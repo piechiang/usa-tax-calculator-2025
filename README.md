@@ -1,35 +1,29 @@
-# 🧾 Watershed Tax — Simple, Smart, Secure Tax Filing for Everyone
+# 🏦 美国税务计算器 2025
 
-**Watershed Tax** is a modern, user-friendly tax preparation and filing platform designed for U.S. individual taxpayers. This open-source project aims to make filing IRS Form 1040 and corresponding state tax returns easy, intuitive, and secure.
+一个功能完整的2025年美国联邦税和马里兰州税计算器
 
----
+## ✨ 功能特点
 
-## 🚀 Features
+- 📊 **准确计算** - 使用2025年最新税率和标准扣除额
+- 📋 **全面支持** - 支持所有报税身份类型
+- 🏛️ **州税计算** - 马里兰州税和地方税计算
+- 📄 **表格生成** - 生成标准1040表格PDF
+- 💾 **数据导出** - 支持税务数据导出
+- 🎨 **现代界面** - 响应式设计，支持移动设备
 
-- 🔐 **Secure User Registration & Login** (with MFA)
-- 📋 **Guided Interview-Style Tax Filing Flow** (TurboTax-style Q&A)
-- 📥 **W-2 Input and Smart Parsing (manual or OCR upload)**
-- 💰 **Automatic Calculation of IRS Form 1040 + Schedules A, B, C**
-- 🗺️ **State Tax Generation Based on User Location**
-- 📄 **PDF Preview, Export & Print**
-- 🌐 **Future Support: IRS e-File Integration**
-- 💳 **Stripe Integration for Filing Payment (planned)**
+## 🚀 快速开始
 
----
+### 在线使用
+访问: [您的部署地址]
 
-## 🧱 Tech Stack
+### 本地运行
+```bash
+# 克隆项目
+git clone https://github.com/您的用户名/usa-tax-calculator-2025.git
+cd usa-tax-calculator-2025
 
-| Layer       | Technology          |
-|-------------|---------------------|
-| Frontend    | React + Tailwind CSS |
-| Backend     | FastAPI (Python)     |
-| Tax Engine  | Modular Calculation Logic (Python) |
-| Database    | PostgreSQL + SQLAlchemy |
-| PDF Engine  | ReportLab / jsPDF    |
-| Hosting     | Railway.app / Vercel / Docker-ready |
+# 安装依赖
+npm install
 
----
-
-## 📂 Project Structure
-
-# Watershed-Tax
+# 启动开发服务器
+npm start
