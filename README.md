@@ -19,7 +19,7 @@
 ### 本地运行
 ```bash
 # 克隆项目
-git clone https://github.com/您的用户名/usa-tax-calculator-2025.git
+git clone https://github.com/piechiang/usa-tax-calculator-2025.git
 cd usa-tax-calculator-2025
 
 # 安装依赖
