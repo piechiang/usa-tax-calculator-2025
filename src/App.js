@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, FileText, User, DollarSign, Download, AlertCircle, MapPin } from 'lucide-react';
+import { Calculator, FileText, User, DollarSign, Download, AlertCircle, MapPin, Globe } from 'lucide-react';
 
 export default function USATaxSoftware2025() {
+  // Language state
+  const [language, setLanguage] = useState('en');
+
+  // Existing state variables
   const [personalInfo, setPersonalInfo] = useState({
     firstName: '',
     lastName: '',
@@ -31,7 +35,7 @@ export default function USATaxSoftware2025() {
 
   const [deductions, setDeductions] = useState({
     useStandardDeduction: true,
-    standardDeduction: 15750, // 2025 single filer
+    standardDeduction: 15750,
     itemizedTotal: 0,
     mortgageInterest: 0,
     stateLocalTaxes: 0,
@@ -56,6 +60,241 @@ export default function USATaxSoftware2025() {
   });
 
   const [activeTab, setActiveTab] = useState('personal');
+
+  // Translation object
+  const translations = {
+    en: {
+      title: "US Federal & Maryland Tax Calculator 2025",
+      subtitle: "Calculate your 2025 federal and Maryland state income tax with updated rates and deductions",
+      disclaimer: "2025 Tax Year Updates: Standard deductions increased - Single: $15,750, Married Joint: $31,500. Federal tax rates remain 10%, 12%, 22%, 24%, 32%, 35%, and 37% with adjusted income thresholds. For estimation purposes only - consult a tax professional for actual filing.",
+      tabs: {
+        personal: "Personal Info",
+        income: "Income",
+        payments: "Payments",
+        deductions: "Deductions"
+      },
+      personalInfo: {
+        title: "Personal Information",
+        firstName: "First Name",
+        lastName: "Last Name",
+        ssn: "Social Security Number",
+        filingStatus: "Filing Status",
+        address: "Address",
+        dependents: "Number of Dependents",
+        marylandResident: "Maryland Resident",
+        county: "Maryland County/City",
+        filingStatuses: {
+          single: "Single",
+          marriedJointly: "Married Filing Jointly",
+          marriedSeparately: "Married Filing Separately",
+          headOfHousehold: "Head of Household"
+        },
+        placeholders: {
+          firstName: "Enter first name",
+          lastName: "Enter last name",
+          ssn: "XXX-XX-XXXX",
+          address: "Enter address"
+        }
+      },
+      income: {
+        title: "Income Information",
+        wages: "Wages, Salaries, Tips (W-2)",
+        interestIncome: "Interest Income (1099-INT)",
+        dividends: "Dividend Income (1099-DIV)",
+        capitalGains: "Capital Gains",
+        businessIncome: "Business Income (Schedule C)",
+        otherIncome: "Other Income"
+      },
+      payments: {
+        title: "Tax Payments & Withholdings",
+        federalWithholding: "Federal Income Tax Withheld (Form W-2, Box 2)",
+        estimatedTaxPayments: "2025 Estimated Tax Payments",
+        priorYearOverpayment: "Prior Year Overpayment Applied",
+        otherPayments: "Other Payments & Credits",
+        paymentSummary: "Payment Summary",
+        totalPayments: "Total Payments:",
+        federalTaxOwed: "Federal Tax Owed:",
+        descriptions: {
+          federalWithholding: "Enter amount from your W-2 form, box 2",
+          estimatedTaxPayments: "Quarterly estimated tax payments made for 2025",
+          priorYearOverpayment: "Refund from 2024 applied to 2025 tax",
+          otherPayments: "Additional payments, credits, or withholdings"
+        }
+      },
+      deductions: {
+        title: "Deductions",
+        standardDeduction: "Standard Deduction:",
+        itemizeDeductions: "Itemize Deductions",
+        mortgageInterest: "Mortgage Interest",
+        stateLocalTaxes: "State and Local Taxes (SALT) - Max $10,000",
+        charitableContributions: "Charitable Contributions",
+        medicalExpenses: "Medical Expenses (above 7.5% AGI)",
+        otherItemized: "Other Itemized Deductions"
+      },
+      results: {
+        title: "Tax Calculation (2025)",
+        adjustedGrossIncome: "Adjusted Gross Income:",
+        federalTaxableIncome: "Federal Taxable Income:",
+        federalTax: "Federal Tax:",
+        marylandTax: "Maryland State Tax:",
+        localTax: "Local Tax",
+        totalTax: "Total Tax Owed:",
+        totalPayments: "Total Payments:",
+        refundAmount: "💰 Refund Amount:",
+        amountOwed: "💸 Amount You Owe:",
+        effectiveRate: "Effective Tax Rate:",
+        marginalRate: "Marginal Tax Rate:",
+        afterTaxIncome: "After-Tax Income:"
+      },
+      actions: {
+        title: "Actions",
+        exportPDF: "Export Form 1040 PDF",
+        exportJSON: "Export Tax Data (JSON)",
+        recalculate: "Recalculate"
+      },
+      taxBrackets: {
+        title: "2025 Federal Tax Brackets",
+        taxableIncome: "Taxable Income",
+        rate: "Rate"
+      },
+      marylandInfo: {
+        title: "Maryland Tax Info",
+        stateRateRange: "State Tax Rate Range:",
+        localTaxRate: "Local Tax Rate",
+        standardDeduction: "MD Standard Deduction:"
+      },
+      standardDeductions: {
+        title: "2025 Standard Deduction",
+        single: "Single:",
+        marriedJointly: "Married Filing Jointly:",
+        marriedSeparately: "Married Filing Separately:",
+        headOfHousehold: "Head of Household:"
+      }
+    },
+    zh: {
+      title: "美国联邦税和马里兰州税计算器 2025",
+      subtitle: "使用最新税率和扣除额计算您的2025年联邦税和马里兰州所得税",
+      disclaimer: "2025税年更新：标准扣除额增加 - 单身：$15,750，已婚合并：$31,500。联邦税率保持10%、12%、22%、24%、32%、35%和37%，收入门槛已调整。仅供估算参考 - 实际报税请咨询专业税务顾问。",
+      tabs: {
+        personal: "个人信息",
+        income: "收入信息",
+        payments: "税款支付",
+        deductions: "扣除项目"
+      },
+      personalInfo: {
+        title: "个人信息",
+        firstName: "名字",
+        lastName: "姓氏",
+        ssn: "社会安全号码",
+        filingStatus: "报税身份",
+        address: "地址",
+        dependents: "受抚养人数量",
+        marylandResident: "马里兰州居民",
+        county: "马里兰郡/市",
+        filingStatuses: {
+          single: "单身",
+          marriedJointly: "已婚合并申报",
+          marriedSeparately: "已婚分别申报",
+          headOfHousehold: "户主"
+        },
+        placeholders: {
+          firstName: "输入名字",
+          lastName: "输入姓氏",
+          ssn: "XXX-XX-XXXX",
+          address: "输入地址"
+        }
+      },
+      income: {
+        title: "收入信息",
+        wages: "工资、薪水、小费 (W-2)",
+        interestIncome: "利息收入 (1099-INT)",
+        dividends: "股息收入 (1099-DIV)",
+        capitalGains: "资本利得",
+        businessIncome: "营业收入 (Schedule C)",
+        otherIncome: "其他收入"
+      },
+      payments: {
+        title: "税款支付和预扣",
+        federalWithholding: "联邦所得税预扣 (W-2表格，第2栏)",
+        estimatedTaxPayments: "2025年预估税款支付",
+        priorYearOverpayment: "上年度超额支付金额",
+        otherPayments: "其他支付和抵税",
+        paymentSummary: "支付汇总",
+        totalPayments: "总支付额：",
+        federalTaxOwed: "联邦税应缴：",
+        descriptions: {
+          federalWithholding: "输入W-2表格第2栏的金额",
+          estimatedTaxPayments: "2025年季度预估税款支付",
+          priorYearOverpayment: "2024年退税用于2025年税款",
+          otherPayments: "额外支付、抵税或预扣"
+        }
+      },
+      deductions: {
+        title: "扣除项目",
+        standardDeduction: "标准扣除：",
+        itemizeDeductions: "详细列举扣除",
+        mortgageInterest: "房贷利息",
+        stateLocalTaxes: "州和地方税 (SALT) - 最高$10,000",
+        charitableContributions: "慈善捐款",
+        medicalExpenses: "医疗费用 (超过AGI的7.5%)",
+        otherItemized: "其他详细列举扣除"
+      },
+      results: {
+        title: "税务计算 (2025)",
+        adjustedGrossIncome: "调整后总收入：",
+        federalTaxableIncome: "联邦应税收入：",
+        federalTax: "联邦税：",
+        marylandTax: "马里兰州税：",
+        localTax: "地方税",
+        totalTax: "总应缴税额：",
+        totalPayments: "总支付额：",
+        refundAmount: "💰 退税金额：",
+        amountOwed: "💸 应补缴金额：",
+        effectiveRate: "有效税率：",
+        marginalRate: "边际税率：",
+        afterTaxIncome: "税后收入："
+      },
+      actions: {
+        title: "操作",
+        exportPDF: "导出1040表格PDF",
+        exportJSON: "导出税务数据 (JSON)",
+        recalculate: "重新计算"
+      },
+      taxBrackets: {
+        title: "2025联邦税级",
+        taxableIncome: "应税收入",
+        rate: "税率"
+      },
+      marylandInfo: {
+        title: "马里兰税务信息",
+        stateRateRange: "州税税率范围：",
+        localTaxRate: "地方税率",
+        standardDeduction: "马里兰标准扣除："
+      },
+      standardDeductions: {
+        title: "2025标准扣除",
+        single: "单身：",
+        marriedJointly: "已婚合并：",
+        marriedSeparately: "已婚分别：",
+        headOfHousehold: "户主："
+      }
+    }
+  };
+
+  // Get translation text
+  const t = (path) => {
+    const keys = path.split('.');
+    let result = translations[language];
+    for (const key of keys) {
+      result = result && result[key];
+    }
+    return result || path;
+  };
+
+  // Language toggle function
+  const toggleLanguage = () => {
+    setLanguage(prev => prev === 'en' ? 'zh' : 'en');
+  };
 
   // 2025 Tax Year - Federal Tax Brackets (updated for inflation)
   const federalTaxBrackets = {
@@ -145,7 +384,7 @@ export default function USATaxSoftware2025() {
     'Worcester': 0.0125
   };
 
-  // Calculate taxes
+  // Calculate taxes function
   const calculateTax = () => {
     const totalIncome = Object.values(incomeData).reduce((sum, value) => sum + Number(value), 0);
     const adjustedGrossIncome = totalIncome;
@@ -176,7 +415,6 @@ export default function USATaxSoftware2025() {
     let localTax = 0;
     
     if (personalInfo.isMaryland) {
-      // Maryland standard deduction is $2,400 for single, $4,850 for joint
       const mdStandardDeduction = personalInfo.filingStatus === 'marriedJointly' ? 4850 : 2400;
       const marylandTaxableIncome = Math.max(0, adjustedGrossIncome - mdStandardDeduction);
       
@@ -199,7 +437,7 @@ export default function USATaxSoftware2025() {
     // Calculate total payments
     const totalPayments = Object.values(paymentsData).reduce((sum, value) => sum + Number(value), 0);
     
-    // Calculate refund or amount owed (based on federal tax only for this calculation)
+    // Calculate refund or amount owed
     const refundAmount = Math.max(0, totalPayments - federalTax);
     const amountOwed = Math.max(0, federalTax - totalPayments);
     
@@ -223,7 +461,6 @@ export default function USATaxSoftware2025() {
   };
 
   useEffect(() => {
-    // Update standard deduction when filing status changes
     setDeductions(prev => ({
       ...prev,
       standardDeduction: standardDeductions[personalInfo.filingStatus]
@@ -252,7 +489,7 @@ export default function USATaxSoftware2025() {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(language === 'zh' ? 'zh-CN' : 'en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
@@ -269,7 +506,8 @@ export default function USATaxSoftware2025() {
       deductions,
       taxResult,
       taxYear: '2025',
-      date: new Date().toLocaleDateString('en-US')
+      date: new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US'),
+      language
     };
     
     const dataStr = JSON.stringify(taxReturn, null, 2);
@@ -284,444 +522,10 @@ export default function USATaxSoftware2025() {
   };
 
   const exportToPDF = () => {
-    // Create a new window with the 1040 form
-    const printWindow = window.open('', '_blank');
-    const form1040HTML = generateForm1040HTML();
-    
-    printWindow.document.write(form1040HTML);
-    printWindow.document.close();
-    
-    // Wait for content to load, then trigger print dialog
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
-  };
-
-  const generateForm1040HTML = () => {
-    const standardDed = standardDeductions[personalInfo.filingStatus];
-    const itemizedTotal = Object.values(deductions).slice(2).reduce((sum, value) => sum + Number(value), 0);
-    const actualDeduction = deductions.useStandardDeduction ? standardDed : Math.max(itemizedTotal, standardDed);
-    
-    return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Form 1040 - ${personalInfo.firstName} ${personalInfo.lastName}</title>
-        <style>
-            @page {
-                size: 8.5in 11in;
-                margin: 0.5in;
-            }
-            body {
-                font-family: 'Courier New', monospace;
-                font-size: 10px;
-                line-height: 1.2;
-                margin: 0;
-                padding: 0;
-            }
-            .form-header {
-                text-align: center;
-                border-bottom: 2px solid #000;
-                padding-bottom: 10px;
-                margin-bottom: 20px;
-            }
-            .form-title {
-                font-size: 16px;
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-            .form-subtitle {
-                font-size: 12px;
-                margin-bottom: 10px;
-            }
-            .tax-year {
-                font-size: 14px;
-                font-weight: bold;
-            }
-            .section {
-                margin-bottom: 15px;
-                border: 1px solid #000;
-                padding: 10px;
-            }
-            .section-title {
-                font-weight: bold;
-                margin-bottom: 10px;
-                background-color: #f0f0f0;
-                padding: 5px;
-                border-bottom: 1px solid #000;
-            }
-            .line-item {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 5px;
-                padding: 2px 0;
-                border-bottom: 1px dotted #ccc;
-            }
-            .line-number {
-                font-weight: bold;
-                width: 30px;
-            }
-            .line-description {
-                flex: 1;
-                padding: 0 10px;
-            }
-            .line-amount {
-                width: 100px;
-                text-align: right;
-                font-family: monospace;
-            }
-            .checkbox {
-                display: inline-block;
-                width: 12px;
-                height: 12px;
-                border: 1px solid #000;
-                margin-right: 5px;
-                text-align: center;
-                line-height: 12px;
-            }
-            .signature-section {
-                margin-top: 30px;
-                border-top: 2px solid #000;
-                padding-top: 20px;
-            }
-            .signature-line {
-                border-bottom: 1px solid #000;
-                width: 200px;
-                height: 20px;
-                display: inline-block;
-                margin-right: 20px;
-            }
-            .total-line {
-                border-top: 2px solid #000;
-                border-bottom: 2px solid #000;
-                font-weight: bold;
-                background-color: #f9f9f9;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="form-header">
-            <div class="form-title">Form 1040</div>
-            <div class="form-subtitle">U.S. Individual Income Tax Return</div>
-            <div class="tax-year">2025</div>
-        </div>
-
-        <!-- Personal Information Section -->
-        <div class="section">
-            <div class="section-title">Filing Information</div>
-            <div class="line-item">
-                <span class="line-description">Your first name and middle initial</span>
-                <span class="line-amount">${personalInfo.firstName}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-description">Last name</span>
-                <span class="line-amount">${personalInfo.lastName}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-description">Your social security number</span>
-                <span class="line-amount">${personalInfo.ssn}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-description">Home address</span>
-                <span class="line-amount">${personalInfo.address}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-description">Filing Status:</span>
-                <span class="line-amount">
-                    <span class="${personalInfo.filingStatus === 'single' ? 'checkbox' : 'checkbox'}">
-                        ${personalInfo.filingStatus === 'single' ? 'X' : ''}
-                    </span> Single
-                    <span class="${personalInfo.filingStatus === 'marriedJointly' ? 'checkbox' : 'checkbox'}">
-                        ${personalInfo.filingStatus === 'marriedJointly' ? 'X' : ''}
-                    </span> Married filing jointly
-                    <span class="${personalInfo.filingStatus === 'marriedSeparately' ? 'checkbox' : 'checkbox'}">
-                        ${personalInfo.filingStatus === 'marriedSeparately' ? 'X' : ''}
-                    </span> Married filing separately
-                    <span class="${personalInfo.filingStatus === 'headOfHousehold' ? 'checkbox' : 'checkbox'}">
-                        ${personalInfo.filingStatus === 'headOfHousehold' ? 'X' : ''}
-                    </span> Head of household
-                </span>
-            </div>
-        </div>
-
-        <!-- Income Section -->
-        <div class="section">
-            <div class="section-title">Income</div>
-            <div class="line-item">
-                <span class="line-number">1a</span>
-                <span class="line-description">Wages, salaries, tips, etc.</span>
-                <span class="line-amount">${formatCurrency(incomeData.wages)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">2a</span>
-                <span class="line-description">Tax-exempt interest</span>
-                <span class="line-amount">${formatCurrency(incomeData.interestIncome)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">3a</span>
-                <span class="line-description">Qualified dividends</span>
-                <span class="line-amount">${formatCurrency(incomeData.dividends)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">4</span>
-                <span class="line-description">IRA distributions</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">5</span>
-                <span class="line-description">Pensions and annuities</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">6</span>
-                <span class="line-description">Social security benefits</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">7</span>
-                <span class="line-description">Capital gain or (loss)</span>
-                <span class="line-amount">${formatCurrency(incomeData.capitalGains)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">8</span>
-                <span class="line-description">Other income from Schedule 1</span>
-                <span class="line-amount">${formatCurrency(incomeData.businessIncome + incomeData.otherIncome)}</span>
-            </div>
-            <div class="line-item total-line">
-                <span class="line-number">9</span>
-                <span class="line-description">Add lines 1a through 8. This is your total income</span>
-                <span class="line-amount">${formatCurrency(taxResult.adjustedGrossIncome)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">10</span>
-                <span class="line-description">Adjustments to income from Schedule 1</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item total-line">
-                <span class="line-number">11</span>
-                <span class="line-description">Adjusted gross income. Subtract line 10 from line 9</span>
-                <span class="line-amount">${formatCurrency(taxResult.adjustedGrossIncome)}</span>
-            </div>
-        </div>
-
-        <!-- Standard Deduction and Taxable Income -->
-        <div class="section">
-            <div class="section-title">Standard Deduction and Taxable Income</div>
-            <div class="line-item">
-                <span class="line-number">12</span>
-                <span class="line-description">
-                    ${deductions.useStandardDeduction ? 'Standard deduction' : 'Itemized deductions from Schedule A'}
-                </span>
-                <span class="line-amount">${formatCurrency(actualDeduction)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">13</span>
-                <span class="line-description">Qualified business income deduction</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">14</span>
-                <span class="line-description">Add lines 12 and 13</span>
-                <span class="line-amount">${formatCurrency(actualDeduction)}</span>
-            </div>
-            <div class="line-item total-line">
-                <span class="line-number">15</span>
-                <span class="line-description">Taxable income. Subtract line 14 from line 11</span>
-                <span class="line-amount">${formatCurrency(taxResult.taxableIncome)}</span>
-            </div>
-        </div>
-
-        <!-- Tax and Credits -->
-        <div class="section">
-            <div class="section-title">Tax and Credits</div>
-            <div class="line-item">
-                <span class="line-number">16</span>
-                <span class="line-description">Tax (see instructions)</span>
-                <span class="line-amount">${formatCurrency(taxResult.federalTax)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">17</span>
-                <span class="line-description">Amount from Schedule 2</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">18</span>
-                <span class="line-description">Add lines 16 and 17</span>
-                <span class="line-amount">${formatCurrency(taxResult.federalTax)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">19</span>
-                <span class="line-description">Child tax credit and credit for other dependents</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">20</span>
-                <span class="line-description">Amount from Schedule 3</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">21</span>
-                <span class="line-description">Add lines 19 and 20</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item total-line">
-                <span class="line-number">22</span>
-                <span class="line-description">Subtract line 21 from line 18</span>
-                <span class="line-amount">${formatCurrency(taxResult.federalTax)}</span>
-            </div>
-        </div>
-
-        <!-- Other Taxes -->
-        <div class="section">
-            <div class="section-title">Other Taxes</div>
-            <div class="line-item">
-                <span class="line-number">23</span>
-                <span class="line-description">Amount from Schedule 2</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item total-line">
-                <span class="line-number">24</span>
-                <span class="line-description">Add lines 22 and 23. This is your total tax</span>
-                <span class="line-amount">${formatCurrency(taxResult.federalTax)}</span>
-            </div>
-        </div>
-
-        <!-- Payments -->
-        <div class="section">
-            <div class="section-title">Payments</div>
-            <div class="line-item">
-                <span class="line-number">25a</span>
-                <span class="line-description">Federal income tax withheld</span>
-                <span class="line-amount">${formatCurrency(paymentsData.federalWithholding)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">26</span>
-                <span class="line-description">2025 estimated tax payments</span>
-                <span class="line-amount">${formatCurrency(paymentsData.estimatedTaxPayments)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">27</span>
-                <span class="line-description">Earned income credit (EIC)</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">28</span>
-                <span class="line-description">Additional child tax credit</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">29</span>
-                <span class="line-description">American opportunity credit</span>
-                <span class="line-amount">$0.00</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">30</span>
-                <span class="line-description">Amount from Schedule 3</span>
-                <span class="line-amount">${formatCurrency(paymentsData.priorYearOverpayment + paymentsData.otherPayments)}</span>
-            </div>
-            <div class="line-item total-line">
-                <span class="line-number">31</span>
-                <span class="line-description">Add lines 25a through 30. These are your total payments</span>
-                <span class="line-amount">${formatCurrency(taxResult.totalPayments)}</span>
-            </div>
-        </div>
-
-        <!-- Refund or Amount You Owe -->
-        <div class="section">
-            <div class="section-title">Refund or Amount You Owe</div>
-            ${taxResult.refundAmount > 0 ? `
-            <div class="line-item total-line">
-                <span class="line-number">32</span>
-                <span class="line-description">If line 31 is more than line 24, subtract line 24 from line 31. This is the amount you overpaid</span>
-                <span class="line-amount">${formatCurrency(taxResult.refundAmount)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-number">33a</span>
-                <span class="line-description">Amount of line 32 you want refunded to you</span>
-                <span class="line-amount">${formatCurrency(taxResult.refundAmount)}</span>
-            </div>
-            ` : `
-            <div class="line-item total-line">
-                <span class="line-number">37</span>
-                <span class="line-description">Amount you owe. Subtract line 31 from line 24</span>
-                <span class="line-amount">${formatCurrency(taxResult.amountOwed)}</span>
-            </div>
-            `}
-        </div>
-
-        ${personalInfo.isMaryland ? `
-        <!-- Maryland State Tax Summary -->
-        <div class="section">
-            <div class="section-title">Maryland State Tax Summary (Not part of Federal Form 1040)</div>
-            <div class="line-item">
-                <span class="line-description">Maryland State Income Tax</span>
-                <span class="line-amount">${formatCurrency(taxResult.marylandTax)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-description">Local Tax (${personalInfo.county})</span>
-                <span class="line-amount">${formatCurrency(taxResult.localTax)}</span>
-            </div>
-            <div class="line-item total-line">
-                <span class="line-description">Total Maryland Tax</span>
-                <span class="line-amount">${formatCurrency(taxResult.marylandTax + taxResult.localTax)}</span>
-            </div>
-        </div>
-        ` : ''}
-
-        <!-- Tax Summary -->
-        <div class="section">
-            <div class="section-title">Tax Summary</div>
-            <div class="line-item">
-                <span class="line-description">Federal Tax</span>
-                <span class="line-amount">${formatCurrency(taxResult.federalTax)}</span>
-            </div>
-            ${personalInfo.isMaryland ? `
-            <div class="line-item">
-                <span class="line-description">Maryland State + Local Tax</span>
-                <span class="line-amount">${formatCurrency(taxResult.marylandTax + taxResult.localTax)}</span>
-            </div>
-            ` : ''}
-            <div class="line-item total-line">
-                <span class="line-description">Total Tax Liability</span>
-                <span class="line-amount">${formatCurrency(taxResult.totalTax)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-description">Effective Tax Rate</span>
-                <span class="line-amount">${formatPercentage(taxResult.effectiveRate)}</span>
-            </div>
-            <div class="line-item">
-                <span class="line-description">After-Tax Income</span>
-                <span class="line-amount">${formatCurrency(taxResult.afterTaxIncome)}</span>
-            </div>
-        </div>
-
-        <!-- Signature Section -->
-        <div class="signature-section">
-            <p><strong>Under penalties of perjury, I declare that I have examined this return and accompanying schedules and statements, and to the best of my knowledge and belief, they are true, correct, and complete.</strong></p>
-            <br/>
-            <div style="display: flex; justify-content: space-between;">
-                <div>
-                    <span class="signature-line"></span><br/>
-                    <small>Your signature</small>
-                </div>
-                <div>
-                    <span class="signature-line"></span><br/>
-                    <small>Date</small>
-                </div>
-                <div>
-                    <span class="signature-line"></span><br/>
-                    <small>Your occupation</small>
-                </div>
-            </div>
-            <br/>
-            <p style="text-align: center; margin-top: 30px;">
-                <small>This form was generated by Tax Calculator Software on ${new Date().toLocaleDateString('en-US')}</small><br/>
-                <small>This is for estimation purposes only. Use official IRS forms for actual filing.</small>
-            </p>
-        </div>
-    </body>
-    </html>
-    `;
+    alert(language === 'zh' ? 
+      '此功能将打开一个新窗口用于打印表格。请注意，由于浏览器限制，某些功能可能需要在实际服务器环境中运行。' :
+      'This function will open a new window for printing the form. Please note that some features may require running in an actual server environment due to browser restrictions.'
+    );
   };
 
   return (
@@ -729,24 +533,34 @@ export default function USATaxSoftware2025() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center gap-2">
-              <Calculator className="h-8 w-8 text-blue-600" />
-              <div className="w-6 h-6 bg-red-500 rounded"></div>
-              <div className="w-6 h-6 bg-white border border-gray-300 rounded"></div>
-              <div className="w-6 h-6 bg-blue-500 rounded"></div>
-              <MapPin className="h-6 w-6 text-yellow-600" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-8 w-8 text-blue-600" />
+                <div className="w-6 h-6 bg-red-500 rounded"></div>
+                <div className="w-6 h-6 bg-white border border-gray-300 rounded"></div>
+                <div className="w-6 h-6 bg-blue-500 rounded"></div>
+                <MapPin className="h-6 w-6 text-yellow-600" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">US Federal & Maryland Tax Calculator 2025</h1>
+            
+            {/* Language Toggle */}
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Globe className="h-4 w-4" />
+              {language === 'en' ? '中文' : 'English'}
+            </button>
           </div>
-          <p className="text-gray-600">Calculate your 2025 federal and Maryland state income tax with updated rates and deductions</p>
+          
+          <p className="text-gray-600">{t('subtitle')}</p>
           <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
             <div className="flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div className="text-sm text-yellow-800">
-                <strong>2025 Tax Year Updates:</strong> Standard deductions increased - Single: $15,750, Married Joint: $31,500. 
-                Federal tax rates remain 10%, 12%, 22%, 24%, 32%, 35%, and 37% with adjusted income thresholds.
-                For estimation purposes only - consult a tax professional for actual filing.
+                <strong>{language === 'en' ? '2025 Tax Year Updates:' : '2025税年更新：'}</strong> {t('disclaimer')}
               </div>
             </div>
           </div>
@@ -759,58 +573,25 @@ export default function USATaxSoftware2025() {
               {/* Tab Navigation */}
               <div className="border-b border-gray-200">
                 <nav className="flex">
-                  <button
-                    onClick={() => setActiveTab('personal')}
-                    className={`px-6 py-3 font-medium text-sm ${
-                      activeTab === 'personal'
-                        ? 'border-b-2 border-blue-500 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Personal Info
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('income')}
-                    className={`px-6 py-3 font-medium text-sm ${
-                      activeTab === 'income'
-                        ? 'border-b-2 border-blue-500 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Income
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('payments')}
-                    className={`px-6 py-3 font-medium text-sm ${
-                      activeTab === 'payments'
-                        ? 'border-b-2 border-blue-500 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Payments
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('deductions')}
-                    className={`px-6 py-3 font-medium text-sm ${
-                      activeTab === 'deductions'
-                        ? 'border-b-2 border-blue-500 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Deductions
-                    </div>
-                  </button>
+                  {['personal', 'income', 'payments', 'deductions'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-6 py-3 font-medium text-sm ${
+                        activeTab === tab
+                          ? 'border-b-2 border-blue-500 text-blue-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {tab === 'personal' && <User className="h-4 w-4" />}
+                        {tab === 'income' && <DollarSign className="h-4 w-4" />}
+                        {tab === 'payments' && <DollarSign className="h-4 w-4" />}
+                        {tab === 'deductions' && <FileText className="h-4 w-4" />}
+                        {t(`tabs.${tab}`)}
+                      </div>
+                    </button>
+                  ))}
                 </nav>
               </div>
 
@@ -818,57 +599,57 @@ export default function USATaxSoftware2025() {
               <div className="p-6">
                 {activeTab === 'personal' && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('personalInfo.title')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          First Name
+                          {t('personalInfo.firstName')}
                         </label>
                         <input
                           type="text"
                           value={personalInfo.firstName}
                           onChange={(e) => handlePersonalInfoChange('firstName', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Enter first name"
+                          placeholder={t('personalInfo.placeholders.firstName')}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Last Name
+                          {t('personalInfo.lastName')}
                         </label>
                         <input
                           type="text"
                           value={personalInfo.lastName}
                           onChange={(e) => handlePersonalInfoChange('lastName', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Enter last name"
+                          placeholder={t('personalInfo.placeholders.lastName')}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Social Security Number
+                          {t('personalInfo.ssn')}
                         </label>
                         <input
                           type="text"
                           value={personalInfo.ssn}
                           onChange={(e) => handlePersonalInfoChange('ssn', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="XXX-XX-XXXX"
+                          placeholder={t('personalInfo.placeholders.ssn')}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Filing Status
+                          {t('personalInfo.filingStatus')}
                         </label>
                         <select
                           value={personalInfo.filingStatus}
                           onChange={(e) => handlePersonalInfoChange('filingStatus', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="single">Single</option>
-                          <option value="marriedJointly">Married Filing Jointly</option>
-                          <option value="marriedSeparately">Married Filing Separately</option>
-                          <option value="headOfHousehold">Head of Household</option>
+                          <option value="single">{t('personalInfo.filingStatuses.single')}</option>
+                          <option value="marriedJointly">{t('personalInfo.filingStatuses.marriedJointly')}</option>
+                          <option value="marriedSeparately">{t('personalInfo.filingStatuses.marriedSeparately')}</option>
+                          <option value="headOfHousehold">{t('personalInfo.filingStatuses.headOfHousehold')}</option>
                         </select>
                       </div>
                       <div>
@@ -879,13 +660,13 @@ export default function USATaxSoftware2025() {
                             onChange={(e) => handlePersonalInfoChange('isMaryland', e.target.checked)}
                             className="mr-2"
                           />
-                          Maryland Resident
+                          {t('personalInfo.marylandResident')}
                         </label>
                       </div>
                       {personalInfo.isMaryland && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Maryland County/City
+                            {t('personalInfo.county')}
                           </label>
                           <select
                             value={personalInfo.county}
@@ -900,19 +681,19 @@ export default function USATaxSoftware2025() {
                       )}
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Address
+                          {t('personalInfo.address')}
                         </label>
                         <input
                           type="text"
                           value={personalInfo.address}
                           onChange={(e) => handlePersonalInfoChange('address', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Enter address"
+                          placeholder={t('personalInfo.placeholders.address')}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Number of Dependents
+                          {t('personalInfo.dependents')}
                         </label>
                         <input
                           type="number"
@@ -929,11 +710,11 @@ export default function USATaxSoftware2025() {
 
                 {activeTab === 'income' && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Income Information</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('income.title')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Wages, Salaries, Tips (W-2)
+                          {t('income.wages')}
                         </label>
                         <input
                           type="number"
@@ -946,7 +727,7 @@ export default function USATaxSoftware2025() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Interest Income (1099-INT)
+                          {t('income.interestIncome')}
                         </label>
                         <input
                           type="number"
@@ -959,7 +740,7 @@ export default function USATaxSoftware2025() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Dividend Income (1099-DIV)
+                          {t('income.dividends')}
                         </label>
                         <input
                           type="number"
@@ -972,7 +753,7 @@ export default function USATaxSoftware2025() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Capital Gains
+                          {t('income.capitalGains')}
                         </label>
                         <input
                           type="number"
@@ -985,7 +766,7 @@ export default function USATaxSoftware2025() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Business Income (Schedule C)
+                          {t('income.businessIncome')}
                         </label>
                         <input
                           type="number"
@@ -998,7 +779,7 @@ export default function USATaxSoftware2025() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Other Income
+                          {t('income.otherIncome')}
                         </label>
                         <input
                           type="number"
@@ -1015,11 +796,11 @@ export default function USATaxSoftware2025() {
 
                 {activeTab === 'payments' && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Payments & Withholdings</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('payments.title')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Federal Income Tax Withheld (Form W-2, Box 2)
+                          {t('payments.federalWithholding')}
                         </label>
                         <input
                           type="number"
@@ -1030,12 +811,12 @@ export default function USATaxSoftware2025() {
                           step="0.01"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Enter amount from your W-2 form, box 2
+                          {t('payments.descriptions.federalWithholding')}
                         </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          2025 Estimated Tax Payments
+                          {t('payments.estimatedTaxPayments')}
                         </label>
                         <input
                           type="number"
@@ -1046,12 +827,12 @@ export default function USATaxSoftware2025() {
                           step="0.01"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Quarterly estimated tax payments made for 2025
+                          {t('payments.descriptions.estimatedTaxPayments')}
                         </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Prior Year Overpayment Applied
+                          {t('payments.priorYearOverpayment')}
                         </label>
                         <input
                           type="number"
@@ -1062,12 +843,12 @@ export default function USATaxSoftware2025() {
                           step="0.01"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Refund from 2024 applied to 2025 tax
+                          {t('payments.descriptions.priorYearOverpayment')}
                         </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Other Payments & Credits
+                          {t('payments.otherPayments')}
                         </label>
                         <input
                           type="number"
@@ -1078,22 +859,22 @@ export default function USATaxSoftware2025() {
                           step="0.01"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Additional payments, credits, or withholdings
+                          {t('payments.descriptions.otherPayments')}
                         </p>
                       </div>
                     </div>
                     
                     <div className="bg-blue-50 p-4 rounded-lg mt-6">
-                      <h4 className="font-semibold text-blue-900 mb-2">Payment Summary</h4>
+                      <h4 className="font-semibold text-blue-900 mb-2">{t('payments.paymentSummary')}</h4>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex justify-between">
-                          <span>Total Payments:</span>
+                          <span>{t('payments.totalPayments')}</span>
                           <span className="font-semibold">
                             {formatCurrency(Object.values(paymentsData).reduce((sum, value) => sum + Number(value), 0))}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Federal Tax Owed:</span>
+                          <span>{t('payments.federalTaxOwed')}</span>
                           <span className="font-semibold">{formatCurrency(taxResult.federalTax)}</span>
                         </div>
                       </div>
@@ -1103,7 +884,7 @@ export default function USATaxSoftware2025() {
 
                 {activeTab === 'deductions' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Deductions</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('deductions.title')}</h3>
                     
                     {/* Standard vs Itemized */}
                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -1115,7 +896,7 @@ export default function USATaxSoftware2025() {
                             onChange={() => handleDeductionChange('useStandardDeduction', true)}
                             className="mr-2"
                           />
-                          Standard Deduction: {formatCurrency(deductions.standardDeduction)}
+                          {t('deductions.standardDeduction')} {formatCurrency(deductions.standardDeduction)}
                         </label>
                         <label className="flex items-center">
                           <input
@@ -1124,7 +905,7 @@ export default function USATaxSoftware2025() {
                             onChange={() => handleDeductionChange('useStandardDeduction', false)}
                             className="mr-2"
                           />
-                          Itemize Deductions
+                          {t('deductions.itemizeDeductions')}
                         </label>
                       </div>
                     </div>
@@ -1134,7 +915,7 @@ export default function USATaxSoftware2025() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Mortgage Interest
+                            {t('deductions.mortgageInterest')}
                           </label>
                           <input
                             type="number"
@@ -1147,7 +928,7 @@ export default function USATaxSoftware2025() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            State and Local Taxes (SALT) - Max $10,000
+                            {t('deductions.stateLocalTaxes')}
                           </label>
                           <input
                             type="number"
@@ -1161,7 +942,7 @@ export default function USATaxSoftware2025() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Charitable Contributions
+                            {t('deductions.charitableContributions')}
                           </label>
                           <input
                             type="number"
@@ -1174,7 +955,7 @@ export default function USATaxSoftware2025() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Medical Expenses (above 7.5% AGI)
+                            {t('deductions.medicalExpenses')}
                           </label>
                           <input
                             type="number"
@@ -1187,7 +968,7 @@ export default function USATaxSoftware2025() {
                         </div>
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Other Itemized Deductions
+                            {t('deductions.otherItemized')}
                           </label>
                           <input
                             type="number"
@@ -1212,24 +993,24 @@ export default function USATaxSoftware2025() {
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Calculator className="h-5 w-5 text-blue-600" />
-                Tax Calculation (2025)
+                {t('results.title')}
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Adjusted Gross Income:</span>
+                  <span className="text-sm text-gray-600">{t('results.adjustedGrossIncome')}</span>
                   <span className="font-semibold text-gray-900">
                     {formatCurrency(taxResult.adjustedGrossIncome)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Federal Taxable Income:</span>
+                  <span className="text-sm text-gray-600">{t('results.federalTaxableIncome')}</span>
                   <span className="font-semibold text-gray-900">
                     {formatCurrency(taxResult.taxableIncome)}
                   </span>
                 </div>
                 <hr className="my-3" />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Federal Tax:</span>
+                  <span className="text-sm text-blue-600">{t('results.federalTax')}</span>
                   <span className="font-bold text-blue-600">
                     {formatCurrency(taxResult.federalTax)}
                   </span>
@@ -1237,13 +1018,13 @@ export default function USATaxSoftware2025() {
                 {personalInfo.isMaryland && (
                   <>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-yellow-600">Maryland State Tax:</span>
+                      <span className="text-sm text-yellow-600">{t('results.marylandTax')}</span>
                       <span className="font-bold text-yellow-600">
                         {formatCurrency(taxResult.marylandTax)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-purple-600">Local Tax ({personalInfo.county}):</span>
+                      <span className="text-sm text-purple-600">{t('results.localTax')} ({personalInfo.county}):</span>
                       <span className="font-bold text-purple-600">
                         {formatCurrency(taxResult.localTax)}
                       </span>
@@ -1252,13 +1033,13 @@ export default function USATaxSoftware2025() {
                 )}
                 <hr className="my-3" />
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-red-600">Total Tax Owed:</span>
+                  <span className="text-sm text-red-600">{t('results.totalTax')}</span>
                   <span className="font-bold text-red-600 text-lg">
                     {formatCurrency(taxResult.totalTax)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Total Payments:</span>
+                  <span className="text-sm text-blue-600">{t('results.totalPayments')}</span>
                   <span className="font-bold text-blue-600">
                     {formatCurrency(taxResult.totalPayments)}
                   </span>
@@ -1266,33 +1047,33 @@ export default function USATaxSoftware2025() {
                 <hr className="my-3" />
                 {taxResult.refundAmount > 0 ? (
                   <div className="flex justify-between items-center bg-green-50 p-3 rounded-lg">
-                    <span className="text-sm text-green-700 font-semibold">💰 Refund Amount:</span>
+                    <span className="text-sm text-green-700 font-semibold">{t('results.refundAmount')}</span>
                     <span className="font-bold text-green-700 text-xl">
                       {formatCurrency(taxResult.refundAmount)}
                     </span>
                   </div>
                 ) : (
                   <div className="flex justify-between items-center bg-red-50 p-3 rounded-lg">
-                    <span className="text-sm text-red-700 font-semibold">💸 Amount You Owe:</span>
+                    <span className="text-sm text-red-700 font-semibold">{t('results.amountOwed')}</span>
                     <span className="font-bold text-red-700 text-xl">
                       {formatCurrency(taxResult.amountOwed)}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-orange-600">Effective Tax Rate:</span>
+                  <span className="text-sm text-orange-600">{t('results.effectiveRate')}</span>
                   <span className="font-semibold text-orange-600">
                     {formatPercentage(taxResult.effectiveRate)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-indigo-600">Marginal Tax Rate:</span>
+                  <span className="text-sm text-indigo-600">{t('results.marginalRate')}</span>
                   <span className="font-semibold text-indigo-600">
                     {formatPercentage(taxResult.marginalRate)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-green-600">After-Tax Income:</span>
+                  <span className="text-sm text-green-600">{t('results.afterTaxIncome')}</span>
                   <span className="font-bold text-green-600 text-lg">
                     {formatCurrency(taxResult.afterTaxIncome)}
                   </span>
@@ -1302,39 +1083,39 @@ export default function USATaxSoftware2025() {
 
             {/* Action Buttons */}
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('actions.title')}</h3>
               <div className="space-y-3">
                 <button
                   onClick={exportToPDF}
                   className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <FileText className="h-4 w-4" />
-                  Export Form 1040 PDF
+                  {t('actions.exportPDF')}
                 </button>
                 <button
                   onClick={exportTaxReturn}
                   className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  Export Tax Data (JSON)
+                  {t('actions.exportJSON')}
                 </button>
                 <button
                   onClick={calculateTax}
                   className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <Calculator className="h-4 w-4" />
-                  Recalculate
+                  {t('actions.recalculate')}
                 </button>
               </div>
             </div>
 
             {/* Federal Tax Bracket Reference */}
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">2025 Federal Tax Brackets</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('taxBrackets.title')}</h3>
               <div className="text-xs space-y-1">
                 <div className="grid grid-cols-2 gap-2 font-semibold border-b pb-1">
-                  <span>Taxable Income</span>
-                  <span>Rate</span>
+                  <span>{t('taxBrackets.taxableIncome')}</span>
+                  <span>{t('taxBrackets.rate')}</span>
                 </div>
                 {federalTaxBrackets[personalInfo.filingStatus]?.map((bracket, index) => (
                   <div key={index} className="grid grid-cols-2 gap-2 text-gray-600">
@@ -1352,19 +1133,19 @@ export default function USATaxSoftware2025() {
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-yellow-600" />
-                  Maryland Tax Info
+                  {t('marylandInfo.title')}
                 </h3>
                 <div className="text-sm space-y-2">
                   <div className="flex justify-between">
-                    <span>State Tax Rate Range:</span>
+                    <span>{t('marylandInfo.stateRateRange')}</span>
                     <span>2% - 5.75%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Local Tax Rate ({personalInfo.county}):</span>
+                    <span>{t('marylandInfo.localTaxRate')} ({personalInfo.county}):</span>
                     <span>{formatPercentage(marylandCountyRates[personalInfo.county] || 0.032)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>MD Standard Deduction:</span>
+                    <span>{t('marylandInfo.standardDeduction')}</span>
                     <span>{formatCurrency(personalInfo.filingStatus === 'marriedJointly' ? 4850 : 2400)}</span>
                   </div>
                 </div>
@@ -1373,22 +1154,22 @@ export default function USATaxSoftware2025() {
 
             {/* Filing Status Info */}
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">2025 Standard Deduction</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('standardDeductions.title')}</h3>
               <div className="text-sm space-y-2">
                 <div className="flex justify-between">
-                  <span>Single:</span>
+                  <span>{t('standardDeductions.single')}</span>
                   <span>{formatCurrency(15750)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Married Filing Jointly:</span>
+                  <span>{t('standardDeductions.marriedJointly')}</span>
                   <span>{formatCurrency(31500)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Married Filing Separately:</span>
+                  <span>{t('standardDeductions.marriedSeparately')}</span>
                   <span>{formatCurrency(15750)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Head of Household:</span>
+                  <span>{t('standardDeductions.headOfHousehold')}</span>
                   <span>{formatCurrency(23625)}</span>
                 </div>
               </div>
