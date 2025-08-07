@@ -1,9 +1,23 @@
-import React, { useState, useEffect } from 'react';
+const exportToPDF = () => {
+    const message = language === 'zh' ? 
+      '此功能将打开一个新窗口用于打印表格。请注意，由于浏览器限制，某些功能可能需要在实际服务器环境中运行。' :
+      language === 'es' ?
+      'Esta función abrirá una nueva ventana para imprimir el formulario. Tenga en cuenta que algunas características pueden requerir ejecutarse en un entorno de servidor real debido a las restricciones del navegador.' :
+      'This function will open a new window for printing the form. Please note that some features may require running in an actual server environment due to browser restrictions.';
+    alert(message);
+  };import React, { useState, useEffect } from 'react';
 import { Calculator, FileText, User, DollarSign, Download, AlertCircle, MapPin, Globe } from 'lucide-react';
 
 export default function USATaxSoftware2025() {
   // Language state
   const [language, setLanguage] = useState('en');
+
+  // Language options
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' }
+  ];
 
   // Existing state variables
   const [personalInfo, setPersonalInfo] = useState({
@@ -278,6 +292,114 @@ export default function USATaxSoftware2025() {
         marriedSeparately: "已婚分别：",
         headOfHousehold: "户主："
       }
+    },
+    es: {
+      title: "Calculadora de Impuestos Federales y de Maryland 2025",
+      subtitle: "Calcule sus impuestos federales y estatales de Maryland para 2025 con tasas y deducciones actualizadas",
+      disclaimer: "Actualizaciones del Año Fiscal 2025: Deducciones estándar aumentadas - Soltero: $15,750, Casado Conjunto: $31,500. Las tasas de impuestos federales permanecen en 10%, 12%, 22%, 24%, 32%, 35% y 37% con umbrales de ingresos ajustados. Solo para fines de estimación - consulte a un profesional de impuestos para la presentación real.",
+      tabs: {
+        personal: "Info Personal",
+        income: "Ingresos",
+        payments: "Pagos",
+        deductions: "Deducciones"
+      },
+      personalInfo: {
+        title: "Información Personal",
+        firstName: "Nombre",
+        lastName: "Apellido",
+        ssn: "Número de Seguro Social",
+        filingStatus: "Estado Civil",
+        address: "Dirección",
+        dependents: "Número de Dependientes",
+        marylandResident: "Residente de Maryland",
+        county: "Condado/Ciudad de Maryland",
+        filingStatuses: {
+          single: "Soltero",
+          marriedJointly: "Casado Presentando Conjuntamente",
+          marriedSeparately: "Casado Presentando Por Separado",
+          headOfHousehold: "Cabeza de Familia"
+        },
+        placeholders: {
+          firstName: "Ingrese el nombre",
+          lastName: "Ingrese el apellido",
+          ssn: "XXX-XX-XXXX",
+          address: "Ingrese la dirección"
+        }
+      },
+      income: {
+        title: "Información de Ingresos",
+        wages: "Salarios, Sueldos, Propinas (W-2)",
+        interestIncome: "Ingresos por Intereses (1099-INT)",
+        dividends: "Ingresos por Dividendos (1099-DIV)",
+        capitalGains: "Ganancias de Capital",
+        businessIncome: "Ingresos de Negocio (Anexo C)",
+        otherIncome: "Otros Ingresos"
+      },
+      payments: {
+        title: "Pagos de Impuestos y Retenciones",
+        federalWithholding: "Impuesto Federal Retenido (Formulario W-2, Casilla 2)",
+        estimatedTaxPayments: "Pagos de Impuestos Estimados 2025",
+        priorYearOverpayment: "Sobrepago del Año Anterior Aplicado",
+        otherPayments: "Otros Pagos y Créditos",
+        paymentSummary: "Resumen de Pagos",
+        totalPayments: "Pagos Totales:",
+        federalTaxOwed: "Impuesto Federal Adeudado:",
+        descriptions: {
+          federalWithholding: "Ingrese la cantidad del formulario W-2, casilla 2",
+          estimatedTaxPayments: "Pagos trimestrales de impuestos estimados realizados para 2025",
+          priorYearOverpayment: "Reembolso de 2024 aplicado al impuesto de 2025",
+          otherPayments: "Pagos adicionales, créditos o retenciones"
+        }
+      },
+      deductions: {
+        title: "Deducciones",
+        standardDeduction: "Deducción Estándar:",
+        itemizeDeductions: "Deducciones Detalladas",
+        mortgageInterest: "Intereses Hipotecarios",
+        stateLocalTaxes: "Impuestos Estatales y Locales (SALT) - Máx $10,000",
+        charitableContributions: "Contribuciones Caritativas",
+        medicalExpenses: "Gastos Médicos (arriba del 7.5% AGI)",
+        otherItemized: "Otras Deducciones Detalladas"
+      },
+      results: {
+        title: "Cálculo de Impuestos (2025)",
+        adjustedGrossIncome: "Ingreso Bruto Ajustado:",
+        federalTaxableIncome: "Ingreso Gravable Federal:",
+        federalTax: "Impuesto Federal:",
+        marylandTax: "Impuesto Estatal de Maryland:",
+        localTax: "Impuesto Local",
+        totalTax: "Total de Impuestos Adeudados:",
+        totalPayments: "Pagos Totales:",
+        refundAmount: "💰 Cantidad de Reembolso:",
+        amountOwed: "💸 Cantidad Adeudada:",
+        effectiveRate: "Tasa de Impuesto Efectiva:",
+        marginalRate: "Tasa de Impuesto Marginal:",
+        afterTaxIncome: "Ingreso Después de Impuestos:"
+      },
+      actions: {
+        title: "Acciones",
+        exportPDF: "Exportar Formulario 1040 PDF",
+        exportJSON: "Exportar Datos de Impuestos (JSON)",
+        recalculate: "Recalcular"
+      },
+      taxBrackets: {
+        title: "Tramos de Impuestos Federales 2025",
+        taxableIncome: "Ingreso Gravable",
+        rate: "Tasa"
+      },
+      marylandInfo: {
+        title: "Información de Impuestos de Maryland",
+        stateRateRange: "Rango de Tasa Estatal:",
+        localTaxRate: "Tasa de Impuesto Local",
+        standardDeduction: "Deducción Estándar MD:"
+      },
+      standardDeductions: {
+        title: "Deducción Estándar 2025",
+        single: "Soltero:",
+        marriedJointly: "Casado Presentando Conjuntamente:",
+        marriedSeparately: "Casado Presentando Por Separado:",
+        headOfHousehold: "Cabeza de Familia:"
+      }
     }
   };
 
@@ -292,8 +414,15 @@ export default function USATaxSoftware2025() {
   };
 
   // Language toggle function
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === 'en' ? 'zh' : 'en');
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  
+  const handleLanguageChange = (langCode) => {
+    setLanguage(langCode);
+    setShowLanguageMenu(false);
+  };
+
+  const getCurrentLanguage = () => {
+    return languages.find(lang => lang.code === language) || languages[0];
   };
 
   // 2025 Tax Year - Federal Tax Brackets (updated for inflation)
@@ -489,7 +618,8 @@ export default function USATaxSoftware2025() {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat(language === 'zh' ? 'zh-CN' : 'en-US', {
+    const locale = language === 'zh' ? 'zh-CN' : language === 'es' ? 'es-US' : 'en-US';
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
@@ -506,7 +636,7 @@ export default function USATaxSoftware2025() {
       deductions,
       taxResult,
       taxYear: '2025',
-      date: new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US'),
+      date: new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : language === 'es' ? 'es-ES' : 'en-US'),
       language
     };
     
@@ -546,13 +676,41 @@ export default function USATaxSoftware2025() {
             </div>
             
             {/* Language Toggle */}
-            <button
-              onClick={toggleLanguage}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Globe className="h-4 w-4" />
-              {language === 'en' ? '中文' : 'English'}
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Globe className="h-4 w-4" />
+                <span className="text-lg">{getCurrentLanguage().flag}</span>
+                <span>{getCurrentLanguage().name}</span>
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {showLanguageMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => handleLanguageChange(lang.code)}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 ${
+                        language === lang.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                      }`}
+                    >
+                      <span className="text-lg">{lang.flag}</span>
+                      <span>{lang.name}</span>
+                      {language === lang.code && (
+                        <svg className="w-4 h-4 ml-auto text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           
           <p className="text-gray-600">{t('subtitle')}</p>
@@ -560,7 +718,7 @@ export default function USATaxSoftware2025() {
             <div className="flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div className="text-sm text-yellow-800">
-                <strong>{language === 'en' ? '2025 Tax Year Updates:' : '2025税年更新：'}</strong> {t('disclaimer')}
+                <strong>{language === 'en' ? '2025 Tax Year Updates:' : language === 'zh' ? '2025税年更新：' : 'Actualizaciones del Año Fiscal 2025:'}</strong> {t('disclaimer')}
               </div>
             </div>
           </div>
