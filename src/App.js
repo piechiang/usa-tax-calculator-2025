@@ -688,13 +688,19 @@ export default function USATaxSoftware2025() {
     });
   };
 
-  useEffect(() => {
-    setDeductions(prev => ({
-      ...prev,
-      standardDeduction: standardDeductions[personalInfo.filingStatus]
-    }));
-    calculateTax();
-  }, [personalInfo, incomeData, deductions, paymentsData]);
+// 自动同步标准扣除额
+useEffect(() => {
+  setDeductions(prev => ({
+    ...prev,
+    standardDeduction: standardDeductions[personalInfo.filingStatus]
+  }));
+}, [personalInfo.filingStatus]);
+
+// 只用来计算税务
+useEffect(() => {
+  calculateTax();
+}, [personalInfo, incomeData, deductions, paymentsData]);
+
 
   const handlePersonalInfoChange = (field, value) => {
     const error = validateField(field, value, 'personal');
