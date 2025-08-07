@@ -3,6 +3,7 @@ export const translations = {
     title: "US Federal & Maryland Tax Calculator 2025",
     subtitle: "Calculate your 2025 federal and Maryland state income tax with updated rates and deductions",
     disclaimer: "2025 Tax Year Updates: Standard deductions increased - Single: $15,750, Married Joint: $31,500. Federal tax rates remain 10%, 12%, 22%, 24%, 32%, 35%, and 37% with adjusted income thresholds. For estimation purposes only - consult a tax professional for actual filing.",
+    privacyNotice: "🔒 Privacy Notice: This calculator runs entirely in your browser. No sensitive information (including Social Security Numbers, personal data, or tax information) is stored on our servers or transmitted over the internet. All calculations are performed locally on your device for your privacy and security.",
     validation: {
       required: "This field is required",
       invalidSSN: "Please enter a valid SSN (XXX-XX-XXXX)",
@@ -174,6 +175,7 @@ export const translations = {
     title: "美国联邦税和马里兰州税计算器 2025",
     subtitle: "使用最新税率和扣除额计算您的2025年联邦税和马里兰州所得税",
     disclaimer: "2025税年更新：标准扣除额增加 - 单身：$15,750，已婚合并：$31,500。联邦税率保持10%、12%、22%、24%、32%、35%和37%，收入门槛已调整。仅供估算参考 - 实际报税请咨询专业税务顾问。",
+    privacyNotice: "🔒 隐私声明：本计算器完全在您的浏览器中运行。不会在我们的服务器上存储或通过互联网传输任何敏感信息（包括社会安全号码、个人数据或税务信息）。所有计算都在您的设备上本地执行，以保护您的隐私和安全。",
     validation: {
       required: "此字段为必填项",
       invalidSSN: "请输入有效的社会安全号码 (XXX-XX-XXXX)",
@@ -345,6 +347,7 @@ export const translations = {
     title: "Calculadora de Impuestos Federales de EE.UU. y Maryland 2025",
     subtitle: "Calcule sus impuestos federales y estatales de Maryland 2025 con tasas y deducciones actualizadas",
     disclaimer: "Actualizaciones del Año Fiscal 2025: Deducciones estándar aumentaron - Soltero: $15,750, Casado Conjunto: $31,500. Las tasas federales permanecen en 10%, 12%, 22%, 24%, 32%, 35% y 37% con umbrales de ingresos ajustados. Solo para propósitos de estimación - consulte a un profesional de impuestos para la presentación real.",
+    privacyNotice: "🔒 Aviso de Privacidad: Esta calculadora funciona completamente en su navegador. No se almacena ni transmite a través de internet ninguna información sensible (incluyendo Números de Seguro Social, datos personales o información fiscal) en nuestros servidores. Todos los cálculos se realizan localmente en su dispositivo para proteger su privacidad y seguridad.",
     validation: {
       required: "Este campo es obligatorio",
       invalidSSN: "Por favor ingrese un SSN válido (XXX-XX-XXXX)",

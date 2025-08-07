@@ -360,8 +360,13 @@ export default function USATaxSoftware2025() {
             </div>
           </div>
           
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs sm:text-sm text-yellow-800">
-            {t('disclaimer')}
+          <div className="space-y-3">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs sm:text-sm text-yellow-800">
+              {t('disclaimer')}
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs sm:text-sm text-green-800">
+              {t('privacyNotice')}
+            </div>
           </div>
         </div>
 
