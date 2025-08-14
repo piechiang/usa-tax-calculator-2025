@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { calculateTaxResults, calculateFilingComparison } from '../utils/taxCalculations';
+import { 
+  calculateTaxResultsWithEngine, 
+  calculateFilingComparisonWithEngine 
+} from '../utils/engineAdapter.ts';
 import { generateTaxOptimizations } from '../utils/taxOptimization';
 import { standardDeductions } from '../constants/taxBrackets';
 
@@ -117,13 +121,26 @@ export const useTaxCalculator = () => {
 
     // Calculate filing comparison for married couples
     if (personalInfo.filingStatus === 'marriedJointly') {
-      const comparison = calculateFilingComparison(
+      // Try new engine first, fallback to old calculation
+      const engineComparison = calculateFilingComparisonWithEngine(
         personalInfo,
         incomeData,
         spouseInfo,
         paymentsData
       );
-      setFilingComparison(comparison);
+      
+      if (engineComparison) {
+        setFilingComparison(engineComparison);
+      } else {
+        // Fallback to legacy calculation
+        const comparison = calculateFilingComparison(
+          personalInfo,
+          incomeData,
+          spouseInfo,
+          paymentsData
+        );
+        setFilingComparison(comparison);
+      }
     } else {
       setFilingComparison(null);
     }
@@ -177,15 +194,36 @@ export const useTaxCalculator = () => {
   };
 
   const recalculate = () => {
-    const results = calculateTaxResults(
+    // Try new engine first, fallback to old calculation
+    const engineResults = calculateTaxResultsWithEngine(
       personalInfo,
       incomeData,
       k1Data,
       businessDetails,
       paymentsData,
-      deductions
+      deductions,
+      spouseInfo
     );
-    setTaxResult(results);
+    
+    if (engineResults.success) {
+      setTaxResult(engineResults.result);
+      console.log('Using new tax engine', { 
+        federal: engineResults.federalDetails, 
+        state: engineResults.stateDetails 
+      });
+    } else {
+      // Fallback to legacy calculation
+      console.warn('Engine calculation failed, using legacy method:', engineResults.error);
+      const results = calculateTaxResults(
+        personalInfo,
+        incomeData,
+        k1Data,
+        businessDetails,
+        paymentsData,
+        deductions
+      );
+      setTaxResult(results);
+    }
   };
 
   return {

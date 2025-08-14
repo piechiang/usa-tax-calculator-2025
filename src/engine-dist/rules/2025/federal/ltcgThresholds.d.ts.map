@@ -1,0 +1,1 @@
+{"version":3,"file":"ltcgThresholds.d.ts","sourceRoot":"","sources":["../../../../../src/engine/rules/2025/federal/ltcgThresholds.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,sBAAsB,CAAC;AAKzD,MAAM,WAAW,cAAc;IAC7B,WAAW,EAAE,MAAM,CAAC;IACpB,cAAc,EAAE,MAAM,CAAC;CACxB;AAED,eAAO,MAAM,SAAS,EAAE,MAAM,CAAC,YAAY,EAAE,cAAc,CAiB1D,CAAC"}
