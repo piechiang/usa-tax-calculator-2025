@@ -6,15 +6,17 @@ let computeFederal1040 = null, convertUIToFederal1040Input = null;
 console.log('🔧 Advanced Federal 1040 engine temporarily disabled - under development');
 
 // Legacy engine fallback
-let computeFederal2025, computeMD2025;
+let computeFederal2025;
+const stateEngines: Record<string, any> = {};
 try {
   const engine = require('../engine-dist/index.js');
   computeFederal2025 = engine.computeFederal2025;
-  computeMD2025 = engine.computeMD2025;
+  stateEngines.MD = engine.computeMD2025;
+  stateEngines.CA = engine.computeCA2025;
+  stateEngines.NY = engine.computeNY2025;
 } catch (error) {
   console.warn('Legacy engine not available:', error.message);
   computeFederal2025 = null;
-  computeMD2025 = null;
 }
 
 /**
@@ -31,9 +33,9 @@ export function convertUIToEngineInput(personalInfo, incomeData, k1Data, busines
     dependents: parseInt(personalInfo.dependents) || 0,
     
     // Location info
-    state: personalInfo.isMaryland ? 'MD' : personalInfo.state,
+    state: personalInfo.state,
     county: personalInfo.county,
-    isMaryland: personalInfo.isMaryland,
+    isMaryland: personalInfo.state === 'MD',
     
     income: {
       wages: parseFloat(incomeData.wages) || 0,
@@ -239,7 +241,7 @@ export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, 
     }
     
     // Priority 2: Use legacy engine if available
-    else if (computeFederal2025 && computeMD2025) {
+    else if (computeFederal2025) {
       console.log('⚡ Using legacy tax engine');
       
       // Convert UI data to engine format
@@ -256,10 +258,11 @@ export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, 
       // Calculate federal taxes
       const federalResult = computeFederal2025(engineInput);
       
-      // Calculate state taxes if Maryland resident
+      // Calculate state taxes if engine available
       let stateResult = null;
-      if (personalInfo.isMaryland) {
-        stateResult = computeMD2025(engineInput, federalResult);
+      const computeState = stateEngines[personalInfo.state];
+      if (computeState) {
+        stateResult = computeState(engineInput, federalResult);
       }
       
       // Convert back to UI format
@@ -342,7 +345,7 @@ export function calculateFilingComparisonWithEngine(personalInfo, incomeData, sp
   
   try {
     // Use engine if available, otherwise fallback to original calculations
-    if (computeFederal2025 && computeMD2025) {
+    if (computeFederal2025) {
       console.log('Using advanced engine for filing comparison');
       
       // Create base input
@@ -359,7 +362,8 @@ export function calculateFilingComparisonWithEngine(personalInfo, incomeData, sp
       // Calculate joint filing
       const jointInput = { ...baseInput, filingStatus: 'marriedJointly' };
       const jointFederal = computeFederal2025(jointInput);
-      const jointState = personalInfo.isMaryland ? computeMD2025(jointInput, jointFederal) : null;
+      const computeState = stateEngines[personalInfo.state];
+      const jointState = computeState ? computeState(jointInput, jointFederal) : null;
       
       // Calculate separate filing (simplified - assumes equal split)
       const separateInput = { 
@@ -382,7 +386,7 @@ export function calculateFilingComparisonWithEngine(personalInfo, incomeData, sp
       };
       
       const separateFederal = computeFederal2025(separateInput);
-      const separateState = personalInfo.isMaryland ? computeMD2025(separateInput, separateFederal) : null;
+      const separateState = computeState ? computeState(separateInput, separateFederal) : null;
       
       // Calculate totals for separate filing (multiply by 2)
       const separateTotalTax = (separateFederal.totalTax + (separateState?.totalStateLiability || 0)) * 2;

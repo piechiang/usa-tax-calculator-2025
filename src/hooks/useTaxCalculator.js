@@ -15,6 +15,7 @@ export const useTaxCalculator = () => {
     filingStatus: 'single',
     address: '',
     dependents: 0,
+    state: 'MD',
     isMaryland: true,
     county: 'Baltimore City'
   });
@@ -158,7 +159,11 @@ export const useTaxCalculator = () => {
   }, [personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo]);
 
   const handlePersonalInfoChange = (field, value) => {
-    setPersonalInfo(prev => ({ ...prev, [field]: value }));
+    setPersonalInfo(prev => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'state' ? { isMaryland: value === 'MD' } : {})
+    }));
   };
 
   const handleSpouseInfoChange = (field, value) => {
