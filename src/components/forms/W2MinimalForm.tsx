@@ -10,7 +10,13 @@ import { CameraOutlined, EditOutlined, QuestionCircleOutlined, CheckCircleOutlin
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
 
-const W2MinimalForm = ({ onComplete, defaultValues = {}, allowMultiple = true }) => {
+interface W2MinimalFormProps {
+  onComplete: (data: any) => void;
+  defaultValues?: any;
+  allowMultiple?: boolean;
+}
+
+const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues = {}, allowMultiple = true }) => {
   const [inputMethod, setInputMethod] = useState(defaultValues.method || 'upload');
   const [w2Data, setW2Data] = useState(defaultValues.w2Data || []);
   const [currentW2, setCurrentW2] = useState({

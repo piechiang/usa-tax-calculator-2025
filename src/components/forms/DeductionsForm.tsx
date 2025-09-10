@@ -1,11 +1,18 @@
 import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
 
-const DeductionsForm = ({ 
-  deductions, 
-  onChange, 
-  t, 
-  ValidatedInput 
+interface DeductionsFormProps {
+  deductions: any;
+  onChange: (field: string, value: string) => void;
+  t: (key: string) => string;
+  ValidatedInput: React.ComponentType<any>;
+}
+
+const DeductionsForm: React.FC<DeductionsFormProps> = ({
+  deductions,
+  onChange,
+  t,
+  ValidatedInput
 }) => {
   const calculateItemizedTotal = () => {
     return (Number(deductions.mortgageInterest) || 0) +

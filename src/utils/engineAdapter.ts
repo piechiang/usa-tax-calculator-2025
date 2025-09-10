@@ -21,7 +21,7 @@ try {
  * Convert UI data to engine input format
  */
 export function convertUIToEngineInput(personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo) {
-  const input = {
+  const input: any = {
     filingStatus: personalInfo.filingStatus,
     primary: {
       birthDate: personalInfo.birthDate,
@@ -187,7 +187,7 @@ export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, 
       console.log('🚀 Using advanced Federal 1040 engine (2025)');
       
       // Convert UI data to Federal 1040 input format
-      const uiInput = {
+      const uiInput: any = {
         filingStatus: personalInfo.filingStatus,
         birthDate: personalInfo.birthDate,
         isBlind: personalInfo.isBlind,
@@ -279,13 +279,12 @@ export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, 
       console.log('📊 Using fallback tax calculations');
       
       const result = calculateTaxResults(
-        personalInfo, 
-        incomeData, 
-        k1Data, 
-        businessDetails, 
-        paymentsData, 
-        deductions, 
-        spouseInfo
+        personalInfo,
+        incomeData,
+        k1Data,
+        businessDetails,
+        paymentsData,
+        deductions
       );
       
       return {
@@ -304,13 +303,12 @@ export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, 
     try {
       console.log('🔄 Attempting fallback calculation...');
       const result = calculateTaxResults(
-        personalInfo, 
-        incomeData, 
-        k1Data, 
-        businessDetails, 
-        paymentsData, 
-        deductions, 
-        spouseInfo
+        personalInfo,
+        incomeData,
+        k1Data,
+        businessDetails,
+        paymentsData,
+        deductions
       );
       
       return {

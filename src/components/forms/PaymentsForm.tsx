@@ -1,11 +1,19 @@
 import React from 'react';
 
-const PaymentsForm = ({ 
-  paymentsData, 
-  personalInfo, 
-  onChange, 
-  t, 
-  ValidatedInput 
+interface PaymentsFormProps {
+  paymentsData: any;
+  personalInfo: any;
+  onChange: (field: string, value: string) => void;
+  t: (key: string) => string;
+  ValidatedInput: React.ComponentType<any>;
+}
+
+const PaymentsForm: React.FC<PaymentsFormProps> = ({
+  paymentsData,
+  personalInfo,
+  onChange,
+  t,
+  ValidatedInput
 }) => {
   return (
     <div className="space-y-4">

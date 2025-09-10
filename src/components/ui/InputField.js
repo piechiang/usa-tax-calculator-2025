@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { validateField } from '../../utils/validation';

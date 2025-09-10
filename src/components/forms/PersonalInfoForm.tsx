@@ -1,12 +1,20 @@
 import React from 'react';
 import { marylandCountyRates } from '../../constants/taxBrackets';
 
-const PersonalInfoForm = ({ 
-  personalInfo, 
-  onChange, 
-  t, 
+interface PersonalInfoFormProps {
+  personalInfo: any;
+  onChange: (field: string, value: any) => void;
+  t: (key: string) => string;
+  UncontrolledInput: React.ComponentType<any>;
+  onShowSpouseDialog: () => void;
+}
+
+const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
+  personalInfo,
+  onChange,
+  t,
   UncontrolledInput,
-  onShowSpouseDialog 
+  onShowSpouseDialog
 }) => {
   const countyOptions = Object.keys(marylandCountyRates).sort();
 

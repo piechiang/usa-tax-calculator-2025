@@ -2,15 +2,26 @@ import React from 'react';
 import { FileText, DollarSign } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
-const IncomeForm = ({ 
-  incomeData, 
-  k1Data, 
-  businessDetails, 
-  onIncomeChange, 
-  onK1Change, 
-  onBusinessDetailsChange, 
-  t, 
-  UncontrolledInput 
+interface IncomeFormProps {
+  incomeData: any;
+  k1Data: any;
+  businessDetails: any;
+  onIncomeChange: (field: string, value: string) => void;
+  onK1Change: (field: string, value: string) => void;
+  onBusinessDetailsChange: (field: string, value: string) => void;
+  t: (key: string) => string;
+  UncontrolledInput: React.ComponentType<any>;
+}
+
+const IncomeForm: React.FC<IncomeFormProps> = ({
+  incomeData,
+  k1Data,
+  businessDetails,
+  onIncomeChange,
+  onK1Change,
+  onBusinessDetailsChange,
+  t,
+  UncontrolledInput
 }) => {
   
   const calculateNetBusinessIncome = () => {
