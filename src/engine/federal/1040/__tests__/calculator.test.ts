@@ -552,4 +552,55 @@ describe('Federal 1040 Calculator - 2025', () => {
     expect(result.nonRefundableCredits + result.refundableCredits)
       .toBeGreaterThan(resultWith2000.nonRefundableCredits + resultWith2000.refundableCredits);
   });
+
+  test('should include 1099-INT income and 1098-E deductions', () => {
+    const input: FederalInput = {
+      filingStatus: 'single',
+      taxpayer: { age: 30, blind: false },
+      dependents: [],
+      income: {
+        wages: [],
+        interest: { taxable: 50, taxExempt: 0 },
+        dividends: { ordinary: 0, qualified: 0 },
+        capitalGains: { shortTerm: 0, longTerm: 0 },
+        scheduleC: [],
+        retirementDistributions: { total: 0, taxable: 0 },
+        socialSecurityBenefits: { total: 0 },
+        scheduleE: { rentalRealEstate: 0, royalties: 0, k1PassiveIncome: 0, k1NonPassiveIncome: 0, k1PortfolioIncome: 0 },
+        unemployment: 0,
+        otherIncome: 0,
+        form1099INT: [{ payer: 'Bank', interest: 100, federalTaxWithheld: 25 }],
+      },
+      adjustments: {
+        educatorExpenses: 0,
+        businessExpenses: 0,
+        hsaDeduction: 0,
+        movingExpenses: 0,
+        selfEmploymentTaxDeduction: 0,
+        selfEmployedRetirement: 0,
+        selfEmployedHealthInsurance: 0,
+        earlyWithdrawalPenalty: 0,
+        alimonyPaid: 0,
+        iraDeduction: 0,
+        studentLoanInterest: 0,
+        otherAdjustments: 0,
+        studentLoanInterestForms: [{ interest: 100 }],
+      },
+      payments: {
+        federalWithholding: 0,
+        estimatedTaxPayments: 0,
+        eicAdvancePayments: 0,
+        extensionPayment: 0,
+        otherPayments: 0,
+      },
+    };
+
+    const result = computeFederal1040(input);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.totalIncome).toBe(150); // 50 base interest + 100 from 1099-INT
+    expect(result.adjustedGrossIncome).toBe(50); // 150 - 100 student loan interest
+    // Withholding from 1099-INT should appear in payments
+    expect(result.totalPayments).toBe(25);
+  });
 });

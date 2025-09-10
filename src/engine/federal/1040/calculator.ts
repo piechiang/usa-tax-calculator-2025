@@ -179,13 +179,22 @@ function calculateTotalIncome(input: FederalInput, steps: CalculationStep[]): nu
   }
   
   // Line 2a/2b - Interest
-  const totalInterest = input.income.interest.taxable;
+  const baseInterest = input.income.interest.taxable;
+  const form1099Interest = input.income.form1099INT?.reduce(
+    (sum, form) => sum + form.interest,
+    0
+  ) || 0;
+  const totalInterest = baseInterest + form1099Interest;
   if (totalInterest > 0) {
     totalIncome += totalInterest;
     steps.push({
       description: 'Taxable Interest',
       amount: totalInterest,
       source: 'Form 1040, Line 2b',
+      formula:
+        form1099Interest > 0
+          ? `Base interest (${baseInterest}) + 1099-INT (${form1099Interest})`
+          : undefined,
     });
   }
   
@@ -318,6 +327,19 @@ function calculateAboveLineDeductions(input: FederalInput, steps: CalculationSte
       });
     }
   });
+
+  const studentLoanForms = input.adjustments.studentLoanInterestForms?.reduce(
+    (sum, form) => sum + form.interest,
+    0
+  ) || 0;
+  if (studentLoanForms > 0) {
+    totalAdjustments += studentLoanForms;
+    steps.push({
+      description: 'Student Loan Interest (Form 1098-E)',
+      amount: studentLoanForms,
+      source: 'Form 1040, Line 21',
+    });
+  }
   
   if (totalAdjustments > 0) {
     steps.push({
@@ -373,8 +395,12 @@ function calculateDeductions(input: FederalInput, agi: number, steps: Calculatio
     );
     
     // Mortgage interest
-    const mortgageInterest = itemized.mortgageInterest + itemized.mortgagePoints + 
-                           itemized.mortgageInsurance + itemized.investmentInterest;
+    const forms1098Total = itemized.forms1098?.reduce(
+      (sum, form) => sum + form.mortgageInterest + form.points,
+      0
+    ) || 0;
+    const mortgageInterest = itemized.mortgageInterest + itemized.mortgagePoints +
+                           itemized.mortgageInsurance + itemized.investmentInterest + forms1098Total;
     
     // Charitable contributions
     const charitable = itemized.charitableCash + itemized.charitableNonCash + itemized.charitableCarryover;
@@ -660,9 +686,14 @@ function calculateTaxCredits(input: FederalInput, taxBeforeCredits: number, step
 
 function calculateTotalPayments(input: FederalInput, steps: CalculationStep[]): number {
   let totalPayments = 0;
-  
+
   // Federal withholding from W-2s
-  const federalWithholding = input.income.wages.reduce((sum, w2) => sum + w2.fedWithholding, 0) +
+  const w2Withholding = input.income.wages.reduce((sum, w2) => sum + w2.fedWithholding, 0);
+  const intWithholding = input.income.form1099INT?.reduce(
+    (sum, form) => sum + (form.federalTaxWithheld || 0),
+    0
+  ) || 0;
+  const federalWithholding = w2Withholding + intWithholding +
                             input.payments.federalWithholding;
   
   // Estimated tax payments
@@ -678,6 +709,10 @@ function calculateTotalPayments(input: FederalInput, steps: CalculationStep[]): 
       description: 'Federal Income Tax Withheld',
       amount: federalWithholding,
       source: 'Form 1040, Line 25a',
+      formula:
+        intWithholding > 0
+          ? `W-2 (${w2Withholding}) + 1099-INT (${intWithholding}) + Other (${input.payments.federalWithholding})`
+          : undefined,
     });
   }
   
