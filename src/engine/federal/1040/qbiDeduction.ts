@@ -146,7 +146,7 @@ function calculateComplexQBIDeduction(
  * Check if the business is a Specified Service Trade or Business (SSTB)
  * This is a simplified check - actual determination requires detailed business analysis
  */
-function checkIfSSTB(input: FederalInput): boolean {
+function checkIfSSTB(_input: FederalInput): boolean {
   // SSTB includes: health, law, accounting, actuarial science, performing arts,
   // consulting, athletics, financial services, brokerage services, 
   // investing and investment management, trading, dealing in securities,

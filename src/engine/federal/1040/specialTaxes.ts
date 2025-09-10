@@ -105,7 +105,7 @@ export function calculateNetInvestmentIncomeTax(
 export function calculateAlternativeMinimumTax(
   input: FederalInput,
   adjustedGrossIncome: number,
-  itemizedDeduction: number
+  _itemizedDeduction: number
 ): number {
   // Step 1: Calculate Alternative Minimum Taxable Income (AMTI)
   let amti = adjustedGrossIncome;
@@ -233,7 +233,7 @@ export function calculateExcessSocialSecurityCredit(w2Wages: W2Income[]): number
  * For eligible individuals who received qualified health coverage
  */
 export function calculateHealthCoverageTaxCredit(
-  input: FederalInput,
+  _input: FederalInput,
   qualifiedHealthCoverageCost: number = 0
 ): number {
   // This is a specialized credit that applies to very few taxpayers
@@ -255,7 +255,7 @@ export function calculateHealthCoverageTaxCredit(
  * For taxpayers who received advance premium tax credits
  */
 export function calculatePremiumTaxCreditReconciliation(
-  input: FederalInput,
+  _input: FederalInput,
   advancePTC: number = 0,
   actualPTC: number = 0
 ): { additionalCredit: number; repaymentAmount: number } {
@@ -268,17 +268,17 @@ export function calculatePremiumTaxCreditReconciliation(
   if (difference > 0) {
     // Additional credit due
     return { additionalCredit: difference, repaymentAmount: 0 };
-  } else if (difference < 0) {
-    // Repayment required (subject to safe harbor limits based on income)
-    const agi = input.adjustedGrossIncome || 0;
-    const federalPovertyLine = getFederalPovertyLine(input.filingStatus, input.dependents.length);
+    } else if (difference < 0) {
+      // Repayment required (subject to safe harbor limits based on income)
+      const agi = _input.adjustedGrossIncome || 0;
+      const federalPovertyLine = getFederalPovertyLine(_input.filingStatus, _input.dependents.length);
     const incomePercent = agi / federalPovertyLine;
     
     // Apply repayment caps based on income
     let maxRepayment = Math.abs(difference);
-    if (incomePercent < 4.0) {
-      // Income under 400% of federal poverty line - apply caps
-      if (input.filingStatus === 'single') {
+      if (incomePercent < 4.0) {
+        // Income under 400% of federal poverty line - apply caps
+        if (_input.filingStatus === 'single') {
         maxRepayment = incomePercent < 2.0 ? 325 : incomePercent < 3.0 ? 825 : 1400;
       } else {
         maxRepayment = incomePercent < 2.0 ? 650 : incomePercent < 3.0 ? 1650 : 2800;

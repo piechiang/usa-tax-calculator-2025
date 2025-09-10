@@ -6,7 +6,17 @@
 // Main calculator function
 export { computeFederal1040 } from './calculator';
 
-// Type definitions
+// Bring types/constants into scope for internal use while re-exporting for consumers
+import type {
+  FederalInput,
+  FilingStatus,
+  Dependent,
+  W2Income,
+} from './types';
+
+import { IRS_CONSTANTS_2025, CALCULATION_CONSTANTS } from './constants2025';
+
+// Re-export types and constants for external consumers
 export type {
   FederalInput,
   FederalResult,
@@ -23,10 +33,12 @@ export type {
   IRSConstants2025,
 } from './types';
 
-// Constants
 export {
   IRS_CONSTANTS_2025,
   CALCULATION_CONSTANTS,
+} from './constants2025';
+
+export {
   STANDARD_DEDUCTIONS_2025,
   TAX_BRACKETS_2025,
   CAPITAL_GAINS_THRESHOLDS_2025,
@@ -195,7 +207,7 @@ export function validateFederalInput(input: FederalInput): { isValid: boolean; e
     errors.push('Income information is required');
   } else {
     // Check for reasonable W-2 values
-    input.income.wages.forEach((w2, index) => {
+    input.income.wages.forEach((w2: W2Income, index: number) => {
       if (w2.wages < 0) {
         errors.push(`W-2 #${index + 1}: Wages cannot be negative`);
       }
@@ -219,7 +231,7 @@ export function validateFederalInput(input: FederalInput): { isValid: boolean; e
   }
 
   // Dependent validation
-  input.dependents.forEach((dep, index) => {
+  input.dependents.forEach((dep: Dependent, index: number) => {
     if (!dep.hasSSN && dep.ctcEligible) {
       warnings.push(`Dependent #${index + 1}: No SSN but marked CTC eligible - may not qualify for CTC`);
     }
@@ -328,22 +340,24 @@ export function convertUIToFederal1040Input(uiInput: any): FederalInput {
       studentLoanInterest: uiInput.studentLoanInterest || 0,
       otherAdjustments: 0,
     },
-    itemizedDeductions: uiInput.itemizeDeductions ? {
-      stateLocalIncomeTaxes: uiInput.stateLocalTaxes || 0,
-      stateLocalSalesTaxes: 0,
-      realEstateTaxes: 0,
-      personalPropertyTaxes: 0,
-      mortgageInterest: uiInput.mortgageInterest || 0,
-      mortgagePoints: 0,
-      mortgageInsurance: 0,
-      investmentInterest: 0,
-      charitableCash: uiInput.charitableContributions || 0,
-      charitableNonCash: 0,
-      charitableCarryover: 0,
-      medicalExpenses: uiInput.medicalExpenses || 0,
-      stateRefundTaxable: 0,
-      otherItemized: uiInput.otherDeductions || 0,
-    } : undefined,
+    ...(uiInput.itemizeDeductions ? {
+      itemizedDeductions: {
+        stateLocalIncomeTaxes: uiInput.stateLocalTaxes || 0,
+        stateLocalSalesTaxes: 0,
+        realEstateTaxes: 0,
+        personalPropertyTaxes: 0,
+        mortgageInterest: uiInput.mortgageInterest || 0,
+        mortgagePoints: 0,
+        mortgageInsurance: 0,
+        investmentInterest: 0,
+        charitableCash: uiInput.charitableContributions || 0,
+        charitableNonCash: 0,
+        charitableCarryover: 0,
+        medicalExpenses: uiInput.medicalExpenses || 0,
+        stateRefundTaxable: 0,
+        otherItemized: uiInput.otherDeductions || 0,
+      }
+    } : {}),
     payments: {
       federalWithholding: uiInput.federalWithholding || 0,
       estimatedTaxPayments: uiInput.estimatedPayments || 0,
