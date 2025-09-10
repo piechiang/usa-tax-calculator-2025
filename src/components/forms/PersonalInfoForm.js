@@ -1,12 +1,12 @@
 import React from 'react';
 import { marylandCountyRates } from '../../constants/taxBrackets';
 
-const PersonalInfoForm = ({ 
-  personalInfo, 
-  onChange, 
-  t, 
+const PersonalInfoForm = ({
+  personalInfo,
+  onChange,
+  t,
   UncontrolledInput,
-  onShowSpouseDialog 
+  onShowSpouseDialog
 }) => {
   const countyOptions = Object.keys(marylandCountyRates).sort();
 
@@ -29,7 +29,7 @@ const PersonalInfoForm = ({
             placeholder={t('personalInfo.placeholders.firstName')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('personalInfo.lastName')} <span className="text-red-500">*</span>
@@ -41,7 +41,7 @@ const PersonalInfoForm = ({
             placeholder={t('personalInfo.placeholders.lastName')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('personalInfo.ssn')} <span className="text-red-500">*</span>
@@ -54,7 +54,7 @@ const PersonalInfoForm = ({
             help={t('personalInfo.help.ssn')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('personalInfo.filingStatus')}
@@ -72,7 +72,7 @@ const PersonalInfoForm = ({
           <div className="text-gray-500 text-xs mt-1">
             💡 {t('personalInfo.help.filingStatus')}
           </div>
-          
+
           {/* Add Spouse Button for Married Filing Jointly */}
           {personalInfo.filingStatus === 'marriedJointly' && (
             <button
@@ -86,7 +86,7 @@ const PersonalInfoForm = ({
             </button>
           )}
         </div>
-        
+
         <div className="lg:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('personalInfo.address')} <span className="text-red-500">*</span>
@@ -98,7 +98,7 @@ const PersonalInfoForm = ({
             placeholder={t('personalInfo.placeholders.address')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('personalInfo.dependents')}
@@ -113,20 +113,24 @@ const PersonalInfoForm = ({
             help={t('personalInfo.help.dependents')}
           />
         </div>
-        
+
         <div>
-          <label className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-            <input
-              type="checkbox"
-              checked={personalInfo.isMaryland}
-              onChange={(e) => handleInputChange('isMaryland', e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span>{t('personalInfo.marylandResident')}</span>
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+          <select
+            value={personalInfo.state}
+            onChange={(e) => {
+              handleInputChange('state', e.target.value);
+              handleInputChange('isMaryland', e.target.value === 'MD');
+            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+          >
+            <option value="MD">Maryland</option>
+            <option value="CA">California</option>
+            <option value="NY">New York</option>
+          </select>
         </div>
-        
-        {personalInfo.isMaryland && (
+
+        {personalInfo.state === 'MD' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('personalInfo.county')}
