@@ -107,55 +107,68 @@ export const useTaxCalculator = () => {
     }));
   }, [personalInfo.filingStatus]);
 
-  // Calculate tax results whenever relevant data changes
-  useEffect(() => {
-    const results = calculateTaxResults(
-      personalInfo,
-      incomeData,
-      k1Data,
-      businessDetails,
-      paymentsData,
-      deductions
-    );
-    setTaxResult(results);
-
-    // Calculate filing comparison for married couples
-    if (personalInfo.filingStatus === 'marriedJointly') {
-      // Try new engine first, fallback to old calculation
-      const engineComparison = calculateFilingComparisonWithEngine(
+    // Calculate tax results whenever relevant data changes
+    useEffect(() => {
+      // Prefer new 1040 engine when available
+      const engineResults = calculateTaxResultsWithEngine(
         personalInfo,
         incomeData,
-        spouseInfo,
-        paymentsData
+        k1Data,
+        businessDetails,
+        paymentsData,
+        deductions,
+        spouseInfo
       );
-      
-      if (engineComparison) {
-        setFilingComparison(engineComparison);
+
+      if (engineResults.success) {
+        setTaxResult(engineResults.result);
       } else {
-        // Fallback to legacy calculation
-        const comparison = calculateFilingComparison(
+        const results = calculateTaxResults(
+          personalInfo,
+          incomeData,
+          k1Data,
+          businessDetails,
+          paymentsData,
+          deductions
+        );
+        setTaxResult(results);
+      }
+
+      // Calculate filing comparison for married couples
+      if (personalInfo.filingStatus === 'marriedJointly') {
+        const engineComparison = calculateFilingComparisonWithEngine(
           personalInfo,
           incomeData,
           spouseInfo,
           paymentsData
         );
-        setFilingComparison(comparison);
-      }
-    } else {
-      setFilingComparison(null);
-    }
 
-    // Generate tax optimization suggestions
-    const optimizations = generateTaxOptimizations(
-      personalInfo,
-      incomeData,
-      k1Data,
-      businessDetails,
-      paymentsData,
-      deductions
-    );
-    setTaxOptimizations(optimizations);
-  }, [personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo]);
+        if (engineComparison) {
+          setFilingComparison(engineComparison);
+        } else {
+          const comparison = calculateFilingComparison(
+            personalInfo,
+            incomeData,
+            spouseInfo,
+            paymentsData
+          );
+          setFilingComparison(comparison);
+        }
+      } else {
+        setFilingComparison(null);
+      }
+
+      // Generate tax optimization suggestions
+      const optimizations = generateTaxOptimizations(
+        personalInfo,
+        incomeData,
+        k1Data,
+        businessDetails,
+        paymentsData,
+        deductions
+      );
+      setTaxOptimizations(optimizations);
+    }, [personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo]);
 
   const handlePersonalInfoChange = (field, value) => {
     setPersonalInfo(prev => ({ ...prev, [field]: value }));

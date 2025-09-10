@@ -4,7 +4,7 @@
  * Last updated: 2025-01 (verification required for final amounts)
  */
 
-import { IRSConstants2025, FilingStatus } from './types';
+import type { IRSConstants2025 } from './types';
 
 export const IRS_CONSTANTS_2025: IRSConstants2025 = {
   // Standard Deductions (Rev. Proc. 2024-40 §2.15)

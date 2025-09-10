@@ -497,12 +497,12 @@ function calculateTaxFromBrackets(income: number, brackets: Array<{min: number; 
   return tax;
 }
 
-function calculateCapitalGainsTax(
-  preferentialIncome: number,
-  taxableIncome: number,
-  ordinaryIncome: number,
-  thresholds: Array<{min: number; max: number | null; rate: number}>
-): number {
+  function calculateCapitalGainsTax(
+    preferentialIncome: number,
+    _taxableIncome: number,
+    ordinaryIncome: number,
+    thresholds: Array<{min: number; max: number | null; rate: number}>
+  ): number {
   let tax = 0;
   let remainingIncome = preferentialIncome;
   let currentTaxableIncome = ordinaryIncome;

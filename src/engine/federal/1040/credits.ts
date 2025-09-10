@@ -3,7 +3,7 @@
  * Includes Child Tax Credit, EITC, Education Credits, and other credits
  */
 
-import { FederalInput, Dependent } from './types';
+import type { FederalInput } from './types';
 import { IRS_CONSTANTS_2025 } from './constants2025';
 
 /**
@@ -183,8 +183,7 @@ export function calculateEducationCredits(
   // American Opportunity Tax Credit
   if (aotcExpenses > 0) {
     // AOTC parameters for 2025
-    const aotcMaxCredit = 2500;
-    const aotcMaxExpenses = 4000;
+      const aotcMaxCredit = 2500;
     const aotcPhaseoutStart = input.filingStatus === 'mfj' ? 160000 : 80000;
     const aotcPhaseoutEnd = input.filingStatus === 'mfj' ? 180000 : 90000;
     
@@ -251,11 +250,9 @@ export function calculateChildAndDependentCareCredit(
   }
   
   // Count qualifying individuals
-  const qualifyingPersons = input.dependents.filter(dep => 
-    dep.age < 13 || // Child under 13
-    dep.relationship === 'spouse' // Disabled spouse (if applicable)
-    // Note: Disabled dependents of any age also qualify but not easily determined here
-  ).length;
+    const qualifyingPersons = input.dependents.filter(dep =>
+      dep.age < 13 // Child under 13; disabled dependents would require additional flags
+    ).length;
   
   if (qualifyingPersons === 0) {
     return 0;

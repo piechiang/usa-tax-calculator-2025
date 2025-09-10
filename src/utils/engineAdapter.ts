@@ -1,9 +1,13 @@
 // Adapter to convert UI data structures to engine format
 import { calculateTaxResults } from './taxCalculations';
 
-// Federal 1040 engine temporarily disabled due to TypeScript compilation issues
+// Attempt to load the new Federal 1040 engine
 let computeFederal1040 = null, convertUIToFederal1040Input = null;
-console.log('🔧 Advanced Federal 1040 engine temporarily disabled - under development');
+try {
+  ({ computeFederal1040, convertUIToFederal1040Input } = require('../engine/federal/1040'));
+} catch (error) {
+  console.warn('Federal 1040 engine not available:', error.message);
+}
 
 // Legacy engine fallback
 let computeFederal2025, computeMD2025;
