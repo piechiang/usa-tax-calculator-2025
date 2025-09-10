@@ -13,7 +13,9 @@ import DeductionsForm from './components/forms/DeductionsForm';
 import TaxResults from './components/ui/TaxResults';
 import TaxBurdenChart from './components/ui/TaxBurdenChart';
 import TaxOptimization from './components/ui/TaxOptimization';
-import { ValidatedInput, UncontrolledInput } from './components/ui/InputField';
+import { ValidatedInput, UncontrolledInput as UncontrolledInputComponent } from './components/ui/InputField';
+
+const UncontrolledInput = UncontrolledInputComponent as React.ComponentType<any>;
 
 // Constants
 import { languages } from './constants/languages';

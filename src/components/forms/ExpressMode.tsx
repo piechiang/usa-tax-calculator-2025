@@ -279,7 +279,12 @@ const EXPRESS_QUESTIONS = [
   }
 ];
 
-const ExpressMode = ({ onComplete, initialData = {} }) => {
+interface ExpressModeProps {
+  onComplete: (data: any) => void;
+  initialData?: any;
+}
+
+const ExpressMode: React.FC<ExpressModeProps> = ({ onComplete, initialData = {} }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState(initialData);
   const [form] = Form.useForm();

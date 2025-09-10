@@ -1,14 +1,77 @@
 import { useState, useEffect } from 'react';
 import { calculateTaxResults, calculateFilingComparison } from '../utils/taxCalculations';
-import { 
-  calculateTaxResultsWithEngine, 
-  calculateFilingComparisonWithEngine 
-} from '../utils/engineAdapter.ts';
+import {
+  calculateTaxResultsWithEngine,
+  calculateFilingComparisonWithEngine
+} from '../utils/engineAdapter';
 import { generateTaxOptimizations } from '../utils/taxOptimization';
 import { standardDeductions } from '../constants/taxBrackets';
 
+interface PersonalInfo {
+  firstName: string;
+  lastName: string;
+  ssn: string;
+  filingStatus: string;
+  address: string;
+  dependents: number;
+  isMaryland: boolean;
+  county: string;
+}
+
+interface SpouseInfo {
+  firstName: string;
+  lastName: string;
+  ssn: string;
+  wages: string;
+  interestIncome: string;
+  dividends: string;
+  capitalGains: string;
+  businessIncome: string;
+  otherIncome: string;
+  federalWithholding: string;
+  stateWithholding: string;
+}
+
+type IncomeData = Record<string, string>;
+type K1Data = Record<string, string>;
+
+interface BusinessDetails {
+  grossReceipts: string;
+  costOfGoodsSold: string;
+  businessExpenses: string;
+}
+
+type PaymentsData = Record<string, string>;
+
+interface Deductions {
+  useStandardDeduction: boolean;
+  standardDeduction: number;
+  itemizedTotal: number;
+  mortgageInterest: string;
+  stateLocalTaxes: string;
+  charitableContributions: string;
+  medicalExpenses: string;
+  otherItemized: string;
+}
+
+interface TaxResult {
+  adjustedGrossIncome: number;
+  taxableIncome: number;
+  federalTax: number;
+  marylandTax: number;
+  localTax: number;
+  totalTax: number;
+  totalPayments: number;
+  balance: number;
+  effectiveRate: number;
+  afterTaxIncome: number;
+}
+
+type Errors = Record<string, string>;
+type Touched = Record<string, boolean>;
+
 export const useTaxCalculator = () => {
-  const [personalInfo, setPersonalInfo] = useState({
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
     firstName: '',
     lastName: '',
     ssn: '',
@@ -19,7 +82,7 @@ export const useTaxCalculator = () => {
     county: 'Baltimore City'
   });
 
-  const [spouseInfo, setSpouseInfo] = useState({
+  const [spouseInfo, setSpouseInfo] = useState<SpouseInfo>({
     firstName: '',
     lastName: '',
     ssn: '',
@@ -33,7 +96,7 @@ export const useTaxCalculator = () => {
     stateWithholding: ""
   });
 
-  const [incomeData, setIncomeData] = useState({
+  const [incomeData, setIncomeData] = useState<IncomeData>({
     wages: "",
     interestIncome: "",
     dividends: "",
@@ -42,7 +105,7 @@ export const useTaxCalculator = () => {
     otherIncome: ""
   });
 
-  const [k1Data, setK1Data] = useState({
+  const [k1Data, setK1Data] = useState<K1Data>({
     ordinaryIncome: "",
     netRentalRealEstate: "",
     otherRentalIncome: "",
@@ -55,13 +118,13 @@ export const useTaxCalculator = () => {
     otherPortfolioIncome: ""
   });
 
-  const [businessDetails, setBusinessDetails] = useState({
+  const [businessDetails, setBusinessDetails] = useState<BusinessDetails>({
     grossReceipts: "",
     costOfGoodsSold: "",
     businessExpenses: ""
   });
 
-  const [paymentsData, setPaymentsData] = useState({
+  const [paymentsData, setPaymentsData] = useState<PaymentsData>({
     federalWithholding: "",
     stateWithholding: "",
     estimatedTaxPayments: "",
@@ -69,7 +132,7 @@ export const useTaxCalculator = () => {
     otherPayments: ""
   });
 
-  const [deductions, setDeductions] = useState({
+  const [deductions, setDeductions] = useState<Deductions>({
     useStandardDeduction: true,
     standardDeduction: 15750,
     itemizedTotal: 0,
@@ -80,7 +143,7 @@ export const useTaxCalculator = () => {
     otherItemized: ""
   });
 
-  const [taxResult, setTaxResult] = useState({
+  const [taxResult, setTaxResult] = useState<TaxResult>({
     adjustedGrossIncome: 0,
     taxableIncome: 0,
     federalTax: 0,
@@ -93,10 +156,10 @@ export const useTaxCalculator = () => {
     afterTaxIncome: 0
   });
 
-  const [filingComparison, setFilingComparison] = useState(null);
-  const [taxOptimizations, setTaxOptimizations] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
+  const [filingComparison, setFilingComparison] = useState<any | null>(null);
+  const [taxOptimizations, setTaxOptimizations] = useState<any[]>([]);
+  const [errors, setErrors] = useState<Errors>({});
+  const [touched, setTouched] = useState<Touched>({});
 
   // Update standard deduction when filing status changes
   useEffect(() => {
@@ -157,39 +220,39 @@ export const useTaxCalculator = () => {
     setTaxOptimizations(optimizations);
   }, [personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo]);
 
-  const handlePersonalInfoChange = (field, value) => {
+  const handlePersonalInfoChange = (field: keyof PersonalInfo, value: any) => {
     setPersonalInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSpouseInfoChange = (field, value) => {
+  const handleSpouseInfoChange = (field: keyof SpouseInfo, value: any) => {
     setSpouseInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleIncomeChange = (field, value) => {
+  const handleIncomeChange = (field: string, value: string) => {
     setIncomeData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleK1Change = (field, value) => {
+  const handleK1Change = (field: string, value: string) => {
     setK1Data(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleBusinessDetailsChange = (field, value) => {
+  const handleBusinessDetailsChange = (field: keyof BusinessDetails, value: string) => {
     setBusinessDetails(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePaymentsChange = (field, value) => {
+  const handlePaymentsChange = (field: string, value: string) => {
     setPaymentsData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleDeductionChange = (field, value) => {
+  const handleDeductionChange = (field: keyof Deductions, value: any) => {
     setDeductions(prev => ({ ...prev, [field]: value }));
   };
 
-  const setError = (field, error) => {
+  const setError = (field: string, error: string) => {
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  const setFieldTouched = (field, isTouched = true) => {
+  const setFieldTouched = (field: string, isTouched = true) => {
     setTouched(prev => ({ ...prev, [field]: isTouched }));
   };
 

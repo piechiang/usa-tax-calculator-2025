@@ -12,7 +12,13 @@ const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
 const { Option } = Select;
 
-const Form1099B = ({ onComplete, defaultValues = {}, allowMultiple = true }) => {
+interface Form1099BProps {
+  onComplete: (data: any) => void;
+  defaultValues?: any;
+  allowMultiple?: boolean;
+}
+
+const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, allowMultiple = true }) => {
   const [inputMethod, setInputMethod] = useState(defaultValues.method || 'upload');
   const [transactions, setTransactions] = useState(defaultValues.transactions || []);
   const [currentTransaction, setCurrentTransaction] = useState({
