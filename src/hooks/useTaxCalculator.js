@@ -16,7 +16,8 @@ export const useTaxCalculator = () => {
     address: '',
     dependents: 0,
     isMaryland: true,
-    county: 'Baltimore City'
+    county: 'Baltimore City',
+    year: 2025
   });
 
   const [spouseInfo, setSpouseInfo] = useState({
@@ -123,6 +124,7 @@ export const useTaxCalculator = () => {
     if (personalInfo.filingStatus === 'marriedJointly') {
       // Try new engine first, fallback to old calculation
       const engineComparison = calculateFilingComparisonWithEngine(
+        personalInfo.year,
         personalInfo,
         incomeData,
         spouseInfo,
@@ -196,6 +198,7 @@ export const useTaxCalculator = () => {
   const recalculate = () => {
     // Try new engine first, fallback to old calculation
     const engineResults = calculateTaxResultsWithEngine(
+      personalInfo.year,
       personalInfo,
       incomeData,
       k1Data,

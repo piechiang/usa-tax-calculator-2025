@@ -123,7 +123,7 @@ export interface FederalResult2025 {
 
 export interface StateResult {
   state: string; // e.g. 'MD'
-  year: 2025;
+  year: number;
   agiState: number; // cents
   taxableIncomeState: number; // cents
   stateTax: number; // cents

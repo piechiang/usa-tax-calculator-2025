@@ -6,15 +6,15 @@ let computeFederal1040 = null, convertUIToFederal1040Input = null;
 console.log('🔧 Advanced Federal 1040 engine temporarily disabled - under development');
 
 // Legacy engine fallback
-let computeFederal2025, computeMD2025;
+let computeFederal, computeMD;
 try {
   const engine = require('../engine-dist/index.js');
-  computeFederal2025 = engine.computeFederal2025;
-  computeMD2025 = engine.computeMD2025;
+  computeFederal = engine.computeFederal;
+  computeMD = engine.computeMD;
 } catch (error) {
   console.warn('Legacy engine not available:', error.message);
-  computeFederal2025 = null;
-  computeMD2025 = null;
+  computeFederal = null;
+  computeMD = null;
 }
 
 /**
@@ -180,7 +180,7 @@ function calculateMarginalRate(agi, federalTax) {
 /**
  * Enhanced tax calculation using the new engine
  */
-export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo) {
+export function calculateTaxResultsWithEngine(taxYear, personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo) {
   try {
     // Priority 1: Use new Federal 1040 engine if available
     if (computeFederal1040 && convertUIToFederal1040Input) {
@@ -239,7 +239,7 @@ export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, 
     }
     
     // Priority 2: Use legacy engine if available
-    else if (computeFederal2025 && computeMD2025) {
+    else if (computeFederal && computeMD) {
       console.log('⚡ Using legacy tax engine');
       
       // Convert UI data to engine format
@@ -254,12 +254,12 @@ export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, 
       );
       
       // Calculate federal taxes
-      const federalResult = computeFederal2025(engineInput);
+      const federalResult = computeFederal(taxYear, engineInput);
       
       // Calculate state taxes if Maryland resident
       let stateResult = null;
       if (personalInfo.isMaryland) {
-        stateResult = computeMD2025(engineInput, federalResult);
+        stateResult = computeMD(taxYear, engineInput, federalResult);
       }
       
       // Convert back to UI format
@@ -335,14 +335,14 @@ export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, 
 /**
  * Calculate filing comparison using the new engine
  */
-export function calculateFilingComparisonWithEngine(personalInfo, incomeData, spouseInfo, paymentsData) {
+export function calculateFilingComparisonWithEngine(taxYear, personalInfo, incomeData, spouseInfo, paymentsData) {
   if (personalInfo.filingStatus !== 'marriedJointly') {
     return null;
   }
   
   try {
     // Use engine if available, otherwise fallback to original calculations
-    if (computeFederal2025 && computeMD2025) {
+    if (computeFederal && computeMD) {
       console.log('Using advanced engine for filing comparison');
       
       // Create base input
@@ -358,8 +358,8 @@ export function calculateFilingComparisonWithEngine(personalInfo, incomeData, sp
       
       // Calculate joint filing
       const jointInput = { ...baseInput, filingStatus: 'marriedJointly' };
-      const jointFederal = computeFederal2025(jointInput);
-      const jointState = personalInfo.isMaryland ? computeMD2025(jointInput, jointFederal) : null;
+      const jointFederal = computeFederal(taxYear, jointInput);
+      const jointState = personalInfo.isMaryland ? computeMD(taxYear, jointInput, jointFederal) : null;
       
       // Calculate separate filing (simplified - assumes equal split)
       const separateInput = { 
@@ -381,8 +381,8 @@ export function calculateFilingComparisonWithEngine(personalInfo, incomeData, sp
         },
       };
       
-      const separateFederal = computeFederal2025(separateInput);
-      const separateState = personalInfo.isMaryland ? computeMD2025(separateInput, separateFederal) : null;
+      const separateFederal = computeFederal(taxYear, separateInput);
+      const separateState = personalInfo.isMaryland ? computeMD(taxYear, separateInput, separateFederal) : null;
       
       // Calculate totals for separate filing (multiply by 2)
       const separateTotalTax = (separateFederal.totalTax + (separateState?.totalStateLiability || 0)) * 2;

@@ -1,26 +1,27 @@
-import { TaxPayerInput } from '../../types';
-import { CTC_2025, EITC_2025, AOTC_2025, LLC_2025 } from '../../rules/2025/federal/credits';
-import { 
-  addCents, 
-  max0, 
-  multiplyCents, 
-  safeCurrencyToCents 
-} from '../../util/money';
+import { TaxPayerInput } from '../types';
+import {
+  addCents,
+  max0,
+  multiplyCents,
+  safeCurrencyToCents
+} from '../util/money';
 
 /**
  * Calculate Child Tax Credit with sophisticated eligibility and phase-out logic
  */
 export function calculateAdvancedCTC(
-  input: TaxPayerInput, 
-  agi: number, 
-  taxBeforeCredits: number
-): { 
+  input: TaxPayerInput,
+  agi: number,
+  taxBeforeCredits: number,
+  CTC: any,
+  year: number
+): {
   ctc: number; 
   additionalChildTaxCredit: number; 
   eligibleChildren: number;
   details: Array<{ name?: string; age: number; eligible: boolean; reason?: string }>;
 } {
-  const currentYear = 2025;
+  const currentYear = year;
   const qualifyingChildren = input.qualifyingChildren || [];
   const details: Array<{ name?: string; age: number; eligible: boolean; reason?: string }> = [];
   let eligibleChildren = 0;
@@ -62,11 +63,11 @@ export function calculateAdvancedCTC(
   }
   
   // Step 2: Calculate base credit
-  const baseCredit = CTC_2025.maxCredit * eligibleChildren;
+  const baseCredit = CTC.maxCredit * eligibleChildren;
   
   // Step 3: Apply phase-out based on filing status and AGI
-  const phaseOutThreshold = CTC_2025.phaseOutThresholds[input.filingStatus] || 
-                           CTC_2025.phaseOutThresholds.single;
+  const phaseOutThreshold = CTC.phaseOutThresholds[input.filingStatus] ||
+                           CTC.phaseOutThresholds.single;
   
   let ctcAfterPhaseOut = baseCredit;
   if (agi > phaseOutThreshold) {
@@ -80,7 +81,7 @@ export function calculateAdvancedCTC(
   const ctc = Math.min(ctcAfterPhaseOut, taxBeforeCredits);
   
   // Step 5: Calculate Additional Child Tax Credit (refundable portion)
-  const maxRefundablePerChild = CTC_2025.additionalChildCredit;
+  const maxRefundablePerChild = CTC.additionalChildCredit;
   const maxRefundable = maxRefundablePerChild * eligibleChildren;
   const remainingCredit = ctcAfterPhaseOut - ctc;
   
@@ -113,8 +114,10 @@ export function calculateAdvancedCTC(
  * Calculate Earned Income Tax Credit with complex phase-in and phase-out
  */
 export function calculateAdvancedEITC(
-  input: TaxPayerInput, 
-  agi: number
+  input: TaxPayerInput,
+  agi: number,
+  EITC: any,
+  year: number
 ): {
   eitc: number;
   eligibleChildren: number;
@@ -123,7 +126,7 @@ export function calculateAdvancedEITC(
   phaseOutAmount: number;
   details: { phase: 'phase-in' | 'plateau' | 'phase-out' | 'ineligible'; rate?: number };
 } {
-  const currentYear = 2025;
+  const currentYear = year;
   
   // Step 1: Determine number of qualifying children for EITC
   let eligibleChildren = 0;
@@ -175,11 +178,11 @@ export function calculateAdvancedEITC(
   }
   
   // Step 3: Get EITC parameters for this filing status and child count
-  const maxCredit = EITC_2025.maxCredits[eligibleChildren as keyof typeof EITC_2025.maxCredits] || 0;
-  const phaseInRate = EITC_2025.phaseInRates[eligibleChildren as keyof typeof EITC_2025.phaseInRates] || 0;
-  const plateauAmount = EITC_2025.plateauAmounts[eligibleChildren as keyof typeof EITC_2025.plateauAmounts] || 0;
-  const phaseOutStart = EITC_2025.phaseOutStarts[input.filingStatus]?.[eligibleChildren as keyof typeof EITC_2025.phaseOutStarts.single] || 0;
-  const phaseOutRate = EITC_2025.phaseOutRates[eligibleChildren as keyof typeof EITC_2025.phaseOutRates] || 0;
+  const maxCredit = EITC.maxCredits[eligibleChildren as keyof typeof EITC.maxCredits] || 0;
+  const phaseInRate = EITC.phaseInRates[eligibleChildren as keyof typeof EITC.phaseInRates] || 0;
+  const plateauAmount = EITC.plateauAmounts[eligibleChildren as keyof typeof EITC.plateauAmounts] || 0;
+  const phaseOutStart = EITC.phaseOutStarts[input.filingStatus]?.[eligibleChildren as keyof typeof EITC.phaseOutStarts.single] || 0;
+  const phaseOutRate = EITC.phaseOutRates[eligibleChildren as keyof typeof EITC.phaseOutRates] || 0;
   
   if (maxCredit === 0) {
     return {
@@ -236,7 +239,8 @@ export function calculateAdvancedEITC(
  */
 export function calculateAdvancedAOTC(
   input: TaxPayerInput,
-  agi: number
+  agi: number,
+  AOTC: any
 ): {
   aotc: number;
   refundableAOTC: number;
@@ -262,8 +266,8 @@ export function calculateAdvancedAOTC(
   let totalEligibleExpenses = 0;
   
   // Step 1: Check phase-out thresholds
-  const phaseOutStart = AOTC_2025.phaseOutStart[input.filingStatus] || 0;
-  const phaseOutEnd = phaseOutStart + AOTC_2025.phaseOutRange;
+  const phaseOutStart = AOTC.phaseOutStart[input.filingStatus] || 0;
+  const phaseOutEnd = phaseOutStart + AOTC.phaseOutRange;
   
   if (agi >= phaseOutEnd) {
     return {
@@ -314,7 +318,7 @@ export function calculateAdvancedAOTC(
       const next2k = Math.min(max0(expense.tuitionAndFees - 200000), 200000);
       
       studentDetail.credit = first2k + multiplyCents(next2k, 0.25);
-      studentDetail.credit = Math.min(studentDetail.credit, AOTC_2025.maxCredit);
+      studentDetail.credit = Math.min(studentDetail.credit, AOTC.maxCredit);
       
       totalCredit += studentDetail.credit;
       totalEligibleExpenses += expense.tuitionAndFees;
@@ -325,7 +329,7 @@ export function calculateAdvancedAOTC(
   
   // Step 3: Apply phase-out
   if (agi > phaseOutStart && totalCredit > 0) {
-    const phaseOutRatio = (phaseOutEnd - agi) / AOTC_2025.phaseOutRange;
+    const phaseOutRatio = (phaseOutEnd - agi) / AOTC.phaseOutRange;
     totalCredit = multiplyCents(totalCredit, Math.max(0, phaseOutRatio));
     
     // Update details with phased-out amounts
@@ -337,7 +341,7 @@ export function calculateAdvancedAOTC(
   }
   
   // Step 4: Calculate refundable portion (40%)
-  const refundableAOTC = multiplyCents(totalCredit, AOTC_2025.refundablePercentage);
+  const refundableAOTC = multiplyCents(totalCredit, AOTC.refundablePercentage);
   const nonRefundableAOTC = totalCredit - refundableAOTC;
   
   return {
@@ -353,7 +357,8 @@ export function calculateAdvancedAOTC(
  */
 export function calculateAdvancedLLC(
   input: TaxPayerInput,
-  agi: number
+  agi: number,
+  LLC: any
 ): {
   llc: number;
   eligibleExpenses: number;
@@ -373,8 +378,8 @@ export function calculateAdvancedLLC(
   }> = [];
   
   // Step 1: Check phase-out (same as AOTC)
-  const phaseOutStart = LLC_2025.phaseOutStart[input.filingStatus] || 0;
-  const phaseOutEnd = phaseOutStart + LLC_2025.phaseOutRange;
+  const phaseOutStart = LLC.phaseOutStart[input.filingStatus] || 0;
+  const phaseOutEnd = phaseOutStart + LLC.phaseOutRange;
   
   if (agi >= phaseOutEnd) {
     return {
@@ -418,13 +423,13 @@ export function calculateAdvancedLLC(
   }
   
   // Step 3: Calculate LLC (20% of expenses, up to $10,000 = $2,000 credit max)
-  const maxExpenses = LLC_2025.maxExpenses; // $10,000 in cents
+  const maxExpenses = LLC.maxExpenses; // $10,000 in cents
   const limitedExpenses = Math.min(totalEligibleExpenses, maxExpenses);
-  let llc = multiplyCents(limitedExpenses, LLC_2025.creditRate);
+  let llc = multiplyCents(limitedExpenses, LLC.creditRate);
   
   // Step 4: Apply phase-out
   if (agi > phaseOutStart) {
-    const phaseOutRatio = (phaseOutEnd - agi) / LLC_2025.phaseOutRange;
+    const phaseOutRatio = (phaseOutEnd - agi) / LLC.phaseOutRange;
     llc = multiplyCents(llc, Math.max(0, phaseOutRatio));
   }
   
