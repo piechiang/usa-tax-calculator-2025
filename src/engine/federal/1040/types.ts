@@ -88,6 +88,13 @@ export interface Income {
   
   // Line 8z - Other income
   otherIncome: number;
+
+  // Form 1099-INT entries
+  form1099INT?: Array<{
+    payer: string;
+    interest: number;
+    federalTaxWithheld?: number;
+  }>;
 }
 
 export interface AboveLineDeductions {
@@ -123,6 +130,11 @@ export interface AboveLineDeductions {
   
   // Line 21 - Student loan interest deduction
   studentLoanInterest: number;
+
+  // Form 1098-E entries
+  studentLoanInterestForms?: Array<{
+    interest: number;
+  }>;
   
   // Line 26 - Other adjustments
   otherAdjustments: number;
@@ -152,6 +164,13 @@ export interface ItemizedDeductions {
   
   // Line 8d - Investment interest
   investmentInterest: number;
+
+  // Form 1098 entries
+  forms1098?: Array<{
+    mortgageInterest: number;
+    points: number;
+    studentLoanInterest?: number;
+  }>;
   
   // Line 11 - Gifts to charity (cash)
   charitableCash: number;

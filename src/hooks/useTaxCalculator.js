@@ -39,7 +39,8 @@ export const useTaxCalculator = () => {
     dividends: "",
     capitalGains: "",
     businessIncome: "",
-    otherIncome: ""
+    otherIncome: "",
+    form1099INT: []
   });
 
   const [k1Data, setK1Data] = useState({
@@ -52,7 +53,9 @@ export const useTaxCalculator = () => {
     royalties: "",
     netShortTermCapitalGain: "",
     netLongTermCapitalGain: "",
-    otherPortfolioIncome: ""
+    otherPortfolioIncome: "",
+    form1099INT: [],
+    form1098: []
   });
 
   const [businessDetails, setBusinessDetails] = useState({
@@ -77,7 +80,8 @@ export const useTaxCalculator = () => {
     stateLocalTaxes: "",
     charitableContributions: "",
     medicalExpenses: "",
-    otherItemized: ""
+    otherItemized: "",
+    form1098: []
   });
 
   const [taxResult, setTaxResult] = useState({
