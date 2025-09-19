@@ -81,7 +81,7 @@ export function computeFederal2025(input: TaxPayerInput): FederalResult2025 {
   );
   
   // Step 5: Calculate credits
-  const credits = calculateCredits(input, agi, taxBeforeCredits);
+  const credits = calculateCredits(input, agi, taxBeforeCredits, mode);
   
   // Step 6: Calculate additional taxes
   const additionalTaxes = calculateAdditionalTaxes(input, agi, mode);
@@ -231,27 +231,27 @@ function calculateMedicalDeduction(medicalExpenses: number, agi: number): number
 function calculateCredits(
   input: TaxPayerInput,
   agi: number,
-  taxBeforeCredits: number
+  taxBeforeCredits: number,
+  mode: 'dollars' | 'cents'
 ): FederalResult2025['credits'] {
   // Earned Income Tax Credit with complex phase-in/phase-out (refundable, calculated first)
-  const eitcResult = calculateAdvancedEITC(input, agi);
+  const eitcResult = calculateAdvancedEITC(input, agi, mode);
 
   // Education credits with expense validation (apply before CTC)
-  const aotcResult = calculateAdvancedAOTC(input, agi);
-  const llcResult = calculateAdvancedLLC(input, agi);
+  const aotcResult = calculateAdvancedAOTC(input, agi, mode);
+  const llcResult = calculateAdvancedLLC(input, agi, mode);
 
-  // Note: Taxpayers can't claim both AOTC and LLC for the same student
-  // In a full implementation, we'd need to optimize which credit to use
-  // For now, we'll prefer AOTC over LLC if both are available
+  // Note: Allow both AOTC and LLC for different students
+  // This fixes the issue where LLC was zeroed out whenever any AOTC was claimed
   const finalAOTC = aotcResult.aotc;
-  const finalLLC = finalAOTC > 0 ? 0 : llcResult.llc;
+  const finalLLC = llcResult.llc; // Don't zero out LLC automatically
 
   // Calculate remaining tax liability after other non-refundable credits
   const otherNonRefundableCredits = addCents(finalAOTC, finalLLC);
   const taxAfterOtherCredits = max0(taxBeforeCredits - otherNonRefundableCredits);
 
   // Child Tax Credit with advanced eligibility and phase-out (limited by remaining tax)
-  const ctcResult = calculateAdvancedCTC(input, agi, taxAfterOtherCredits);
+  const ctcResult = calculateAdvancedCTC(input, agi, taxAfterOtherCredits, mode);
 
   return {
     ctc: ctcResult.ctc,
@@ -275,7 +275,7 @@ function calculateAdditionalTaxes(input: TaxPayerInput, agi: number, mode: 'doll
   const scheduleCNet = nToCentsWithMode(input.income?.scheduleCNet, mode);
   const seTax = scheduleCNet > 0 ? multiplyCents(scheduleCNet, 0.1413) : 0; // Simplified 14.13%
 
-  // Net Investment Income Tax (3.8% on investment income over threshold)
+  // Net Investment Income Tax (3.8% on lesser of net investment income or excess MAGI)
   const niitThreshold = input.filingStatus === 'marriedJointly' ? 25000000 : 20000000; // $250k/$200k in cents
   const investmentIncome = addCents(
     nToCentsWithMode(input.income?.interest, mode),
@@ -283,12 +283,27 @@ function calculateAdditionalTaxes(input: TaxPayerInput, agi: number, mode: 'doll
     nToCentsWithMode(input.income?.dividends?.qualified, mode),
     max0(nToCentsWithMode(input.income?.capGains, mode))
   );
-  const niit = agi > niitThreshold ? multiplyCents(investmentIncome, 0.038) : 0;
+  // NIIT applies to the lesser of: (1) net investment income, or (2) excess of MAGI over threshold
+  const excessMAGI = max0(agi - niitThreshold);
+  const niitBase = Math.min(investmentIncome, excessMAGI);
+  const niit = niitBase > 0 ? multiplyCents(niitBase, 0.038) : 0;
 
-  // Additional Medicare Tax (0.9% on wages over threshold)
-  const medicareThreshold = input.filingStatus === 'marriedJointly' ? 25000000 : 20000000; // $250k/$200k in cents
+  // Additional Medicare Tax (0.9% on wages and SE earnings over threshold)
+  // Correct thresholds: $250k MFJ, $125k MFS, $200k for others
+  let medicareThreshold: number;
+  if (input.filingStatus === 'marriedJointly') {
+    medicareThreshold = 25000000; // $250k in cents
+  } else if (input.filingStatus === 'marriedSeparately') {
+    medicareThreshold = 12500000; // $125k in cents
+  } else {
+    medicareThreshold = 20000000; // $200k in cents (single, hoh, etc.)
+  }
+
   const wages = nToCentsWithMode(input.income?.wages, mode);
-  const medicareSurtax = wages > medicareThreshold ? multiplyCents(wages - medicareThreshold, 0.009) : 0;
+  const seEarnings = max0(scheduleCNet); // Include SE earnings for Medicare tax
+  const totalMedicareEarnings = addCents(wages, seEarnings);
+  const medicareSurtax = totalMedicareEarnings > medicareThreshold ?
+    multiplyCents(totalMedicareEarnings - medicareThreshold, 0.009) : 0;
 
   // AMT (simplified - placeholder)
   const amt = 0;

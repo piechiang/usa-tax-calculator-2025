@@ -11,12 +11,13 @@ import {
  * Calculate Child Tax Credit with sophisticated eligibility and phase-out logic
  */
 export function calculateAdvancedCTC(
-  input: TaxPayerInput, 
-  agi: number, 
-  taxBeforeCredits: number
-): { 
-  ctc: number; 
-  additionalChildTaxCredit: number; 
+  input: TaxPayerInput,
+  agi: number,
+  taxBeforeCredits: number,
+  mode: 'dollars' | 'cents' = 'dollars'
+): {
+  ctc: number;
+  additionalChildTaxCredit: number;
   eligibleChildren: number;
   details: Array<{ name?: string; age: number; eligible: boolean; reason?: string }>;
 } {
@@ -88,10 +89,6 @@ export function calculateAdvancedCTC(
   let additionalChildTaxCredit = 0;
   if (remainingCredit > 0) {
     // Must have earned income of at least $2,500 to qualify for ACTC
-    const mode: 'dollars' | 'cents' = (() => {
-      const probe: any[] = [input.income?.wages, input.income?.scheduleCNet];
-      return probe.some(v => typeof v === 'number' && Math.abs(v) >= 1_000_000) ? 'cents' : 'dollars';
-    })();
     const nToCents = (v: any) => typeof v === 'string' ? safeCurrencyToCents(v) : (typeof v === 'number' ? (mode === 'cents' ? Math.round(v) : Math.round(v * 100)) : 0);
     const earnedIncome = addCents(
       nToCents(input.income?.wages),
@@ -118,8 +115,9 @@ export function calculateAdvancedCTC(
  * Calculate Earned Income Tax Credit with complex phase-in and phase-out
  */
 export function calculateAdvancedEITC(
-  input: TaxPayerInput, 
-  agi: number
+  input: TaxPayerInput,
+  agi: number,
+  mode: 'dollars' | 'cents' = 'dollars'
 ): {
   eitc: number;
   eligibleChildren: number;
@@ -198,10 +196,6 @@ export function calculateAdvancedEITC(
   }
   
   // Step 4: Calculate earned income (wages + self-employment)
-  const mode: 'dollars' | 'cents' = (() => {
-    const probe: any[] = [input.income?.wages, input.income?.scheduleCNet];
-    return probe.some(v => typeof v === 'number' && Math.abs(v) >= 1_000_000) ? 'cents' : 'dollars';
-  })();
   const nToCents = (v: any) => typeof v === 'string' ? safeCurrencyToCents(v) : (typeof v === 'number' ? (mode === 'cents' ? Math.round(v) : Math.round(v * 100)) : 0);
   const earnedIncome = addCents(
     nToCents(input.income?.wages),
@@ -246,7 +240,8 @@ export function calculateAdvancedEITC(
  */
 export function calculateAdvancedAOTC(
   input: TaxPayerInput,
-  agi: number
+  agi: number,
+  mode: 'dollars' | 'cents' = 'dollars'
 ): {
   aotc: number;
   refundableAOTC: number;
@@ -363,7 +358,8 @@ export function calculateAdvancedAOTC(
  */
 export function calculateAdvancedLLC(
   input: TaxPayerInput,
-  agi: number
+  agi: number,
+  mode: 'dollars' | 'cents' = 'dollars'
 ): {
   llc: number;
   eligibleExpenses: number;
