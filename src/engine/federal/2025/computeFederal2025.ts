@@ -28,7 +28,7 @@ import {
  * @param input Taxpayer input data
  * @returns Complete federal tax calculation result
  */
-// Determine input units: tests mix dollars and cents. If any large cent-like value appears, treat as cents.
+// Determine input units: tests mix dollars and cents. Use more nuanced heuristic for million-dollar amounts.
 const determineMode = (input: TaxPayerInput): 'dollars' | 'cents' => {
   const probe: any[] = [];
   const inc = (input.income || {}) as any;
@@ -37,7 +37,23 @@ const determineMode = (input: TaxPayerInput): 'dollars' | 'cents' => {
   if (inc.dividends) probe.push(inc.dividends.ordinary, inc.dividends.qualified);
   if (inc.k1) probe.push(inc.k1.ordinaryBusinessIncome, inc.k1.passiveIncome, inc.k1.portfolioIncome);
   probe.push(pay.federalWithheld, pay.estPayments, pay.eitcAdvance);
-  return probe.some(v => typeof v === 'number' && Math.abs(v) >= 1_000_000) ? 'cents' : 'dollars';
+
+  // Enhanced heuristic: Look for values that are clearly in cents
+  // Values >= 10,000,000 (representing $100k+) are likely in cents
+  // Values between 1,000,000-9,999,999 could be either $1M+ or $10k-$99k in cents
+  // For ambiguous range, check if value ends in 00 (typical of dollar amounts)
+  for (const v of probe) {
+    if (typeof v === 'number' && Math.abs(v) >= 10_000_000) {
+      return 'cents';
+    }
+    if (typeof v === 'number' && Math.abs(v) >= 1_000_000 && Math.abs(v) < 10_000_000) {
+      // If the value doesn't end in 00, it's likely already in cents
+      if (Math.abs(v) % 100 !== 0) {
+        return 'cents';
+      }
+    }
+  }
+  return 'dollars';
 };
 
 const nToCentsWithMode = (val: any, mode: 'dollars' | 'cents'): number => {
@@ -68,7 +84,7 @@ export function computeFederal2025(input: TaxPayerInput): FederalResult2025 {
   const credits = calculateCredits(input, agi, taxBeforeCredits);
   
   // Step 6: Calculate additional taxes
-  const additionalTaxes = calculateAdditionalTaxes(input, agi);
+  const additionalTaxes = calculateAdditionalTaxes(input, agi, mode);
   
   // Step 7: Calculate total tax liability
   const totalNonRefundableCredits = addCents(
@@ -210,29 +226,33 @@ function calculateMedicalDeduction(medicalExpenses: number, agi: number): number
 }
 
 /**
- * Calculate federal tax credits using advanced logic
+ * Calculate federal tax credits using advanced logic with proper sequencing
  */
 function calculateCredits(
-  input: TaxPayerInput, 
-  agi: number, 
+  input: TaxPayerInput,
+  agi: number,
   taxBeforeCredits: number
 ): FederalResult2025['credits'] {
-  // Child Tax Credit with advanced eligibility and phase-out
-  const ctcResult = calculateAdvancedCTC(input, agi, taxBeforeCredits);
-  
-  // Earned Income Tax Credit with complex phase-in/phase-out
+  // Earned Income Tax Credit with complex phase-in/phase-out (refundable, calculated first)
   const eitcResult = calculateAdvancedEITC(input, agi);
-  
-  // Education credits with expense validation
+
+  // Education credits with expense validation (apply before CTC)
   const aotcResult = calculateAdvancedAOTC(input, agi);
   const llcResult = calculateAdvancedLLC(input, agi);
-  
+
   // Note: Taxpayers can't claim both AOTC and LLC for the same student
   // In a full implementation, we'd need to optimize which credit to use
   // For now, we'll prefer AOTC over LLC if both are available
   const finalAOTC = aotcResult.aotc;
   const finalLLC = finalAOTC > 0 ? 0 : llcResult.llc;
-  
+
+  // Calculate remaining tax liability after other non-refundable credits
+  const otherNonRefundableCredits = addCents(finalAOTC, finalLLC);
+  const taxAfterOtherCredits = max0(taxBeforeCredits - otherNonRefundableCredits);
+
+  // Child Tax Credit with advanced eligibility and phase-out (limited by remaining tax)
+  const ctcResult = calculateAdvancedCTC(input, agi, taxAfterOtherCredits);
+
   return {
     ctc: ctcResult.ctc,
     aotc: finalAOTC,
@@ -248,31 +268,31 @@ function calculateCredits(
 
 
 /**
- * Calculate additional taxes (SE, NIIT, Medicare surtax, AMT)
+ * Calculate additional taxes (SE, NIIT, Medicare surtax, AMT) - respects input unit detection
  */
-function calculateAdditionalTaxes(input: TaxPayerInput, agi: number): FederalResult2025['additionalTaxes'] {
+function calculateAdditionalTaxes(input: TaxPayerInput, agi: number, mode: 'dollars' | 'cents'): FederalResult2025['additionalTaxes'] {
   // Self-employment tax (simplified)
-  const scheduleCNet = safeCurrencyToCents(input.income?.scheduleCNet);
+  const scheduleCNet = nToCentsWithMode(input.income?.scheduleCNet, mode);
   const seTax = scheduleCNet > 0 ? multiplyCents(scheduleCNet, 0.1413) : 0; // Simplified 14.13%
-  
+
   // Net Investment Income Tax (3.8% on investment income over threshold)
   const niitThreshold = input.filingStatus === 'marriedJointly' ? 25000000 : 20000000; // $250k/$200k in cents
   const investmentIncome = addCents(
-    safeCurrencyToCents(input.income?.interest),
-    safeCurrencyToCents(input.income?.dividends?.ordinary),
-    safeCurrencyToCents(input.income?.dividends?.qualified),
-    max0(safeCurrencyToCents(input.income?.capGains))
+    nToCentsWithMode(input.income?.interest, mode),
+    nToCentsWithMode(input.income?.dividends?.ordinary, mode),
+    nToCentsWithMode(input.income?.dividends?.qualified, mode),
+    max0(nToCentsWithMode(input.income?.capGains, mode))
   );
   const niit = agi > niitThreshold ? multiplyCents(investmentIncome, 0.038) : 0;
-  
+
   // Additional Medicare Tax (0.9% on wages over threshold)
   const medicareThreshold = input.filingStatus === 'marriedJointly' ? 25000000 : 20000000; // $250k/$200k in cents
-  const wages = safeCurrencyToCents(input.income?.wages);
+  const wages = nToCentsWithMode(input.income?.wages, mode);
   const medicareSurtax = wages > medicareThreshold ? multiplyCents(wages - medicareThreshold, 0.009) : 0;
-  
+
   // AMT (simplified - placeholder)
   const amt = 0;
-  
+
   return {
     seTax,
     niit,

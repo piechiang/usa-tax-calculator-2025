@@ -160,7 +160,7 @@ describe('Federal 2025 - Complete Tax Scenarios', () => {
         },
         dependents: 1,
         income: {
-          wages: 35000),
+          wages: 35000,
         },
         payments: {
           federalWithheld: $(2800),
