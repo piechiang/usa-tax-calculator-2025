@@ -190,7 +190,7 @@ function calculateTotalIncome(input: FederalInput, steps: CalculationStep[]): nu
   }
   
   // Line 3a/3b - Dividends
-  const totalDividends = input.income.dividends.ordinary + input.income.dividends.qualified;
+  const totalDividends = input.income.dividends.ordinary;
   if (totalDividends > 0) {
     totalIncome += totalDividends;
     steps.push({
@@ -342,18 +342,21 @@ function calculateDeductions(input: FederalInput, agi: number, steps: Calculatio
   
   // Additional standard deduction for age 65+ or blind
   const isMarried = input.filingStatus === 'mfj' || input.filingStatus === 'mfs' || input.filingStatus === 'qss';
-  const additionalAmount = isMarried 
-    ? IRS_CONSTANTS_2025.additionalStandardDeductions.marriedAge65OrBlind
-    : IRS_CONSTANTS_2025.additionalStandardDeductions.age65OrBlind;
-  
+
   // Taxpayer
   if (input.taxpayer.age >= 65 || input.taxpayer.blind) {
-    additionalStandardDeduction += additionalAmount;
+    const amount = isMarried
+      ? IRS_CONSTANTS_2025.additionalStandardDeductions.marriedAge65OrBlind
+      : IRS_CONSTANTS_2025.additionalStandardDeductions.age65OrBlind;
+    additionalStandardDeduction += amount;
   }
-  
+
   // Spouse (if applicable)
   if (input.spouse && (input.spouse.age >= 65 || input.spouse.blind)) {
-    additionalStandardDeduction += additionalAmount;
+    const amount = isMarried
+      ? IRS_CONSTANTS_2025.additionalStandardDeductions.marriedAge65OrBlind
+      : IRS_CONSTANTS_2025.additionalStandardDeductions.age65OrBlind;
+    additionalStandardDeduction += amount;
   }
   
   const standardDeduction = baseStandardDeduction + additionalStandardDeduction;
@@ -363,13 +366,14 @@ function calculateDeductions(input: FederalInput, agi: number, steps: Calculatio
   if (input.itemizedDeductions) {
     const itemized = input.itemizedDeductions;
     
-    // SALT deduction (capped at $10,000)
+    // SALT deduction (capped at $10,000 for most filers, $5,000 for MFS)
+    const saltCap = input.filingStatus === 'mfs' ? 5000 : CALCULATION_CONSTANTS.SALT_CAP;
     const saltDeduction = Math.min(
-      itemized.stateLocalIncomeTaxes + 
-      itemized.stateLocalSalesTaxes + 
-      itemized.realEstateTaxes + 
+      itemized.stateLocalIncomeTaxes +
+      itemized.stateLocalSalesTaxes +
+      itemized.realEstateTaxes +
       itemized.personalPropertyTaxes,
-      CALCULATION_CONSTANTS.SALT_CAP
+      saltCap
     );
     
     // Mortgage interest

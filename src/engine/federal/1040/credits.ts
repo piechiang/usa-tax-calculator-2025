@@ -175,11 +175,21 @@ export function calculateEducationCredits(
   const agi = input.adjustedGrossIncome || 0;
   let aotc = 0;
   let llc = 0;
-  
+
+  // Education credits are not allowed for married filing separately
+  if (input.filingStatus === 'mfs') {
+    return {
+      nonRefundable: 0,
+      refundable: 0,
+      aotc: 0,
+      llc: 0,
+    };
+  }
+
   // Get education expenses from input (if provided)
   const aotcExpenses = input.credits?.educationCredits?.americanOpportunity || 0;
   const llcExpenses = input.credits?.educationCredits?.lifetimeLearning || 0;
-  
+
   // American Opportunity Tax Credit
   if (aotcExpenses > 0) {
     // AOTC parameters for 2025
@@ -187,12 +197,12 @@ export function calculateEducationCredits(
     const aotcMaxExpenses = 4000;
     const aotcPhaseoutStart = input.filingStatus === 'mfj' ? 160000 : 80000;
     const aotcPhaseoutEnd = input.filingStatus === 'mfj' ? 180000 : 90000;
-    
+
     // Calculate credit: 100% of first $2,000 + 25% of next $2,000
     const firstTier = Math.min(aotcExpenses, 2000);
     const secondTier = Math.min(Math.max(0, aotcExpenses - 2000), 2000) * 0.25;
     let creditBeforePhaseout = firstTier + secondTier;
-    
+
     // Apply phase-out
     if (agi > aotcPhaseoutStart && agi < aotcPhaseoutEnd) {
       const phaseoutRatio = (aotcPhaseoutEnd - agi) / (aotcPhaseoutEnd - aotcPhaseoutStart);
@@ -200,22 +210,30 @@ export function calculateEducationCredits(
     } else if (agi >= aotcPhaseoutEnd) {
       creditBeforePhaseout = 0;
     }
-    
+
     aotc = Math.min(creditBeforePhaseout, aotcMaxCredit);
   }
-  
+
   // Lifetime Learning Credit
-  if (llcExpenses > 0) {
+  // LLC cannot be claimed for the same student expenses used for AOTC
+  let llcEligibleExpenses = llcExpenses;
+  if (aotcExpenses > 0 && llcExpenses > 0) {
+    // Assume AOTC expenses overlap with LLC expenses, reduce LLC expenses accordingly
+    // In a real implementation, this would track per-student expenses
+    llcEligibleExpenses = Math.max(0, llcExpenses - aotcExpenses);
+  }
+
+  if (llcEligibleExpenses > 0) {
     // LLC parameters for 2025
     const llcRate = 0.20; // 20% of expenses
     const llcMaxExpenses = 10000;
     const llcMaxCredit = 2000;
     const llcPhaseoutStart = input.filingStatus === 'mfj' ? 160000 : 80000;
     const llcPhaseoutEnd = input.filingStatus === 'mfj' ? 180000 : 90000;
-    
-    // Calculate credit: 20% of expenses up to $10,000
-    let creditBeforePhaseout = Math.min(llcExpenses, llcMaxExpenses) * llcRate;
-    
+
+    // Calculate credit: 20% of eligible expenses up to $10,000
+    let creditBeforePhaseout = Math.min(llcEligibleExpenses, llcMaxExpenses) * llcRate;
+
     // Apply phase-out (same as AOTC)
     if (agi > llcPhaseoutStart && agi < llcPhaseoutEnd) {
       const phaseoutRatio = (llcPhaseoutEnd - agi) / (llcPhaseoutEnd - llcPhaseoutStart);
@@ -223,7 +241,7 @@ export function calculateEducationCredits(
     } else if (agi >= llcPhaseoutEnd) {
       creditBeforePhaseout = 0;
     }
-    
+
     llc = Math.min(creditBeforePhaseout, llcMaxCredit);
   }
   

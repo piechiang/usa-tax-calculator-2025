@@ -56,6 +56,8 @@ export function calculateAdditionalMedicareTax(
   seEarnings: number = 0
 ): number {
   const threshold = IRS_CONSTANTS_2025.medicare.additionalThresholds[filingStatus];
+  // Apply 92.35% multiplier to convert Schedule C net profit to net earnings from self-employment
+  // This is the correct base for Additional Medicare Tax calculation per IRC §1401(b)
   const totalMedicareIncome = medicareWages + (seEarnings * CALCULATION_CONSTANTS.SE_DEDUCTION_MULTIPLIER);
   
   if (totalMedicareIncome <= threshold) {
