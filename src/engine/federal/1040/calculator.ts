@@ -570,9 +570,8 @@ function calculateAdditionalTaxes(input: FederalInput, agi: number, steps: Calcu
   
   // Net Investment Income Tax (if enabled)
   if (input.options?.niitCalculation) {
-    const netInvestmentIncome = input.income.interest.taxable + 
-                               input.income.dividends.ordinary + 
-                               input.income.dividends.qualified +
+    const netInvestmentIncome = input.income.interest.taxable +
+                               input.income.dividends.ordinary +
                                Math.max(0, input.income.capitalGains.longTerm + input.income.capitalGains.shortTerm) +
                                input.income.scheduleE.k1PassiveIncome +
                                Math.max(0, input.income.scheduleE.rentalRealEstate) +

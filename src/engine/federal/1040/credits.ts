@@ -115,8 +115,14 @@ export function calculateOtherDependentCredit(
  * Source: IRC §32, Rev. Proc. 2024-40 §2.06
  */
 export function calculateEarnedIncomeCredit(input: FederalInput): number {
+  // EITC is not allowed for married filing separately (unless special separation criteria are met)
+  // Since the software doesn't capture "separated spouse" criteria, we block all MFS filers
+  if (input.filingStatus === 'mfs') {
+    return 0;
+  }
+
   // Count EITC qualifying children
-  const qualifyingChildren = Math.min(3, input.dependents.filter(dep => 
+  const qualifyingChildren = Math.min(3, input.dependents.filter(dep =>
     dep.isQualifyingChild &&
     (dep.age < 19 || // Under 19
     (dep.age >= 19 && dep.age < 24) || // 19-23 if full-time student
@@ -132,8 +138,9 @@ export function calculateEarnedIncomeCredit(input: FederalInput): number {
   // Calculate earned income
   const earnedIncome = calculateEarnedIncome(input);
   const agi = input.adjustedGrossIncome || 0;
-  
-  // Use the greater of earned income or AGI for EITC calculation
+
+  // For EITC phase-out, use the greater of earned income or AGI
+  // This ensures high AGI (from investment income) properly reduces EITC
   const eitcIncome = Math.max(earnedIncome, agi);
   
   if (eitcIncome <= 0) {
