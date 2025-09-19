@@ -262,10 +262,19 @@ export function calculateAdvancedAOTC(
     eligible: boolean;
     reason?: string;
   }> = [];
-  
+
+  // Helper function to convert input values based on mode
+  const convertToCents = (value: number): number => {
+    if (mode === 'cents') {
+      return Math.round(value);
+    } else {
+      return Math.round(value * 100); // Convert dollars to cents
+    }
+  };
+
   let totalCredit = 0;
   let totalEligibleExpenses = 0;
-  
+
   // Step 1: Check phase-out thresholds
   const phaseOutStart = AOTC_2025.phaseOutStart[input.filingStatus] || 0;
   const phaseOutEnd = phaseOutStart + AOTC_2025.phaseOutRange;
@@ -277,7 +286,7 @@ export function calculateAdvancedAOTC(
       eligibleExpenses: 0,
       details: educationExpenses.map(exp => ({
         studentName: exp.studentName,
-        expenses: exp.tuitionAndFees,
+        expenses: convertToCents(exp.tuitionAndFees) + convertToCents(exp.booksAndSupplies || 0),
         credit: 0,
         eligible: false,
         reason: 'Income too high for AOTC'
@@ -287,6 +296,11 @@ export function calculateAdvancedAOTC(
   
   // Step 2: Calculate credit for each student
   for (const expense of educationExpenses) {
+    // Convert input values to cents based on mode
+    const tuitionAndFees = convertToCents(expense.tuitionAndFees);
+    const booksAndSupplies = convertToCents(expense.booksAndSupplies || 0);
+    const totalQualifiedExpenses = tuitionAndFees + booksAndSupplies;
+
     const studentDetail: {
       studentName: string;
       expenses: number;
@@ -295,11 +309,11 @@ export function calculateAdvancedAOTC(
       reason?: string;
     } = {
       studentName: expense.studentName,
-      expenses: expense.tuitionAndFees,
+      expenses: totalQualifiedExpenses,
       credit: 0,
       eligible: false,
     };
-    
+
     // AOTC eligibility checks
     if (!expense.isEligibleInstitution) {
       studentDetail.reason = 'Not an eligible educational institution';
@@ -309,20 +323,20 @@ export function calculateAdvancedAOTC(
       studentDetail.reason = 'AOTC already claimed for 4 tax years';
     } else if (!expense.isHalfTimeStudent) {
       studentDetail.reason = 'Student not enrolled at least half-time';
-    } else if (expense.tuitionAndFees <= 0) {
+    } else if (totalQualifiedExpenses <= 0) {
       studentDetail.reason = 'No qualified expenses';
     } else {
       studentDetail.eligible = true;
-      
+
       // Calculate AOTC: 100% of first $2,000 + 25% of next $2,000
-      const first2k = Math.min(expense.tuitionAndFees, 200000); // $2,000 in cents
-      const next2k = Math.min(max0(expense.tuitionAndFees - 200000), 200000);
-      
+      const first2k = Math.min(totalQualifiedExpenses, 200000); // $2,000 in cents
+      const next2k = Math.min(max0(totalQualifiedExpenses - 200000), 200000);
+
       studentDetail.credit = first2k + multiplyCents(next2k, 0.25);
       studentDetail.credit = Math.min(studentDetail.credit, AOTC_2025.maxCredit);
-      
+
       totalCredit += studentDetail.credit;
-      totalEligibleExpenses += expense.tuitionAndFees;
+      totalEligibleExpenses += totalQualifiedExpenses;
     }
     
     details.push(studentDetail);
@@ -377,18 +391,27 @@ export function calculateAdvancedLLC(
     eligible: boolean;
     reason?: string;
   }> = [];
-  
+
+  // Helper function to convert input values based on mode
+  const convertToCents = (value: number): number => {
+    if (mode === 'cents') {
+      return Math.round(value);
+    } else {
+      return Math.round(value * 100); // Convert dollars to cents
+    }
+  };
+
   // Step 1: Check phase-out (same as AOTC)
   const phaseOutStart = LLC_2025.phaseOutStart[input.filingStatus] || 0;
   const phaseOutEnd = phaseOutStart + LLC_2025.phaseOutRange;
-  
+
   if (agi >= phaseOutEnd) {
     return {
       llc: 0,
       eligibleExpenses: 0,
       details: educationExpenses.map(exp => ({
         studentName: exp.studentName,
-        expenses: exp.tuitionAndFees,
+        expenses: convertToCents(exp.tuitionAndFees) + convertToCents(exp.booksAndSupplies || 0),
         eligible: false,
         reason: 'Income too high for LLC'
       }))
@@ -397,8 +420,13 @@ export function calculateAdvancedLLC(
   
   // Step 2: Calculate total eligible expenses (all students combined for LLC)
   let totalEligibleExpenses = 0;
-  
+
   for (const expense of educationExpenses) {
+    // Convert input values to cents based on mode
+    const tuitionAndFees = convertToCents(expense.tuitionAndFees);
+    const booksAndSupplies = convertToCents(expense.booksAndSupplies || 0);
+    const totalQualifiedExpenses = tuitionAndFees + booksAndSupplies;
+
     const studentDetail: {
       studentName: string;
       expenses: number;
@@ -406,18 +434,18 @@ export function calculateAdvancedLLC(
       reason?: string;
     } = {
       studentName: expense.studentName,
-      expenses: expense.tuitionAndFees,
+      expenses: totalQualifiedExpenses,
       eligible: false,
     };
-    
+
     // LLC is less restrictive than AOTC
     if (!expense.isEligibleInstitution) {
       studentDetail.reason = 'Not an eligible educational institution';
-    } else if (expense.tuitionAndFees <= 0) {
+    } else if (totalQualifiedExpenses <= 0) {
       studentDetail.reason = 'No qualified expenses';
     } else {
       studentDetail.eligible = true;
-      totalEligibleExpenses += expense.tuitionAndFees;
+      totalEligibleExpenses += totalQualifiedExpenses;
     }
     
     details.push(studentDetail);

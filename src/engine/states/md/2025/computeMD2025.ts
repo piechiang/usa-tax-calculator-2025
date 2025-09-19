@@ -112,8 +112,16 @@ function calculateMDDeductionsAndExemptions(input: TaxPayerInput, mdAGI: number)
     exemptions += MD_RULES_2025.personalExemption.spouse; // Spouse exemption
   }
   
-  if (input.dependents && input.dependents > 0) {
-    exemptions += MD_RULES_2025.personalExemption.dependent * input.dependents; // Dependent exemptions
+  // Count dependents from modern arrays first, fallback to legacy field
+  let totalDependents = 0;
+  if (input.qualifyingChildren || input.qualifyingRelatives) {
+    totalDependents = (input.qualifyingChildren?.length || 0) + (input.qualifyingRelatives?.length || 0);
+  } else if (input.dependents && input.dependents > 0) {
+    totalDependents = input.dependents; // Legacy fallback
+  }
+
+  if (totalDependents > 0) {
+    exemptions += MD_RULES_2025.personalExemption.dependent * totalDependents; // Dependent exemptions
   }
   
   // Maryland itemized deductions (if taxpayer itemizes on federal)
@@ -158,7 +166,7 @@ function calculateMDMedicalDeduction(medicalExpenses: number, mdAGI: number): nu
  * Calculate Maryland local tax based on county
  */
 function calculateMDLocalTax(input: TaxPayerInput, mdTaxableIncome: number): number {
-  if (!input.isMaryland || mdTaxableIncome <= 0) {
+  if (!isMarylandResident(input) || mdTaxableIncome <= 0) {
     return 0;
   }
   
