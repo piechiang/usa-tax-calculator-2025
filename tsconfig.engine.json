@@ -8,7 +8,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./build/engine",
+    "outDir": "./src/engine-dist",
     "rootDir": "./src/engine",
     "strict": true,
     "noImplicitAny": true,
@@ -34,6 +34,7 @@
     "build",
     "tests",
     "**/__tests__/**/*",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "src/engine/federal/1040/**/*"
   ]
 }

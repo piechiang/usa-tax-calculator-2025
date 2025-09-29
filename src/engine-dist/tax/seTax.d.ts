@@ -1,4 +1,4 @@
-import type { FilingStatus } from '../rules/2025/federal/standardDeductions';
+import type { FilingStatus } from '../types';
 export interface SETaxInput {
     filingStatus: FilingStatus;
     seNetProfit: number;

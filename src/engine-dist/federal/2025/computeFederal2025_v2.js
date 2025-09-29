@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.computeFederal2025 = void 0;
-const standardDeductions_1 = require("../../rules/2025/federal/standardDeductions");
-// FEDERAL_BRACKETS_2025 is used via calculateRegularTax2025
 const deductions_1 = require("../../rules/2025/federal/deductions");
 const medicareSocialSecurity_1 = require("../../rules/2025/federal/medicareSocialSecurity");
 // Import new authoritative calculation modules
@@ -52,7 +50,7 @@ function computeFederal2025(input) {
     return {
         agi,
         taxableIncome,
-        standardDeduction: deductionResult.isStandard ? deductionResult.deduction : standardDeductions_1.STANDARD_DEDUCTION_2025[input.filingStatus],
+        standardDeduction: deductionResult.isStandard ? deductionResult.deduction : deductions_1.STANDARD_DEDUCTION_2025[input.filingStatus],
         itemizedDeduction: deductionResult.isStandard ? undefined : deductionResult.deduction,
         taxBeforeCredits: taxResult.totalIncomeTax,
         credits,
@@ -105,19 +103,23 @@ function calculateAGI(input, seTaxDeduction) {
  */
 function calculateDeductions(input, agi) {
     // Calculate standard deduction with age/blindness adjustments
-    let standardDeduction = standardDeductions_1.STANDARD_DEDUCTION_2025[input.filingStatus];
+    let standardDeduction = deductions_1.STANDARD_DEDUCTION_2025[input.filingStatus];
     // Additional standard deduction for age 65+ and/or blindness
     if (input.primary?.birthDate || input.primary?.isBlind) {
-        const additionalAmount = ['single', 'headOfHousehold'].includes(input.filingStatus)
-            ? standardDeductions_1.ADDITIONAL_STANDARD_DEDUCTION_2025.singleOrHOH
-            : standardDeductions_1.ADDITIONAL_STANDARD_DEDUCTION_2025.marriedPerSpouse;
-        if (input.primary.isBlind)
-            standardDeduction += additionalAmount;
-        // Add age calculation here when needed
+        if (input.primary.isBlind) {
+            standardDeduction += deductions_1.ADDITIONAL_STANDARD_DEDUCTION_2025.blind;
+        }
+        // Add age calculation here when needed (currently using simplified approach)
+        if (input.primary.birthDate) {
+            standardDeduction += deductions_1.ADDITIONAL_STANDARD_DEDUCTION_2025.age65OrOlder;
+        }
     }
     if (input.spouse?.birthDate || input.spouse?.isBlind) {
         if (input.spouse.isBlind) {
-            standardDeduction += standardDeductions_1.ADDITIONAL_STANDARD_DEDUCTION_2025.marriedPerSpouse;
+            standardDeduction += deductions_1.ADDITIONAL_STANDARD_DEDUCTION_2025.blind;
+        }
+        if (input.spouse.birthDate) {
+            standardDeduction += deductions_1.ADDITIONAL_STANDARD_DEDUCTION_2025.age65OrOlder;
         }
     }
     // Calculate itemized deductions

@@ -13,8 +13,7 @@ import {
 export function calculateAdvancedCTC(
   input: TaxPayerInput,
   agi: number,
-  taxBeforeCredits: number,
-  mode: 'dollars' | 'cents' = 'dollars'
+  taxBeforeCredits: number
 ): {
   ctc: number;
   additionalChildTaxCredit: number;
@@ -89,7 +88,7 @@ export function calculateAdvancedCTC(
   let additionalChildTaxCredit = 0;
   if (remainingCredit > 0) {
     // Must have earned income of at least $2,500 to qualify for ACTC
-    const nToCents = (v: any) => typeof v === 'string' ? safeCurrencyToCents(v) : (typeof v === 'number' ? (mode === 'cents' ? Math.round(v) : Math.round(v * 100)) : 0);
+    const nToCents = (v: any) => safeCurrencyToCents(v);
     const earnedIncome = addCents(
       nToCents(input.income?.wages),
       nToCents(input.income?.scheduleCNet)
@@ -116,8 +115,7 @@ export function calculateAdvancedCTC(
  */
 export function calculateAdvancedEITC(
   input: TaxPayerInput,
-  agi: number,
-  mode: 'dollars' | 'cents' = 'dollars'
+  agi: number
 ): {
   eitc: number;
   eligibleChildren: number;
@@ -196,7 +194,7 @@ export function calculateAdvancedEITC(
   }
   
   // Step 4: Calculate earned income (wages + self-employment)
-  const nToCents = (v: any) => typeof v === 'string' ? safeCurrencyToCents(v) : (typeof v === 'number' ? (mode === 'cents' ? Math.round(v) : Math.round(v * 100)) : 0);
+  const nToCents = (v: any) => safeCurrencyToCents(v);
   const earnedIncome = addCents(
     nToCents(input.income?.wages),
     nToCents(input.income?.scheduleCNet)
@@ -240,8 +238,7 @@ export function calculateAdvancedEITC(
  */
 export function calculateAdvancedAOTC(
   input: TaxPayerInput,
-  agi: number,
-  mode: 'dollars' | 'cents' = 'dollars'
+  agi: number
 ): {
   aotc: number;
   refundableAOTC: number;
@@ -263,13 +260,9 @@ export function calculateAdvancedAOTC(
     reason?: string;
   }> = [];
 
-  // Helper function to convert input values based on mode
+  // Helper function to convert input values to cents
   const convertToCents = (value: number): number => {
-    if (mode === 'cents') {
-      return Math.round(value);
-    } else {
-      return Math.round(value * 100); // Convert dollars to cents
-    }
+    return Math.round(value * 100); // Convert dollars to cents
   };
 
   let totalCredit = 0;
@@ -372,8 +365,7 @@ export function calculateAdvancedAOTC(
  */
 export function calculateAdvancedLLC(
   input: TaxPayerInput,
-  agi: number,
-  mode: 'dollars' | 'cents' = 'dollars'
+  agi: number
 ): {
   llc: number;
   eligibleExpenses: number;
@@ -392,13 +384,9 @@ export function calculateAdvancedLLC(
     reason?: string;
   }> = [];
 
-  // Helper function to convert input values based on mode
+  // Helper function to convert input values to cents
   const convertToCents = (value: number): number => {
-    if (mode === 'cents') {
-      return Math.round(value);
-    } else {
-      return Math.round(value * 100); // Convert dollars to cents
-    }
+    return Math.round(value * 100); // Convert dollars to cents
   };
 
   // Step 1: Check phase-out (same as AOTC)
@@ -473,12 +461,18 @@ export function calculateAdvancedLLC(
  * Calculate age from birth date
  */
 function calculateAge(birthDate: string, currentYear: number): number {
-  const birth = new Date(birthDate);
+  // Handle ISO date strings properly to avoid timezone issues
+  const parts = birthDate.split('-');
+  const birthYear = parseInt(parts[0], 10);
+  const birthMonth = parseInt(parts[1], 10) - 1; // Convert to 0-indexed
+  const birthDay = parseInt(parts[2], 10);
+
+  const birth = new Date(birthYear, birthMonth, birthDay);
   const age = currentYear - birth.getFullYear();
-  
+
   // Adjust if birthday hasn't occurred yet this year
   const today = new Date(currentYear, 11, 31); // Dec 31 of tax year
   const birthdayThisYear = new Date(currentYear, birth.getMonth(), birth.getDate());
-  
+
   return birthdayThisYear <= today ? age : age - 1;
 }

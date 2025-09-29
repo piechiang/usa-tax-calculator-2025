@@ -4,7 +4,7 @@ export * from './util/money';
 export * from './util/math';
 
 // Rules exports
-export { FEDERAL_BRACKETS_2025 } from './rules/2025/federal/brackets';
+export { FEDERAL_BRACKETS_2025 } from './rules/2025/federal/federalBrackets';
 export { 
   STANDARD_DEDUCTION_2025, 
   ADDITIONAL_STANDARD_DEDUCTION_2025,

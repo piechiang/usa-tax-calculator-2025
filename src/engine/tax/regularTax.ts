@@ -1,4 +1,4 @@
-import type { FilingStatus } from '../rules/2025/federal/standardDeductions';
+import type { FilingStatus } from '../types';
 import { FEDERAL_BRACKETS_2025 } from '../rules/2025/federal/federalBrackets';
 
 /**

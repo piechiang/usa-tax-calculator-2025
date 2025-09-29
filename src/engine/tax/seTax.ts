@@ -1,4 +1,4 @@
-import type { FilingStatus } from '../rules/2025/federal/standardDeductions';
+import type { FilingStatus } from '../types';
 import { 
   ADDL_MEDICARE_THRESHOLDS_2025, 
   SS_WAGE_BASE_2025,

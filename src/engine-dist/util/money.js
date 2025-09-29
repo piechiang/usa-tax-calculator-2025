@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatCents = exports.safeCurrencyToCents = exports.isValidCurrency = exports.roundToCents = exports.percentOf = exports.max0 = exports.multiplyCents = exports.subtractCents = exports.addCents = exports.centsToDollars = exports.dollarsToCents = exports.cents = exports.toCents = exports.C = void 0;
+exports.formatCents = exports.toCentsFlexible = exports.safeCurrencyToCents = exports.isValidCurrency = exports.roundToCents = exports.percentOf = exports.max0 = exports.multiplyCents = exports.subtractCents = exports.addCents = exports.centsToDollars = exports.dollarsToCents = exports.cents = exports.toCents = exports.C = void 0;
 const decimal_js_1 = __importDefault(require("decimal.js"));
 // Configure Decimal.js for financial calculations
 decimal_js_1.default.set({
@@ -72,18 +72,34 @@ exports.isValidCurrency = isValidCurrency;
 const safeCurrencyToCents = (amount) => {
     if (amount === null || amount === undefined || amount === '')
         return 0;
+    // Strings are interpreted as dollars (e.g., "1234.56")
     if (typeof amount === 'string') {
-        // Remove currency symbols and commas
         const cleaned = amount.replace(/[$,\s]/g, '');
         const num = parseFloat(cleaned);
         return isNaN(num) ? 0 : (0, exports.dollarsToCents)(num);
     }
+    // Numbers are interpreted as dollars (consistent with UI/tests)
     if (typeof amount === 'number') {
         return isFinite(amount) ? (0, exports.dollarsToCents)(amount) : 0;
     }
     return 0;
 };
 exports.safeCurrencyToCents = safeCurrencyToCents;
+// Heuristic conversion: accept either dollars or cents when a number is provided.
+// - Numbers >= 1,000,000 are treated as cents (already in cents)
+// - Numbers < 1,000,000 are treated as dollars
+const toCentsFlexible = (amount) => {
+    if (amount === null || amount === undefined || amount === '')
+        return 0;
+    if (typeof amount === 'string')
+        return (0, exports.safeCurrencyToCents)(amount);
+    if (typeof amount === 'number') {
+        const n = Math.round(amount);
+        return Math.abs(n) >= 1000000 ? n : (0, exports.dollarsToCents)(n);
+    }
+    return 0;
+};
+exports.toCentsFlexible = toCentsFlexible;
 // Format cents as currency string
 const formatCents = (cents) => {
     return new Intl.NumberFormat('en-US', {

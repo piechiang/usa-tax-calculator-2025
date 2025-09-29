@@ -1,4 +1,4 @@
-import type { FilingStatus } from '../rules/2025/federal/standardDeductions';
+import type { FilingStatus } from '../types';
 /**
  * Calculate regular income tax using 2025 federal tax brackets
  * Source: Rev. Proc. 2024-40

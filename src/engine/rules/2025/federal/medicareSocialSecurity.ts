@@ -1,4 +1,4 @@
-import type { FilingStatus } from './standardDeductions';
+import type { FilingStatus } from '../../../types';
 
 // Social Security wage base for 2025 (SSA)
 export const SS_WAGE_BASE_2025 = 17610000; // $176,100

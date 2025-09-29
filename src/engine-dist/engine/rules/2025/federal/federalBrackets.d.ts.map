@@ -1,1 +1,0 @@
-{"version":3,"file":"federalBrackets.d.ts","sourceRoot":"","sources":["../../../../../src/engine/rules/2025/federal/federalBrackets.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,sBAAsB,CAAC;AAIzD,MAAM,WAAW,UAAU;IACzB,GAAG,EAAE,MAAM,CAAC;IACZ,GAAG,EAAE,MAAM,CAAC;IACZ,IAAI,EAAE,MAAM,CAAC;CACd;AAED,eAAO,MAAM,qBAAqB,EAAE,MAAM,CAAC,YAAY,EAAE,UAAU,EAAE,CAqCpE,CAAC"}

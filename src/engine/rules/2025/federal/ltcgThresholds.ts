@@ -1,4 +1,4 @@
-import type { FilingStatus } from './standardDeductions';
+import type { FilingStatus } from '../../../types';
 
 // Preferential long-term capital gains / qualified dividends thresholds for 2025
 // Source: Rev. Proc. 2024-40 §2.03

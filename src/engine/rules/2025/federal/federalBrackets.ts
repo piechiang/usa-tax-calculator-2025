@@ -1,4 +1,4 @@
-import type { FilingStatus } from './standardDeductions';
+import type { FilingStatus } from '../../../types';
 
 // 2025 ordinary income tax brackets (Rev. Proc. 2024-40)
 // Ranges are inclusive of min, exclusive of max. All amounts in cents.

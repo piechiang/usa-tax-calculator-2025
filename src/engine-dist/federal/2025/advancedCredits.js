@@ -66,7 +66,8 @@ function calculateAdvancedCTC(input, agi, taxBeforeCredits) {
     let additionalChildTaxCredit = 0;
     if (remainingCredit > 0) {
         // Must have earned income of at least $2,500 to qualify for ACTC
-        const earnedIncome = (0, money_1.addCents)((0, money_1.safeCurrencyToCents)(input.income?.wages), (0, money_1.safeCurrencyToCents)(input.income?.scheduleCNet));
+        const nToCents = (v) => (0, money_1.safeCurrencyToCents)(v);
+        const earnedIncome = (0, money_1.addCents)(nToCents(input.income?.wages), nToCents(input.income?.scheduleCNet));
         if (earnedIncome >= 250000) { // $2,500 in cents
             // 15% of earned income over $2,500, up to remaining credit
             const actcFromEarnedIncome = (0, money_1.multiplyCents)((0, money_1.max0)(earnedIncome - 250000), 0.15);
@@ -141,13 +142,14 @@ function calculateAdvancedEITC(input, agi) {
         };
     }
     // Step 4: Calculate earned income (wages + self-employment)
-    const earnedIncome = (0, money_1.addCents)((0, money_1.safeCurrencyToCents)(input.income?.wages), (0, money_1.safeCurrencyToCents)(input.income?.scheduleCNet));
+    const nToCents = (v) => (0, money_1.safeCurrencyToCents)(v);
+    const earnedIncome = (0, money_1.addCents)(nToCents(input.income?.wages), nToCents(input.income?.scheduleCNet));
     // Use the smaller of AGI or earned income for EITC calculation
     const eitcIncome = Math.min(agi, earnedIncome);
     // Step 5: Calculate EITC amount based on phase
     let eitc = 0;
     let details;
-    if (eitcIncome <= plateauAmount) {
+    if (eitcIncome < plateauAmount) {
         // Phase-in: EITC = income × phase-in rate, up to maximum
         eitc = Math.min(maxCredit, (0, money_1.multiplyCents)(eitcIncome, phaseInRate));
         details = { phase: 'phase-in', rate: phaseInRate };
@@ -180,6 +182,10 @@ exports.calculateAdvancedEITC = calculateAdvancedEITC;
 function calculateAdvancedAOTC(input, agi) {
     const educationExpenses = input.educationExpenses || [];
     const details = [];
+    // Helper function to convert input values to cents
+    const convertToCents = (value) => {
+        return Math.round(value * 100); // Convert dollars to cents
+    };
     let totalCredit = 0;
     let totalEligibleExpenses = 0;
     // Step 1: Check phase-out thresholds
@@ -192,7 +198,7 @@ function calculateAdvancedAOTC(input, agi) {
             eligibleExpenses: 0,
             details: educationExpenses.map(exp => ({
                 studentName: exp.studentName,
-                expenses: exp.tuitionAndFees,
+                expenses: convertToCents(exp.tuitionAndFees) + convertToCents(exp.booksAndSupplies || 0),
                 credit: 0,
                 eligible: false,
                 reason: 'Income too high for AOTC'
@@ -201,9 +207,13 @@ function calculateAdvancedAOTC(input, agi) {
     }
     // Step 2: Calculate credit for each student
     for (const expense of educationExpenses) {
+        // Convert input values to cents based on mode
+        const tuitionAndFees = convertToCents(expense.tuitionAndFees);
+        const booksAndSupplies = convertToCents(expense.booksAndSupplies || 0);
+        const totalQualifiedExpenses = tuitionAndFees + booksAndSupplies;
         const studentDetail = {
             studentName: expense.studentName,
-            expenses: expense.tuitionAndFees,
+            expenses: totalQualifiedExpenses,
             credit: 0,
             eligible: false,
         };
@@ -220,18 +230,18 @@ function calculateAdvancedAOTC(input, agi) {
         else if (!expense.isHalfTimeStudent) {
             studentDetail.reason = 'Student not enrolled at least half-time';
         }
-        else if (expense.tuitionAndFees <= 0) {
+        else if (totalQualifiedExpenses <= 0) {
             studentDetail.reason = 'No qualified expenses';
         }
         else {
             studentDetail.eligible = true;
             // Calculate AOTC: 100% of first $2,000 + 25% of next $2,000
-            const first2k = Math.min(expense.tuitionAndFees, 200000); // $2,000 in cents
-            const next2k = Math.min((0, money_1.max0)(expense.tuitionAndFees - 200000), 200000);
+            const first2k = Math.min(totalQualifiedExpenses, 200000); // $2,000 in cents
+            const next2k = Math.min((0, money_1.max0)(totalQualifiedExpenses - 200000), 200000);
             studentDetail.credit = first2k + (0, money_1.multiplyCents)(next2k, 0.25);
             studentDetail.credit = Math.min(studentDetail.credit, credits_1.AOTC_2025.maxCredit);
             totalCredit += studentDetail.credit;
-            totalEligibleExpenses += expense.tuitionAndFees;
+            totalEligibleExpenses += totalQualifiedExpenses;
         }
         details.push(studentDetail);
     }
@@ -263,6 +273,10 @@ exports.calculateAdvancedAOTC = calculateAdvancedAOTC;
 function calculateAdvancedLLC(input, agi) {
     const educationExpenses = input.educationExpenses || [];
     const details = [];
+    // Helper function to convert input values to cents
+    const convertToCents = (value) => {
+        return Math.round(value * 100); // Convert dollars to cents
+    };
     // Step 1: Check phase-out (same as AOTC)
     const phaseOutStart = credits_1.LLC_2025.phaseOutStart[input.filingStatus] || 0;
     const phaseOutEnd = phaseOutStart + credits_1.LLC_2025.phaseOutRange;
@@ -272,7 +286,7 @@ function calculateAdvancedLLC(input, agi) {
             eligibleExpenses: 0,
             details: educationExpenses.map(exp => ({
                 studentName: exp.studentName,
-                expenses: exp.tuitionAndFees,
+                expenses: convertToCents(exp.tuitionAndFees) + convertToCents(exp.booksAndSupplies || 0),
                 eligible: false,
                 reason: 'Income too high for LLC'
             }))
@@ -281,21 +295,25 @@ function calculateAdvancedLLC(input, agi) {
     // Step 2: Calculate total eligible expenses (all students combined for LLC)
     let totalEligibleExpenses = 0;
     for (const expense of educationExpenses) {
+        // Convert input values to cents based on mode
+        const tuitionAndFees = convertToCents(expense.tuitionAndFees);
+        const booksAndSupplies = convertToCents(expense.booksAndSupplies || 0);
+        const totalQualifiedExpenses = tuitionAndFees + booksAndSupplies;
         const studentDetail = {
             studentName: expense.studentName,
-            expenses: expense.tuitionAndFees,
+            expenses: totalQualifiedExpenses,
             eligible: false,
         };
         // LLC is less restrictive than AOTC
         if (!expense.isEligibleInstitution) {
             studentDetail.reason = 'Not an eligible educational institution';
         }
-        else if (expense.tuitionAndFees <= 0) {
+        else if (totalQualifiedExpenses <= 0) {
             studentDetail.reason = 'No qualified expenses';
         }
         else {
             studentDetail.eligible = true;
-            totalEligibleExpenses += expense.tuitionAndFees;
+            totalEligibleExpenses += totalQualifiedExpenses;
         }
         details.push(studentDetail);
     }
@@ -319,7 +337,12 @@ exports.calculateAdvancedLLC = calculateAdvancedLLC;
  * Calculate age from birth date
  */
 function calculateAge(birthDate, currentYear) {
-    const birth = new Date(birthDate);
+    // Handle ISO date strings properly to avoid timezone issues
+    const parts = birthDate.split('-');
+    const birthYear = parseInt(parts[0], 10);
+    const birthMonth = parseInt(parts[1], 10) - 1; // Convert to 0-indexed
+    const birthDay = parseInt(parts[2], 10);
+    const birth = new Date(birthYear, birthMonth, birthDay);
     const age = currentYear - birth.getFullYear();
     // Adjust if birthday hasn't occurred yet this year
     const today = new Date(currentYear, 11, 31); // Dec 31 of tax year

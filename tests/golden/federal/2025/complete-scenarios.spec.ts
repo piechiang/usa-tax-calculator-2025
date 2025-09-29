@@ -185,7 +185,7 @@ describe('Federal 2025 - Complete Tax Scenarios', () => {
         primary: {},
         income: {
           scheduleCNet: $(75000), // Self-employment income
-          wages: 0),
+          wages: 0,
         },
         adjustments: {
           seTaxDeduction: $(5303), // Half of SE tax (approximately)
@@ -216,7 +216,7 @@ describe('Federal 2025 - Complete Tax Scenarios', () => {
           isBlind: true, // Blind spouse
         },
         income: {
-          wages: 45000),
+          wages: 45000,
           interest: $(3200),
         },
         payments: {
@@ -256,7 +256,7 @@ describe('Federal 2025 - Complete Tax Scenarios', () => {
         filingStatus: 'single',
         primary: {},
         income: {
-          wages: 50000),
+          wages: 50000,
           capGains: $(-20000), // Capital loss
         },
         payments: {

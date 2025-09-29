@@ -36,7 +36,7 @@ function computeEITC2025(input) {
     let credit = 0;
     let phase = 'zero';
     // Step 2: Calculate credit based on phase
-    if (earnedIncome <= row.earnedIncomeAmount) {
+    if (earnedIncome < row.earnedIncomeAmount) {
         // Phase-in: Credit grows linearly to maximum
         if (earnedIncome > 0) {
             credit = Math.round(row.maxCredit * (earnedIncome / row.earnedIncomeAmount));

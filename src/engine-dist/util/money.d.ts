@@ -12,5 +12,6 @@ export declare const percentOf: (amount: number, percentage: number) => number;
 export declare const roundToCents: (amount: number) => number;
 export declare const isValidCurrency: (amount: any) => boolean;
 export declare const safeCurrencyToCents: (amount: any) => number;
+export declare const toCentsFlexible: (amount: any) => number;
 export declare const formatCents: (cents: number) => string;
 //# sourceMappingURL=money.d.ts.map

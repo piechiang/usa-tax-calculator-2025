@@ -35,10 +35,11 @@ describe('Federal 2025 - Basic Golden Tests', () => {
 
   describe('Standard deductions validation', () => {
     it('should have correct standard deduction amounts', () => {
-      expect(STANDARD_DEDUCTION_2025.single).toBe($(15750));
-      expect(STANDARD_DEDUCTION_2025.marriedJointly).toBe($(31500));
-      expect(STANDARD_DEDUCTION_2025.marriedSeparately).toBe($(15750));
-      expect(STANDARD_DEDUCTION_2025.headOfHousehold).toBe($(23625));
+      // Updated to match IRS Rev. Proc. 2024-40 official 2025 amounts
+      expect(STANDARD_DEDUCTION_2025.single).toBe($(15000));
+      expect(STANDARD_DEDUCTION_2025.marriedJointly).toBe($(30000));
+      expect(STANDARD_DEDUCTION_2025.marriedSeparately).toBe($(15000));
+      expect(STANDARD_DEDUCTION_2025.headOfHousehold).toBe($(22500));
     });
 
     it('should have MFJ deduction equal to 2x single', () => {

@@ -1,4 +1,4 @@
-import type { FilingStatus } from '../rules/2025/federal/standardDeductions';
+import type { FilingStatus } from '../types';
 import { 
   EITC_2025, 
   EITC_INVESTMENT_INCOME_LIMIT_2025, 

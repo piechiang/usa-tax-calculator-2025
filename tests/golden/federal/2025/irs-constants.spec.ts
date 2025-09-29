@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STANDARD_DEDUCTION_2025 } from '../../../../src/engine/rules/2025/federal/standardDeductions';
+import { STANDARD_DEDUCTION_2025 } from '../../../../src/engine/rules/2025/federal/deductions';
 import { FEDERAL_BRACKETS_2025 } from '../../../../src/engine/rules/2025/federal/federalBrackets';
 import { EITC_2025, EITC_INVESTMENT_INCOME_LIMIT_2025 } from '../../../../src/engine/rules/2025/federal/eitc';
 import { SS_WAGE_BASE_2025, ADDL_MEDICARE_THRESHOLDS_2025 } from '../../../../src/engine/rules/2025/federal/medicareSocialSecurity';

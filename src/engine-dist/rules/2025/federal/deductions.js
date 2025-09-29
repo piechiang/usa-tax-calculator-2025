@@ -3,11 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ITEMIZED_DEDUCTION_PHASEOUT_2025 = exports.PERSONAL_EXEMPTION_2025 = exports.CHARITABLE_DEDUCTION_LIMITS = exports.MEDICAL_EXPENSE_AGI_THRESHOLD = exports.SALT_CAP_2025 = exports.ADDITIONAL_STANDARD_DEDUCTION_2025 = exports.STANDARD_DEDUCTION_2025 = void 0;
 const money_1 = require("../../../util/money");
 // Standard deductions for 2025 (converted to cents)
+// Source: IRS Rev. Proc. 2024-40, aligned with official 2025 amounts
 exports.STANDARD_DEDUCTION_2025 = {
-    single: (0, money_1.dollarsToCents)(15750),
-    marriedJointly: (0, money_1.dollarsToCents)(31500),
-    marriedSeparately: (0, money_1.dollarsToCents)(15750),
-    headOfHousehold: (0, money_1.dollarsToCents)(23625),
+    single: (0, money_1.dollarsToCents)(15000),
+    marriedJointly: (0, money_1.dollarsToCents)(30000),
+    marriedSeparately: (0, money_1.dollarsToCents)(15000),
+    headOfHousehold: (0, money_1.dollarsToCents)(22500),
 };
 // Additional standard deduction amounts for 2025
 exports.ADDITIONAL_STANDARD_DEDUCTION_2025 = {

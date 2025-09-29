@@ -43,13 +43,13 @@ describe('Long-Term Capital Gains 2025 Calculations', () => {
       });
 
       // All ordinary income uses up 0% capacity
-      // $500,050 at 15% (from $96,700 to $600,050 threshold)  
+      // $500,050 at 15% (15% capacity: $600,050 - $100,000 ordinary = $500,050)
       // $99,950 at 20% (remaining)
       expect(result.at0Percent).toBe(0);
-      expect(result.at15Percent).toBe($(503350)); // $600,050 - $96,700 = $503,350
-      expect(result.at20Percent).toBe($(96650));  // $600,000 - $503,350 = $96,650
+      expect(result.at15Percent).toBe($(500050)); // $600,050 - $100,000 = $500,050
+      expect(result.at20Percent).toBe($(99950));  // $600,000 - $500,050 = $99,950
       
-      const expectedTax = $(503350) * 0.15 + $(96650) * 0.20;
+      const expectedTax = $(500050) * 0.15 + $(99950) * 0.20;
       expect(result.preferentialTax).toBe(Math.round(expectedTax));
     });
   });

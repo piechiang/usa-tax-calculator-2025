@@ -1,4 +1,4 @@
-import type { FilingStatus } from './standardDeductions';
+import type { FilingStatus } from '../../../types';
 export interface TaxBracket {
     min: number;
     max: number;

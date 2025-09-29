@@ -1,4 +1,4 @@
-import type { FilingStatus } from '../rules/2025/federal/standardDeductions';
+import type { FilingStatus } from '../types';
 import { type EITCQualifyingChildren } from '../rules/2025/federal/eitc';
 export interface EITCInput {
     filingStatus: FilingStatus;

@@ -1,4 +1,4 @@
-import type { FilingStatus } from './standardDeductions';
+import type { FilingStatus } from '../../../types';
 export declare const SS_WAGE_BASE_2025 = 17610000;
 export declare const ADDL_MEDICARE_THRESHOLDS_2025: Record<FilingStatus, number>;
 export declare const NIIT_THRESHOLDS_2025: Record<FilingStatus, number>;
