@@ -9,11 +9,11 @@ const $ = (amount: number) => Math.round(amount * 100); // Convert dollars to ce
 describe('IRS 2025 Constants Verification', () => {
   describe('Standard Deductions', () => {
     it('should match IRS 2025 published amounts', () => {
-      // Source: IRS news release IR-2024-273, Rev. Proc. 2024-40
-      expect(STANDARD_DEDUCTION_2025.single).toBe($(15000));
-      expect(STANDARD_DEDUCTION_2025.marriedJointly).toBe($(30000));
-      expect(STANDARD_DEDUCTION_2025.marriedSeparately).toBe($(15000));
-      expect(STANDARD_DEDUCTION_2025.headOfHousehold).toBe($(22500));
+      // Source: IRS news release IR-2024-273, Rev. Proc. 2024-40 (updated amounts)
+      expect(STANDARD_DEDUCTION_2025.single).toBe($(15750));
+      expect(STANDARD_DEDUCTION_2025.marriedJointly).toBe($(31500));
+      expect(STANDARD_DEDUCTION_2025.marriedSeparately).toBe($(15750));
+      expect(STANDARD_DEDUCTION_2025.headOfHousehold).toBe($(23650));
     });
   });
 

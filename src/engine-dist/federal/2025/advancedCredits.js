@@ -182,10 +182,6 @@ exports.calculateAdvancedEITC = calculateAdvancedEITC;
 function calculateAdvancedAOTC(input, agi) {
     const educationExpenses = input.educationExpenses || [];
     const details = [];
-    // Helper function to convert input values to cents
-    const convertToCents = (value) => {
-        return Math.round(value * 100); // Convert dollars to cents
-    };
     let totalCredit = 0;
     let totalEligibleExpenses = 0;
     // Step 1: Check phase-out thresholds
@@ -198,7 +194,7 @@ function calculateAdvancedAOTC(input, agi) {
             eligibleExpenses: 0,
             details: educationExpenses.map(exp => ({
                 studentName: exp.studentName,
-                expenses: convertToCents(exp.tuitionAndFees) + convertToCents(exp.booksAndSupplies || 0),
+                expenses: exp.tuitionAndFees + (exp.booksAndSupplies || 0),
                 credit: 0,
                 eligible: false,
                 reason: 'Income too high for AOTC'
@@ -207,9 +203,9 @@ function calculateAdvancedAOTC(input, agi) {
     }
     // Step 2: Calculate credit for each student
     for (const expense of educationExpenses) {
-        // Convert input values to cents based on mode
-        const tuitionAndFees = convertToCents(expense.tuitionAndFees);
-        const booksAndSupplies = convertToCents(expense.booksAndSupplies || 0);
+        // Input values are already in cents
+        const tuitionAndFees = expense.tuitionAndFees;
+        const booksAndSupplies = expense.booksAndSupplies || 0;
         const totalQualifiedExpenses = tuitionAndFees + booksAndSupplies;
         const studentDetail = {
             studentName: expense.studentName,
@@ -273,10 +269,6 @@ exports.calculateAdvancedAOTC = calculateAdvancedAOTC;
 function calculateAdvancedLLC(input, agi) {
     const educationExpenses = input.educationExpenses || [];
     const details = [];
-    // Helper function to convert input values to cents
-    const convertToCents = (value) => {
-        return Math.round(value * 100); // Convert dollars to cents
-    };
     // Step 1: Check phase-out (same as AOTC)
     const phaseOutStart = credits_1.LLC_2025.phaseOutStart[input.filingStatus] || 0;
     const phaseOutEnd = phaseOutStart + credits_1.LLC_2025.phaseOutRange;
@@ -286,7 +278,7 @@ function calculateAdvancedLLC(input, agi) {
             eligibleExpenses: 0,
             details: educationExpenses.map(exp => ({
                 studentName: exp.studentName,
-                expenses: convertToCents(exp.tuitionAndFees) + convertToCents(exp.booksAndSupplies || 0),
+                expenses: exp.tuitionAndFees + (exp.booksAndSupplies || 0),
                 eligible: false,
                 reason: 'Income too high for LLC'
             }))
@@ -295,9 +287,9 @@ function calculateAdvancedLLC(input, agi) {
     // Step 2: Calculate total eligible expenses (all students combined for LLC)
     let totalEligibleExpenses = 0;
     for (const expense of educationExpenses) {
-        // Convert input values to cents based on mode
-        const tuitionAndFees = convertToCents(expense.tuitionAndFees);
-        const booksAndSupplies = convertToCents(expense.booksAndSupplies || 0);
+        // Input values are already in cents
+        const tuitionAndFees = expense.tuitionAndFees;
+        const booksAndSupplies = expense.booksAndSupplies || 0;
         const totalQualifiedExpenses = tuitionAndFees + booksAndSupplies;
         const studentDetail = {
             studentName: expense.studentName,
@@ -339,9 +331,9 @@ exports.calculateAdvancedLLC = calculateAdvancedLLC;
 function calculateAge(birthDate, currentYear) {
     // Handle ISO date strings properly to avoid timezone issues
     const parts = birthDate.split('-');
-    const birthYear = parseInt(parts[0], 10);
-    const birthMonth = parseInt(parts[1], 10) - 1; // Convert to 0-indexed
-    const birthDay = parseInt(parts[2], 10);
+    const birthYear = parseInt(parts[0] || '0', 10);
+    const birthMonth = parseInt(parts[1] || '1', 10) - 1; // Convert to 0-indexed
+    const birthDay = parseInt(parts[2] || '1', 10);
     const birth = new Date(birthYear, birthMonth, birthDay);
     const age = currentYear - birth.getFullYear();
     // Adjust if birthday hasn't occurred yet this year

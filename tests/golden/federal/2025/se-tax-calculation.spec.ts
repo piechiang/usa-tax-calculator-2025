@@ -35,22 +35,22 @@ describe('Self-Employment Tax 2025 Calculations', () => {
     it('should cap OASDI at Social Security wage base', () => {
       const result = computeSETax2025({
         filingStatus: 'single',
-        seNetProfit: $(200000), // Well above SS wage base
+        seNetProfit: $(220000), // Above SS wage base and above Additional Medicare threshold
         w2SocialSecurityWages: 0,
         w2MedicareWages: 0
       });
 
-      const nese = Math.round($(200000) * 0.9235); // $184,700
+      const nese = Math.round($(220000) * 0.9235); // $203,170
       expect(result.netEarningsFromSE).toBe(nese);
 
       // OASDI should be capped at SS wage base
       const maxOASDI = Math.round(SS_WAGE_BASE_2025 * 0.124);
       expect(result.oasdi).toBe(maxOASDI);
-      
+
       // Medicare has no cap
       expect(result.medicare).toBe(Math.round(nese * 0.029));
-      
-      // Should trigger additional Medicare tax (over $200k)
+
+      // Should trigger additional Medicare tax (nese $203,170 > $200k threshold)
       expect(result.additionalMedicare).toBeGreaterThan(0);
     });
   });

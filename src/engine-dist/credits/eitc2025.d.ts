@@ -6,6 +6,8 @@ export interface EITCInput {
     agi: number;
     qualifyingChildren: EITCQualifyingChildren;
     investmentIncome: number;
+    primaryAge?: number;
+    spouseAge?: number;
 }
 export interface EITCResult {
     eitc: number;

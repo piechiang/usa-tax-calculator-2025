@@ -20,12 +20,12 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         isMaryland: true,
         county: 'Montgomery',
         income: {
-          wages: $(75000),
-          interest: $(500),
+          wages: 75000, // In dollars
+          interest: 500,
         },
         payments: {
-          federalWithheld: $(9000),
-          stateWithheld: $(3500),
+          federalWithheld: 9000,
+          stateWithheld: 3500,
         },
       };
 
@@ -54,14 +54,14 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         isMaryland: true,
         county: 'Baltimore City',
         income: {
-          wages: $(125000),
+          wages: 125000, // In dollars
           dividends: {
-            ordinary: $(2000),
+            ordinary: 2000,
           },
         },
         payments: {
-          federalWithheld: $(15000),
-          stateWithheld: $(6000),
+          federalWithheld: 15000,
+          stateWithheld: 6000,
         },
       };
 
@@ -85,11 +85,11 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         isMaryland: true,
         county: 'Anne Arundel',
         income: {
-          wages: $(28000), // Low income eligible for EITC
+          wages: 28000, // Low income eligible for EITC (in dollars)
         },
         payments: {
-          federalWithheld: $(1500),
-          stateWithheld: $(800),
+          federalWithheld: 1500,
+          stateWithheld: 800,
         },
       };
 
@@ -117,12 +117,12 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         isMaryland: true,
         county: 'Howard',
         income: {
-          wages: $(25000),
+          wages: 25000, // In dollars
           // In a full implementation, would have pension income field
         },
         payments: {
-          federalWithheld: $(2000),
-          stateWithheld: $(1200),
+          federalWithheld: 2000,
+          stateWithheld: 1200,
         },
       };
 
@@ -140,11 +140,11 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         isMaryland: true,
         county: 'Garrett',
         income: {
-          wages: $(12000), // Very low income
+          wages: 12000, // Very low income (in dollars)
         },
         payments: {
-          federalWithheld: $(500),
-          stateWithheld: $(200),
+          federalWithheld: 500,
+          stateWithheld: 200,
         },
       };
 
@@ -164,11 +164,11 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         primary: {},
         isMaryland: true,
         income: {
-          wages: $(60000),
+          wages: 60000, // In dollars
         },
         payments: {
-          federalWithheld: $(7000),
-          stateWithheld: $(2500),
+          federalWithheld: 7000,
+          stateWithheld: 2500,
         },
       };
 
@@ -208,11 +208,11 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         isMaryland: true,
         county: 'UnknownCounty',
         income: {
-          wages: $(50000),
+          wages: 50000, // In dollars
         },
         payments: {
-          federalWithheld: $(6000),
-          stateWithheld: $(2000),
+          federalWithheld: 6000,
+          stateWithheld: 2000,
         },
       };
 
@@ -237,16 +237,16 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         isMaryland: true,
         county: 'Frederick',
         income: {
-          wages: $(180000),
+          wages: 180000, // In dollars
         },
         itemized: {
-          stateLocalTaxes: $(25000), // Above federal cap
-          mortgageInterest: $(20000),
-          charitable: $(8000),
+          stateLocalTaxes: 25000, // Above federal cap
+          mortgageInterest: 20000,
+          charitable: 8000,
         },
         payments: {
-          federalWithheld: $(25000),
-          stateWithheld: $(9000),
+          federalWithheld: 25000,
+          stateWithheld: 9000,
         },
       };
 
@@ -310,18 +310,18 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         isMaryland: true,
         county: 'Carroll',
         income: {
-          wages: $(95000),
-          interest: $(1200),
+          wages: 95000, // In dollars
+          interest: 1200,
           k1: {
-            ordinaryBusinessIncome: $(8000),
+            ordinaryBusinessIncome: 8000,
           },
         },
         adjustments: {
-          iraDeduction: $(6000),
+          iraDeduction: 6000,
         },
         payments: {
-          federalWithheld: $(11000),
-          stateWithheld: $(4500),
+          federalWithheld: 11000,
+          stateWithheld: 4500,
         },
       };
 

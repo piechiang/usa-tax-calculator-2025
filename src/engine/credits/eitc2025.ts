@@ -5,12 +5,14 @@ import {
   type EITCQualifyingChildren 
 } from '../rules/2025/federal/eitc';
 
-export interface EITCInput { 
-  filingStatus: FilingStatus; 
+export interface EITCInput {
+  filingStatus: FilingStatus;
   earnedIncome: number;                 // W-2 wages + SE net earnings - cents
   agi: number;                         // Adjusted Gross Income - cents
-  qualifyingChildren: EITCQualifyingChildren; 
+  qualifyingChildren: EITCQualifyingChildren;
   investmentIncome: number;            // Interest, dividends, cap gains, etc. - cents
+  primaryAge?: number;                 // Age of primary taxpayer (optional, for childless EITC)
+  spouseAge?: number;                  // Age of spouse (optional, for MFJ childless EITC)
 }
 
 export interface EITCResult {
@@ -31,7 +33,7 @@ export interface EITCResult {
  * Source: Rev. Proc. 2024-40 §2.06, IRS Publication 596
  */
 export function computeEITC2025(input: EITCInput): EITCResult {
-  const { filingStatus, earnedIncome, agi, qualifyingChildren, investmentIncome } = input;
+  const { filingStatus, earnedIncome, agi, qualifyingChildren, investmentIncome, primaryAge, spouseAge } = input;
 
   // Step 1: Investment income test - disqualifies if over limit
   if (investmentIncome > EITC_INVESTMENT_INCOME_LIMIT_2025) {
@@ -46,6 +48,50 @@ export function computeEITC2025(input: EITCInput): EITCResult {
         completePhaseoutPoint: 0
       }
     };
+  }
+
+  // Step 2: Age test for childless taxpayers (must be 25-64)
+  // IRS Pub 596: Without qualifying children, must be at least 25 but under 65
+  if (qualifyingChildren === 0) {
+    const ageCheckFailed = (age: number | undefined) => {
+      return age !== undefined && (age < 25 || age >= 65);
+    };
+
+    if (filingStatus === 'marriedJointly') {
+      // For MFJ, at least one spouse must meet age requirement
+      const primaryFails = ageCheckFailed(primaryAge);
+      const spouseFails = ageCheckFailed(spouseAge);
+
+      // If both fail or both are undefined, disqualify
+      if ((primaryFails && spouseFails) || (primaryAge === undefined && spouseAge === undefined)) {
+        return {
+          eitc: 0,
+          disqualified: true,
+          phase: 'zero',
+          details: {
+            maxCredit: 0,
+            incomeUsedForCalculation: 0,
+            thresholdUsed: 0,
+            completePhaseoutPoint: 0
+          }
+        };
+      }
+    } else {
+      // For other filing statuses, primary must meet age requirement
+      if (ageCheckFailed(primaryAge)) {
+        return {
+          eitc: 0,
+          disqualified: true,
+          phase: 'zero',
+          details: {
+            maxCredit: 0,
+            incomeUsedForCalculation: 0,
+            thresholdUsed: 0,
+            completePhaseoutPoint: 0
+          }
+        };
+      }
+    }
   }
 
   const row = EITC_2025[qualifyingChildren];

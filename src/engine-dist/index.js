@@ -33,9 +33,9 @@ Object.defineProperty(exports, "AOTC_2025", { enumerable: true, get: function ()
 Object.defineProperty(exports, "LLC_2025", { enumerable: true, get: function () { return credits_1.LLC_2025; } });
 var md_1 = require("./rules/2025/states/md");
 Object.defineProperty(exports, "MD_RULES_2025", { enumerable: true, get: function () { return md_1.MD_RULES_2025; } });
-// Calculator exports - using v2 as main implementation
-var computeFederal2025_v2_1 = require("./federal/2025/computeFederal2025_v2");
-Object.defineProperty(exports, "computeFederal2025", { enumerable: true, get: function () { return computeFederal2025_v2_1.computeFederal2025; } });
+// Calculator exports
+var computeFederal2025_1 = require("./federal/2025/computeFederal2025");
+Object.defineProperty(exports, "computeFederal2025", { enumerable: true, get: function () { return computeFederal2025_1.computeFederal2025; } });
 var computeMD2025_1 = require("./states/md/2025/computeMD2025");
 Object.defineProperty(exports, "computeMD2025", { enumerable: true, get: function () { return computeMD2025_1.computeMD2025; } });
 Object.defineProperty(exports, "isMarylandResident", { enumerable: true, get: function () { return computeMD2025_1.isMarylandResident; } });

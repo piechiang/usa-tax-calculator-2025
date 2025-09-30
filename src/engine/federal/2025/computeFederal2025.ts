@@ -174,23 +174,31 @@ function calculateDeductions(input: TaxPayerInput, agi: number): {
 } {
   // Calculate standard deduction with age/blindness adjustments
   let standardDeduction = STANDARD_DEDUCTION_2025[input.filingStatus];
-  
+
+  const TAX_YEAR = 2025;
+
+  // Helper to calculate age at end of tax year
+  const calculateAge = (birthDate: string): number => {
+    const parts = birthDate.split('-');
+    const birthYear = parseInt(parts[0] || '0', 10);
+    return TAX_YEAR - birthYear;
+  };
+
   // Additional standard deduction for age 65+ and/or blindness
-  if (input.primary?.birthDate || input.primary?.isBlind) {
+  if (input.primary) {
     if (input.primary.isBlind) {
       standardDeduction += ADDITIONAL_STANDARD_DEDUCTION_2025.blind;
     }
-    // Add age calculation here when needed (currently using simplified approach)
-    if (input.primary.birthDate) {
+    if (input.primary.birthDate && calculateAge(input.primary.birthDate) >= 65) {
       standardDeduction += ADDITIONAL_STANDARD_DEDUCTION_2025.age65OrOlder;
     }
   }
 
-  if (input.spouse?.birthDate || input.spouse?.isBlind) {
+  if (input.spouse) {
     if (input.spouse.isBlind) {
       standardDeduction += ADDITIONAL_STANDARD_DEDUCTION_2025.blind;
     }
-    if (input.spouse.birthDate) {
+    if (input.spouse.birthDate && calculateAge(input.spouse.birthDate) >= 65) {
       standardDeduction += ADDITIONAL_STANDARD_DEDUCTION_2025.age65OrOlder;
     }
   }
@@ -332,13 +340,27 @@ function calculateCredits(
   } else if (input.dependents) {
     qualifyingChildrenCount = Math.min(3, input.dependents) as 0 | 1 | 2 | 3;
   }
-  
+
+  // Calculate ages for EITC eligibility (childless taxpayers need age 25-64)
+  const TAX_YEAR = 2025;
+  const calculateAge = (birthDate: string | undefined): number | undefined => {
+    if (!birthDate) return undefined;
+    const parts = birthDate.split('-');
+    const birthYear = parseInt(parts[0] || '0', 10);
+    return TAX_YEAR - birthYear;
+  };
+
+  const primaryAge = calculateAge(input.primary?.birthDate);
+  const spouseAge = calculateAge(input.spouse?.birthDate);
+
   const eitcResult = computeEITC2025({
     filingStatus: input.filingStatus,
     earnedIncome,
     agi,
     qualifyingChildren: qualifyingChildrenCount,
-    investmentIncome
+    investmentIncome,
+    ...(primaryAge !== undefined && { primaryAge }),
+    ...(spouseAge !== undefined && { spouseAge })
   });
   
   // Child Tax Credit using existing advanced logic
