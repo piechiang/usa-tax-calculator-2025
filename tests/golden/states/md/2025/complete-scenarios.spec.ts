@@ -1,20 +1,65 @@
 import { describe, it, expect } from 'vitest';
-import { 
+import {
   computeFederal2025,
   computeMD2025,
-  isMarylandResident,
   getMarylandCounties,
   getMDLocalRate,
-  dollarsToCents 
+  dollarsToCents
 } from '../../../../../src/engine';
-import type { TaxPayerInput } from '../../../../../src/engine/types';
+import type { StateTaxInput } from '../../../../../src/engine/types/stateTax';
+import { buildFederalInput } from '../../../../helpers/buildFederalInput';
 
 const $ = dollarsToCents;
+
+// Helper to convert test inputs into StateTaxInput structures
+function createMDInput(partialInput: any, county?: string): StateTaxInput {
+  // Use buildFederalInput to ensure all required fields are present
+  const taxpayerInput = buildFederalInput({
+    filingStatus: partialInput.filingStatus,
+    primary: partialInput.primary || {},
+    spouse: partialInput.spouse,
+    dependents: partialInput.dependents || 0,
+    qualifyingChildren: partialInput.qualifyingChildren || [],
+    income: partialInput.income || {},
+    payments: partialInput.payments || {},
+    itemized: partialInput.itemized,
+    adjustments: partialInput.adjustments
+  });
+
+  const federalResult = computeFederal2025(taxpayerInput);
+
+  const stateItemized =
+    taxpayerInput.itemized &&
+    (taxpayerInput.itemized.medical ||
+      taxpayerInput.itemized.stateLocalTaxes ||
+      taxpayerInput.itemized.mortgageInterest ||
+      taxpayerInput.itemized.charitable ||
+      taxpayerInput.itemized.other)
+      ? {
+          medicalExpenses: taxpayerInput.itemized.medical,
+          propertyTaxes: taxpayerInput.itemized.stateLocalTaxes,
+          mortgageInterest: taxpayerInput.itemized.mortgageInterest,
+          charitableContributions: taxpayerInput.itemized.charitable,
+          other: taxpayerInput.itemized.other,
+        }
+      : undefined;
+
+  return {
+    federalResult,
+    state: 'MD',
+    county: county || partialInput.county,
+    filingStatus: taxpayerInput.filingStatus,
+    stateWithheld: $(partialInput.payments?.stateWithheld || 0),
+    stateEstPayments: 0,
+    stateDependents: taxpayerInput.dependents,
+    stateItemized,
+  };
+}
 
 describe('Maryland 2025 - Complete Tax Scenarios', () => {
   describe('Basic Maryland calculations', () => {
     it('should calculate MD tax for single filer in Montgomery County', () => {
-      const input: TaxPayerInput = {
+      const input = {
         filingStatus: 'single',
         primary: {},
         isMaryland: true,
@@ -29,13 +74,13 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         },
       };
 
-      const federalResult = computeFederal2025(input);
-      const mdResult = computeMD2025(input, federalResult);
+      const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
 
       expect(mdResult.state).toBe('MD');
-      expect(mdResult.year).toBe(2025);
-      expect(mdResult.agiState).toBe(federalResult.agi);
-      expect(mdResult.taxableIncomeState).toBeGreaterThan(0);
+      expect(mdResult.taxYear).toBe(2025);
+      expect(mdResult.stateAGI).toBe(mdInput.federalResult.agi);
+      expect(mdResult.stateTaxableIncome).toBeGreaterThan(0);
       expect(mdResult.stateTax).toBeGreaterThan(0);
       expect(mdResult.localTax).toBeGreaterThan(0);
       expect(mdResult.totalStateLiability).toBe(mdResult.stateTax + (mdResult.localTax || 0));
@@ -43,7 +88,7 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
     });
 
     it('should calculate MD tax for married couple in Baltimore City', () => {
-      const input: TaxPayerInput = {
+      const input = {
         filingStatus: 'marriedJointly',
         primary: {},
         spouse: {
@@ -65,11 +110,11 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         },
       };
 
-      const federalResult = computeFederal2025(input);
-      const mdResult = computeMD2025(input, federalResult);
+      const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
 
-      expect(mdResult.agiState).toBe($(127000));
-      expect(mdResult.taxableIncomeState).toBeGreaterThan($(80000)); // After deductions/exemptions
+      expect(mdResult.stateAGI).toBe($(127000));
+      expect(mdResult.stateTaxableIncome).toBeGreaterThan($(80000)); // After deductions/exemptions
       expect(mdResult.stateTax).toBeGreaterThan($(3000));
       expect(mdResult.localTax).toBeGreaterThan($(2000)); // Baltimore City rate
       expect(mdResult.totalStateLiability).toBeGreaterThan($(5000));
@@ -78,7 +123,7 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
 
   describe('Maryland-specific features', () => {
     it('should apply MD EITC as 28% of federal EITC', () => {
-      const input: TaxPayerInput = {
+      const input = {
         filingStatus: 'headOfHousehold',
         primary: {},
         dependents: 1,
@@ -93,20 +138,20 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         },
       };
 
-      const federalResult = computeFederal2025(input);
-      const mdResult = computeMD2025(input, federalResult);
+      const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
 
-      if (federalResult.credits.eitc && federalResult.credits.eitc > 0) {
-        const expectedMDEITC = Math.round(federalResult.credits.eitc * 0.28);
+      if (mdInput.federalResult.credits.eitc && mdInput.federalResult.credits.eitc > 0) {
+        const expectedMDEITC = Math.round(mdInput.federalResult.credits.eitc * 0.28);
         // MD EITC should reduce state tax liability
         expect(mdResult.stateTax).toBeLessThan(
-          mdResult.taxableIncomeState * 0.05 // Without EITC would be higher
+          mdResult.stateTaxableIncome * 0.05 // Without EITC would be higher
         );
       }
     });
 
     it('should handle Maryland pension exclusion for seniors', () => {
-      const input: TaxPayerInput = {
+      const input = {
         filingStatus: 'marriedJointly',
         primary: {
           birthDate: '1958-01-01', // Age 67 in 2025
@@ -126,15 +171,15 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         },
       };
 
-      const federalResult = computeFederal2025(input);
-      const mdResult = computeMD2025(input, federalResult);
+      const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
 
       // Should have lower MD AGI if pension exclusion applied
-      expect(mdResult.agiState).toBeLessThanOrEqual(federalResult.agi);
+      expect(mdResult.stateAGI).toBeLessThanOrEqual(mdInput.federalResult.agi);
     });
 
     it('should handle poverty level exemption', () => {
-      const input: TaxPayerInput = {
+      const input = {
         filingStatus: 'single',
         primary: {},
         isMaryland: true,
@@ -148,8 +193,8 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         },
       };
 
-      const federalResult = computeFederal2025(input);
-      const mdResult = computeMD2025(input, federalResult);
+      const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
 
       // Should have minimal or zero MD tax due to poverty exemption
       expect(mdResult.stateTax).toBeLessThan($(500));
@@ -159,7 +204,7 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
 
   describe('County-specific local tax rates', () => {
     it('should apply correct local tax rates by county', () => {
-      const baseInput: TaxPayerInput = {
+      const baseInput = {
         filingStatus: 'single',
         primary: {},
         isMaryland: true,
@@ -178,8 +223,8 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
 
       counties.forEach(county => {
         const input = { ...baseInput, county };
-        const federalResult = computeFederal2025(input);
-        const mdResult = computeMD2025(input, federalResult);
+        const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
         const rate = getMDLocalRate(county);
 
         results.push({
@@ -202,7 +247,7 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
     });
 
     it('should use default rate for unknown county', () => {
-      const input: TaxPayerInput = {
+      const input = {
         filingStatus: 'single',
         primary: {},
         isMaryland: true,
@@ -216,18 +261,18 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         },
       };
 
-      const federalResult = computeFederal2025(input);
-      const mdResult = computeMD2025(input, federalResult);
+      const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
 
       // Should use default rate (3.2%)
-      const expectedLocalTax = Math.round(mdResult.taxableIncomeState * 0.032);
+      const expectedLocalTax = Math.round(mdResult.stateTaxableIncome * 0.032);
       expect(mdResult.localTax).toBeCloseTo(expectedLocalTax, -2); // Within $1
     });
   });
 
   describe('Maryland itemized deductions', () => {
     it('should allow full SALT deduction (no federal cap)', () => {
-      const input: TaxPayerInput = {
+      const input = {
         filingStatus: 'marriedJointly',
         primary: {},
         spouse: {
@@ -250,35 +295,16 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         },
       };
 
-      const federalResult = computeFederal2025(input);
-      const mdResult = computeMD2025(input, federalResult);
+      const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
 
       // Federal should cap SALT at $10k, but MD allows full amount
       // This would show in lower MD taxable income vs federal
-      expect(mdResult.taxableIncomeState).toBeLessThan(federalResult.taxableIncome);
+      expect(mdResult.stateTaxableIncome).toBeLessThan(mdInput.federalResult.taxableIncome);
     });
   });
 
   describe('Utility functions', () => {
-    it('should correctly identify Maryland residents', () => {
-      const mdResident: TaxPayerInput = {
-        filingStatus: 'single',
-        primary: {},
-        isMaryland: true,
-        income: {},
-      };
-
-      const nonResident: TaxPayerInput = {
-        filingStatus: 'single',
-        primary: {},
-        state: 'VA',
-        income: {},
-      };
-
-      expect(isMarylandResident(mdResident)).toBe(true);
-      expect(isMarylandResident(nonResident)).toBe(false);
-    });
-
     it('should return all Maryland counties', () => {
       const counties = getMarylandCounties();
       
@@ -299,7 +325,7 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
 
   describe('Integration with federal calculations', () => {
     it('should properly integrate federal and state calculations', () => {
-      const input: TaxPayerInput = {
+      const input = {
         filingStatus: 'marriedJointly',
         primary: {},
         spouse: {
@@ -325,12 +351,12 @@ describe('Maryland 2025 - Complete Tax Scenarios', () => {
         },
       };
 
-      const federalResult = computeFederal2025(input);
-      const mdResult = computeMD2025(input, federalResult);
+      const mdInput = createMDInput(input);
+      const mdResult = computeMD2025(mdInput);
 
       // Verify consistency
-      expect(mdResult.agiState).toBe(federalResult.agi);
-      expect(mdResult.year).toBe(2025);
+      expect(mdResult.stateAGI).toBe(mdInput.federalResult.agi);
+      expect(mdResult.taxYear).toBe(2025);
       expect(mdResult.state).toBe('MD');
 
       // Verify reasonable tax amounts

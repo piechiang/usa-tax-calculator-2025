@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calculator, TrendingUp, TrendingDown, DollarSign, Clock, Zap, AlertCircle } from 'lucide-react';
 
+type NumericTaxSnapshot = Partial<Record<string, number>>;
+
 interface RealTimeTaxDisplayProps {
-  taxResult: any;
-  previousTaxResult: any;
+  taxResult: NumericTaxSnapshot;
+  previousTaxResult: NumericTaxSnapshot;
   isCalculating: boolean;
   lastCalculated: Date | null;
-  t: (key: string) => string;
 }
 
 interface TaxChangeIndicator {
@@ -22,49 +23,57 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
   taxResult,
   previousTaxResult,
   isCalculating,
-  lastCalculated,
-  t
+  lastCalculated
 }) => {
   const [changes, setChanges] = useState<TaxChangeIndicator[]>([]);
   const [animationTrigger, setAnimationTrigger] = useState(0);
-  const previousResultRef = useRef(previousTaxResult);
+  const previousResultRef = useRef<NumericTaxSnapshot | null>(previousTaxResult);
 
   useEffect(() => {
-    if (previousResultRef.current && taxResult) {
-      const newChanges: TaxChangeIndicator[] = [];
+    previousResultRef.current = previousTaxResult;
+  }, [previousTaxResult]);
 
-      const fieldsToTrack = [
-        { key: 'federalTax', label: 'Federal Tax' },
-        { key: 'totalTax', label: 'Total Tax' },
-        { key: 'effectiveRate', label: 'Effective Rate' },
-        { key: 'marginalRate', label: 'Marginal Rate' },
-        { key: 'taxableIncome', label: 'Taxable Income' },
-        { key: 'adjustedGrossIncome', label: 'Adjusted Gross Income' }
-      ];
-
-      fieldsToTrack.forEach(({ key, label }) => {
-        const current = taxResult[key] || 0;
-        const previous = previousResultRef.current[key] || 0;
-
-        if (current !== previous && previous !== 0) {
-          const change = current - previous;
-          const changePercent = (change / previous) * 100;
-
-          newChanges.push({
-            field: label,
-            currentValue: current,
-            previousValue: previous,
-            change,
-            changePercent,
-            isIncrease: change > 0
-          });
-        }
-      });
-
-      setChanges(newChanges);
-      setAnimationTrigger(prev => prev + 1);
+  useEffect(() => {
+    if (!taxResult) {
+      setChanges([]);
+      return;
     }
 
+    const previousSnapshot = previousResultRef.current ?? {};
+    const newChanges: TaxChangeIndicator[] = [];
+
+    const fieldsToTrack = [
+      { key: 'federalTax', label: 'Federal Tax' },
+      { key: 'totalTax', label: 'Total Tax' },
+      { key: 'effectiveRate', label: 'Effective Rate' },
+      { key: 'marginalRate', label: 'Marginal Rate' },
+      { key: 'taxableIncome', label: 'Taxable Income' },
+      { key: 'adjustedGrossIncome', label: 'Adjusted Gross Income' }
+    ] as const;
+
+    fieldsToTrack.forEach(({ key, label }) => {
+      const current = Number(taxResult[key] ?? 0);
+      const previous = Number(previousSnapshot[key] ?? 0);
+
+      if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0 || current === previous) {
+        return;
+      }
+
+      const change = current - previous;
+      const changePercent = (change / previous) * 100;
+
+      newChanges.push({
+        field: label,
+        currentValue: current,
+        previousValue: previous,
+        change,
+        changePercent,
+        isIncrease: change > 0
+      });
+    });
+
+    setChanges(newChanges);
+    setAnimationTrigger(prev => prev + 1);
     previousResultRef.current = taxResult;
   }, [taxResult]);
 

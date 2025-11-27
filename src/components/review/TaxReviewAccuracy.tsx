@@ -1,45 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { AlertTriangle, CheckCircle, Info, TrendingUp, TrendingDown, Calculator, DollarSign, Eye, FileText, Shield, Target, BarChart3, Minus, Plus, Check, Dot } from 'lucide-react';
-
-interface AccuracyCheck {
-  id: string;
-  category: 'error' | 'warning' | 'suggestion' | 'info';
-  title: string;
-  description: string;
-  impact?: 'high' | 'medium' | 'low';
-  potentialSavings?: number;
-  actionRequired?: boolean;
-  suggestion?: string;
-  fieldPath?: string;
-}
-
-interface DeductionComparison {
-  standardDeduction: number;
-  itemizedDeduction: number;
-  recommended: 'standard' | 'itemized';
-  savings: number;
-  breakdown?: Array<{
-    category: string;
-    amount: number;
-    limit?: number;
-  }>;
-}
-
-interface TaxScenario {
-  id: string;
-  name: string;
-  description: string;
-  taxOwed: number;
-  refund: number;
-  changes: string[];
-}
+import type {
+  AccuracyCheck,
+  DeductionComparison,
+  TaxScenario,
+  TaxDataSnapshot,
+  TaxCalculationOutput,
+  TranslationFunction
+} from '../../types/CommonTypes';
 
 interface TaxReviewAccuracyProps {
-  taxData: any;
-  calculations: any;
+  taxData: TaxDataSnapshot;
+  calculations: TaxCalculationOutput;
   onFixIssue: (issueId: string, fieldPath: string) => void;
   onAcceptSuggestion: (suggestionId: string) => void;
-  t: (key: string) => string;
+  t: TranslationFunction;
 }
 
 export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({

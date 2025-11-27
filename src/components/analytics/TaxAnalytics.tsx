@@ -1,10 +1,33 @@
 import React, { useState, useMemo } from 'react';
-import { BarChart3, PieChart, TrendingUp, TrendingDown, Calendar, Download, Filter, Eye, DollarSign, Target, Zap, AlertTriangle } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Calendar, Download, Eye, DollarSign, Target, Zap } from 'lucide-react';
+
+interface TaxResultData {
+  totalTax?: number;
+  adjustedGrossIncome?: number;
+  marginalRate?: number;
+  federalTax?: number;
+  stateTax?: number;
+  localTax?: number;
+  taxableIncome?: number;
+  standardDeduction?: number;
+}
+
+interface HistoricalDataPoint {
+  year: number;
+  totalTax: number;
+  agi: number;
+}
+
+interface ExpenseItem {
+  amount: number;
+  isDeductible: boolean;
+  category?: string;
+}
 
 interface TaxAnalyticsProps {
-  taxResult: any;
-  historicalData?: any[];
-  expenses?: any[];
+  taxResult: TaxResultData;
+  historicalData?: HistoricalDataPoint[];
+  expenses?: ExpenseItem[];
   t: (key: string) => string;
 }
 
@@ -43,13 +66,13 @@ interface AnalysisReport {
 
 export const TaxAnalytics: React.FC<TaxAnalyticsProps> = ({
   taxResult,
-  historicalData = [],
+  historicalData: _historicalData = [],
   expenses = [],
-  t
+  t: _t
 }) => {
   const [selectedView, setSelectedView] = useState<'overview' | 'detailed' | 'projections' | 'benchmarks'>('overview');
-  const [timeRange, setTimeRange] = useState<'current' | '5years' | '10years'>('current');
-  const [showExport, setShowExport] = useState(false);
+  const [_timeRange, _setTimeRange] = useState<'current' | '5years' | '10years'>('current');
+  const [_showExport, _setShowExport] = useState(false);
 
   const analysisReport: AnalysisReport = useMemo(() => {
     const totalTax = taxResult.totalTax || 0;
@@ -64,7 +87,7 @@ export const TaxAnalytics: React.FC<TaxAnalyticsProps> = ({
     const taxEfficiency = idealTax > 0 ? (totalTax / idealTax) * 100 : 100;
 
     // Estimate savings opportunities from expenses
-    const deductibleExpenses = expenses.filter((exp: any) => exp.isDeductible).reduce((sum: number, exp: any) => sum + exp.amount, 0);
+    const deductibleExpenses = expenses.filter((exp) => exp.isDeductible).reduce((sum, exp) => sum + exp.amount, 0);
     const savingsOpportunities = deductibleExpenses * marginalRate;
 
     return {
@@ -198,7 +221,7 @@ export const TaxAnalytics: React.FC<TaxAnalyticsProps> = ({
         ].map((view) => (
           <button
             key={view.id}
-            onClick={() => setSelectedView(view.id as any)}
+            onClick={() => setSelectedView(view.id as 'overview' | 'detailed' | 'projections' | 'benchmarks')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
               selectedView === view.id
                 ? 'border-purple-500 text-purple-600'

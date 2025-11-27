@@ -612,7 +612,7 @@ export interface ValidationRule {
   field: string;
   rule: 'required' | 'format' | 'range' | 'dependency' | 'custom';
   message: string;
-  params?: any;
+  params?: Record<string, unknown>;
 }
 
 export interface TaxFormValidation {

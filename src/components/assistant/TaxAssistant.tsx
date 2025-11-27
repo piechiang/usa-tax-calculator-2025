@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, Bot, User, Lightbulb, Calculator, FileText, TrendingUp } from 'lucide-react';
+import { Send, Bot, User, Lightbulb, Calculator, FileText, TrendingUp } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -9,9 +9,31 @@ interface Message {
   suggestions?: string[];
 }
 
+interface TaxFormData {
+  personalInfo?: {
+    filingStatus?: string;
+    isMaryland?: boolean;
+  };
+  incomeData?: {
+    wages?: string | number;
+  };
+  deductions?: {
+    useStandardDeduction?: boolean;
+    standardDeduction?: number;
+    itemizedTotal?: number;
+  };
+}
+
+interface TaxCalculationResult {
+  adjustedGrossIncome?: number;
+  taxableIncome?: number;
+  federalTax?: number;
+  totalTax?: number;
+}
+
 interface TaxAssistantProps {
-  formData: any;
-  taxResult: any;
+  formData: TaxFormData;
+  taxResult: TaxCalculationResult;
   t: (key: string) => string;
 }
 
@@ -26,7 +48,11 @@ export const TaxAssistant: React.FC<TaxAssistantProps> = ({
       content: t('assistant.greeting'),
       sender: 'assistant',
       timestamp: new Date(),
-      suggestions: t('assistant.suggestions')
+      suggestions: [
+        t('assistant.suggestion1'),
+        t('assistant.suggestion2'),
+        t('assistant.suggestion3')
+      ]
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -46,7 +72,8 @@ export const TaxAssistant: React.FC<TaxAssistantProps> = ({
 
     // Tax optimization questions
     if (message.includes('reduce') || message.includes('lower') || message.includes('save')) {
-      const income = formData.incomeData?.wages ? parseFloat(formData.incomeData.wages) : 0;
+      const wagesValue = formData.incomeData?.wages;
+      const income = wagesValue ? parseFloat(String(wagesValue)) : 0;
       let suggestions = [];
 
       if (income > 50000) {
@@ -75,15 +102,19 @@ export const TaxAssistant: React.FC<TaxAssistantProps> = ({
 
     // Tax calculation explanation
     if (message.includes('explain') || message.includes('calculation') || message.includes('how')) {
+      const deductionAmount = formData.deductions?.useStandardDeduction
+        ? (formData.deductions?.standardDeduction ?? 0)
+        : (formData.deductions?.itemizedTotal ?? 0);
+
       return `Here's how your taxes are calculated:
 
 1. **Gross Income**: $${(taxResult.adjustedGrossIncome || 0).toLocaleString()}
-2. **Standard/Itemized Deduction**: $${(formData.deductions?.useStandardDeduction ? formData.deductions?.standardDeduction : formData.deductions?.itemizedTotal || 0).toLocaleString()}
+2. **Standard/Itemized Deduction**: $${deductionAmount.toLocaleString()}
 3. **Taxable Income**: $${(taxResult.taxableIncome || 0).toLocaleString()}
 4. **Federal Tax**: $${(taxResult.federalTax || 0).toLocaleString()}
 5. **Total Tax**: $${(taxResult.totalTax || 0).toLocaleString()}
 
-Your effective tax rate is ${((taxResult.totalTax / taxResult.adjustedGrossIncome) * 100 || 0).toFixed(1)}%`;
+Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGrossIncome ?? 1)) * 100 || 0).toFixed(1)}%`;
     }
 
     // Filing status questions
@@ -99,7 +130,7 @@ Your effective tax rate is ${((taxResult.totalTax / taxResult.adjustedGrossIncom
         advice = "Your filing status determines your tax brackets and standard deduction amount.";
       }
 
-      return `Your current filing status is "${status}". ${advice}`;
+      return `Your current filing status is "${status ?? 'not set'}". ${advice}`;
     }
 
     // State tax questions
@@ -136,12 +167,12 @@ Your effective tax rate is ${((taxResult.totalTax / taxResult.adjustedGrossIncom
     if (message.includes('tips') || message.includes('advice')) {
       return `Here are my top tax tips:
 
-💡 **Keep good records** - Track all receipts and documents
-📊 **Maximize deductions** - Don't miss eligible expenses
-💰 **Plan ahead** - Consider tax implications of major decisions
-📅 **File on time** - Avoid penalties and interest
-🔍 **Review annually** - Tax laws change frequently
-👨‍💼 **Consider professional help** - For complex situations`;
+* **Keep good records** - Track all receipts and documents
+* **Maximize deductions** - Don't miss eligible expenses
+* **Plan ahead** - Consider tax implications of major decisions
+* **File on time** - Avoid penalties and interest
+* **Review annually** - Tax laws change frequently
+* **Consider professional help** - For complex situations`;
     }
 
     // Default response
@@ -188,11 +219,12 @@ Your effective tax rate is ${((taxResult.totalTax / taxResult.adjustedGrossIncom
     }
   };
 
-  const quickActions = t('assistant.quickActions').map((action: any, index: number) => ({
-    icon: [Calculator, FileText, TrendingUp, Lightbulb][index],
-    label: action.label,
-    query: action.query
-  }));
+  const quickActions = [
+    { icon: Calculator, label: t('assistant.quickAction1'), query: t('assistant.query1') },
+    { icon: FileText, label: t('assistant.quickAction2'), query: t('assistant.query2') },
+    { icon: TrendingUp, label: t('assistant.quickAction3'), query: t('assistant.query3') },
+    { icon: Lightbulb, label: t('assistant.quickAction4'), query: t('assistant.query4') }
+  ];
 
   return (
     <div className="bg-white rounded-lg shadow-lg h-[600px] flex flex-col">
@@ -295,7 +327,7 @@ Your effective tax rate is ${((taxResult.totalTax / taxResult.adjustedGrossIncom
             <textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder={t('assistant.placeholder')}
               className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={1}

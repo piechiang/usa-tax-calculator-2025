@@ -6,29 +6,53 @@
 
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Upload, Radio, Typography, Space, Alert, Divider, Tooltip, message, Select, Switch, Table, Popconfirm } from 'antd';
+import type { UploadChangeParam } from 'antd/es/upload';
+import type { UploadFile } from 'antd/es/upload/interface';
 import { CameraOutlined, PlusOutlined, QuestionCircleOutlined, DeleteOutlined, CalculatorOutlined, InfoCircleOutlined } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
 const { Option } = Select;
 
+interface Transaction {
+  id?: string;
+  description: string;
+  dateAcquired: string;
+  dateSold: string;
+  proceeds: string;
+  cost: string;
+  washSale: boolean;
+  shortLong: 'auto' | 'short' | 'long';
+  gainLoss: string;
+  type?: string;
+}
+
+interface Form1099BData {
+  method?: string;
+  transactions?: Transaction[];
+  shortTermGainLoss?: number;
+  longTermGainLoss?: number;
+  totalProceeds?: number;
+  totalCost?: number;
+}
+
 interface Form1099BProps {
-  onComplete: (data: any) => void;
-  defaultValues?: any;
+  onComplete: (data: Form1099BData) => void;
+  defaultValues?: Form1099BData;
   allowMultiple?: boolean;
 }
 
 const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, allowMultiple = true }) => {
   const [inputMethod, setInputMethod] = useState(defaultValues.method || 'upload');
   const [transactions, setTransactions] = useState(defaultValues.transactions || []);
-  const [currentTransaction, setCurrentTransaction] = useState({
+  const [currentTransaction, setCurrentTransaction] = useState<Transaction>({
     description: '',
     dateAcquired: '',
     dateSold: '',
     proceeds: '',
     cost: '',
     washSale: false,
-    shortLong: 'auto', // auto, short, long
+    shortLong: 'auto' as const,
     gainLoss: ''
   });
   const [uploading, setUploading] = useState(false);
@@ -45,14 +69,14 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
   ];
 
   // 模拟1099-B OCR识别
-  const simulate1099BOCR = async (file) => {
+  const simulate1099BOCR = async (_file: File) => {
     setUploading(true);
     
     // 模拟API调用延迟
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     // 模拟Consolidated 1099-B识别结果
-    const mockTransactions = [
+    const mockTransactions: Transaction[] = [
       {
         id: '1',
         description: 'AAPL - Apple Inc.',
@@ -61,7 +85,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
         proceeds: '5200.00',
         cost: '4800.00',
         gainLoss: '400.00',
-        shortLong: 'long',
+        shortLong: 'long' as const,
         washSale: false,
         type: 'stock'
       },
@@ -73,7 +97,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
         proceeds: '3100.00',
         cost: '3400.00',
         gainLoss: '-300.00',
-        shortLong: 'short',
+        shortLong: 'short' as const,
         washSale: false,
         type: 'stock'
       },
@@ -85,7 +109,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
         proceeds: '12500.00',
         cost: '10800.00',
         gainLoss: '1700.00',
-        shortLong: 'long',
+        shortLong: 'long' as const,
         washSale: false,
         type: 'etf'
       }
@@ -99,9 +123,10 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
     return mockTransactions;
   };
 
-  const handleUpload = async (info) => {
-    const { file } = info;
-    
+  const handleUpload = async (info: UploadChangeParam<UploadFile>) => {
+    const file = info.file.originFileObj as File;
+    if (!file) return;
+
     if (file.size > 10 * 1024 * 1024) {
       message.error('文件大小不能超过10MB');
       return;
@@ -116,25 +141,25 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
   };
 
   // 计算持有期间（判断短期/长期）
-  const calculateHoldingPeriod = (acquired, sold) => {
+  const calculateHoldingPeriod = (acquired: string, sold: string): 'short' | 'long' | 'unknown' => {
     if (!acquired || !sold) return 'unknown';
-    
+
     const acquiredDate = new Date(acquired);
     const soldDate = new Date(sold);
-    const diffTime = soldDate - acquiredDate;
+    const diffTime = soldDate.getTime() - acquiredDate.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return diffDays > 365 ? 'long' : 'short';
   };
 
   // 自动计算盈亏
-  const calculateGainLoss = (proceeds, cost) => {
+  const calculateGainLoss = (proceeds: string, cost: string): string => {
     const proceedsNum = parseFloat(proceeds) || 0;
     const costNum = parseFloat(cost) || 0;
     return (proceedsNum - costNum).toFixed(2);
   };
 
-  const handleFieldChange = (field, value) => {
+  const handleFieldChange = (field: keyof Transaction, value: string | boolean) => {
     const newTransaction = { ...currentTransaction, [field]: value };
     
     // 自动计算相关字段
@@ -146,7 +171,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
       if (newTransaction.shortLong === 'auto') {
         const period = calculateHoldingPeriod(newTransaction.dateAcquired, newTransaction.dateSold);
         if (period !== 'unknown') {
-          newTransaction.shortLong = period;
+          newTransaction.shortLong = period as 'short' | 'long';
         }
       }
     }
@@ -184,7 +209,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
     message.success('交易记录已添加');
   };
 
-  const removeTransaction = (id) => {
+  const removeTransaction = (id?: string) => {
     setTransactions(transactions.filter(t => t.id !== id));
     message.success('交易记录已删除');
   };
@@ -246,13 +271,13 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
     return acc;
   }, { shortTerm: 0, longTerm: 0 });
 
-  const formatCurrency = (value) => {
+  const formatCurrency = (value: string | number): string => {
     if (!value) return '$0.00';
-    const num = parseFloat(value);
-    return isNaN(num) ? '$0.00' : num.toLocaleString('en-US', { 
-      style: 'currency', 
+    const num = parseFloat(value.toString());
+    return isNaN(num) ? '$0.00' : num.toLocaleString('en-US', {
+      style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 2 
+      minimumFractionDigits: 2
     });
   };
 
@@ -261,7 +286,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
       title: '投资描述',
       dataIndex: 'description',
       key: 'description',
-      render: (text, record) => (
+      render: (text: string, record: Transaction) => (
         <div>
           <Text strong>{text}</Text>
           {record.type && (
@@ -277,7 +302,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
     {
       title: '买入/卖出日期',
       key: 'dates',
-      render: (_, record) => (
+      render: (_: unknown, record: Transaction) => (
         <div>
           <div>买入: {record.dateAcquired || '未知'}</div>
           <div>卖出: {record.dateSold || '未知'}</div>
@@ -287,7 +312,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
     {
       title: '收益/成本',
       key: 'amounts',
-      render: (_, record) => (
+      render: (_: unknown, record: Transaction) => (
         <div>
           <div>收益: {formatCurrency(record.proceeds)}</div>
           <div>成本: {formatCurrency(record.cost)}</div>
@@ -298,7 +323,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
       title: '盈亏',
       dataIndex: 'gainLoss',
       key: 'gainLoss',
-      render: (value, record) => {
+      render: (value: string, record: Transaction) => {
         const amount = parseFloat(value) || 0;
         const isProfit = amount >= 0;
         return (
@@ -318,7 +343,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
     {
       title: '操作',
       key: 'action',
-      render: (_, record) => (
+      render: (_: unknown, record: Transaction) => (
         <Popconfirm
           title="确定删除这笔交易？"
           onConfirm={() => removeTransaction(record.id)}
@@ -529,7 +554,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
                   >
                     <Option value="auto">自动判断</Option>
                     <Option value="short">短期 (≤1年)</Option>
-                    <Option value="long">长期 (>1年)</Option>
+                    <Option value="long">长期 (&gt;1年)</Option>
                   </Select>
                 </Form.Item>
 
@@ -599,7 +624,7 @@ const Form1099B: React.FC<Form1099BProps> = ({ onComplete, defaultValues = {}, a
           description={
             <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
               <li><Text>短期资本利得(持有≤1年)按普通收入税率征税</Text></li>
-              <li><Text>长期资本利得(持有>1年)享受优惠税率：0%、15%或20%</Text></li>
+              <li><Text>长期资本利得(持有&gt;1年)享受优惠税率：0%、15%或20%</Text></li>
               <li><Text>资本损失可以抵消资本利得，最多抵消$3,000普通收入</Text></li>
               <li><Text>如果有wash sale，请确保正确标记</Text></li>
               <li><Text>加密货币交易也需要在此申报</Text></li>

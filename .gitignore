@@ -10,6 +10,9 @@ node_modules/
 /build
 /dist
 
+# Legacy engine build artifacts (tsconfig now outputs to build/engine)
+src/engine-dist/
+
 # Environment variables
 .env.local
 .env.development.local

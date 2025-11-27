@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Upload, Download, Tag, Calendar, DollarSign, Filter, Search, Trash2, Edit2, Receipt, PieChart, BarChart3 } from 'lucide-react';
+import { Plus, Download, Tag, Calendar, DollarSign, Search, Trash2, Receipt, PieChart, BarChart3 } from 'lucide-react';
 
 interface Expense {
   id: string;
@@ -30,12 +30,10 @@ interface ExpenseCategory {
 
 interface ExpenseTrackerProps {
   onExpenseUpdate: (expenses: Expense[]) => void;
-  t: (key: string) => string;
 }
 
 export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
-  onExpenseUpdate,
-  t
+  onExpenseUpdate
 }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories] = useState<ExpenseCategory[]>([
@@ -115,18 +113,25 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
   });
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
     // Load expenses from localStorage
     const savedExpenses = localStorage.getItem('tax_expenses');
-    if (savedExpenses) {
-      const parsed = JSON.parse(savedExpenses).map((exp: any) => ({
+    if (!savedExpenses) return;
+
+    try {
+      type StoredExpense = Omit<Expense, 'date'> & { date: string };
+
+      const parsedExpenses = JSON.parse(savedExpenses) as StoredExpense[];
+      const normalizedExpenses: Expense[] = parsedExpenses.map((exp) => ({
         ...exp,
         date: new Date(exp.date)
       }));
-      setExpenses(parsed);
+
+      setExpenses(normalizedExpenses);
+    } catch (error) {
+      console.error('Failed to parse stored expenses', error);
     }
   }, []);
 
@@ -433,13 +438,6 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
                 </div>
 
                 <div className="flex gap-1 ml-4">
-                  <button
-                    onClick={() => setEditingExpense(expense.id)}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded"
-                    title="Edit"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
                   <button
                     onClick={() => deleteExpense(expense.id)}
                     className="p-2 text-red-600 hover:bg-red-100 rounded"

@@ -1,11 +1,38 @@
 import React from 'react';
 import { AlertTriangle, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
+interface TaxFormData {
+  ssn?: string;
+  filingStatus?: string;
+  wages?: number | string;
+  mortgageInterest?: number | string;
+  stateLocalTaxes?: number | string;
+  charitableContributions?: number | string;
+  adjustedGrossIncome?: number;
+  businessIncome?: number | string;
+  grossReceipts?: number | string;
+  businessExpenses?: number | string;
+  federalWithholding?: number | string;
+  capitalGains?: number | string;
+  deductions?: {
+    mortgageInterest?: number | string;
+    stateLocalTaxes?: number | string;
+    charitableContributions?: number | string;
+    [key: string]: unknown;
+  };
+  taxResult?: {
+    balance?: number;
+    adjustedGrossIncome?: number;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 export interface ValidationRule {
   field: string;
   type: 'error' | 'warning' | 'info';
   message: string;
-  condition: (data: any) => boolean;
+  condition: (data: TaxFormData) => boolean;
   suggestion?: string;
 }
 
@@ -59,14 +86,14 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     field: 'deductions.mortgageInterest',
     type: 'warning',
     message: 'Mortgage interest exceeds typical limits',
-    condition: (data) => parseFloat(data.deductions?.mortgageInterest || '0') > 100000,
+    condition: (data) => parseFloat(String(data.deductions?.mortgageInterest || '0')) > 100000,
     suggestion: 'Mortgage interest is limited for loans over $750,000'
   },
   {
     field: 'deductions.stateLocalTaxes',
     type: 'warning',
     message: 'SALT deduction limited to $10,000',
-    condition: (data) => parseFloat(data.deductions?.stateLocalTaxes || '0') > 10000,
+    condition: (data) => parseFloat(String(data.deductions?.stateLocalTaxes || '0')) > 10000,
     suggestion: 'State and local tax deduction is capped at $10,000'
   },
   {
@@ -74,7 +101,7 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     type: 'info',
     message: 'Large charitable contributions may require documentation',
     condition: (data) => {
-      const contributions = parseFloat(data.deductions?.charitableContributions || '0');
+      const contributions = parseFloat(String(data.deductions?.charitableContributions || '0'));
       const agi = data.taxResult?.adjustedGrossIncome || 0;
       return contributions > agi * 0.6;
     },
@@ -143,12 +170,12 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
 ];
 
 interface TaxValidatorProps {
-  formData: any;
+  formData: TaxFormData;
   t: (key: string) => string;
 }
 
 export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
-  const validateTaxData = (data: any): ValidationResult => {
+  const validateTaxData = (data: TaxFormData): ValidationResult => {
     const errors: ValidationRule[] = [];
     const warnings: ValidationRule[] = [];
     const info: ValidationRule[] = [];

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, DollarSign, PieChart, Target, AlertTriangle, CheckCircle } from 'lucide-react';
 
+import type { TaxContextValue } from '../../contexts/TaxContext';
+
 interface Asset {
   id: string;
   name: string;
@@ -22,18 +24,18 @@ interface TaxStrategy {
   steps: string[];
 }
 
+interface PortfolioFormData {
+  incomeData?: TaxContextValue['incomeData'];
+}
+
 interface PortfolioOptimizerProps {
-  formData: any;
-  taxResult: any;
-  t: (key: string) => string;
+  formData: PortfolioFormData;
 }
 
 export const PortfolioOptimizer: React.FC<PortfolioOptimizerProps> = ({
-  formData,
-  taxResult,
-  t
+  formData
 }) => {
-  const [portfolio, setPortfolio] = useState<Asset[]>([
+  const [portfolio, _setPortfolio] = useState<Asset[]>([
     {
       id: '1',
       name: 'Apple Inc. (AAPL)',
@@ -61,7 +63,8 @@ export const PortfolioOptimizer: React.FC<PortfolioOptimizerProps> = ({
 
   useEffect(() => {
     generateTaxStrategies();
-  }, [portfolio, taxResult]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portfolio]);
 
   const calculateGainLoss = (asset: Asset) => {
     const totalGain = (asset.currentPrice - asset.purchasePrice) * asset.shares;
@@ -81,7 +84,6 @@ export const PortfolioOptimizer: React.FC<PortfolioOptimizerProps> = ({
 
   const generateTaxStrategies = () => {
     const newStrategies: TaxStrategy[] = [];
-    let totalGains = 0;
     let totalLosses = 0;
     let longTermGains = 0;
     let shortTermGains = 0;
@@ -89,7 +91,6 @@ export const PortfolioOptimizer: React.FC<PortfolioOptimizerProps> = ({
     portfolio.forEach(asset => {
       const analysis = calculateGainLoss(asset);
       if (analysis.totalGain > 0) {
-        totalGains += analysis.totalGain;
         if (analysis.isLongTerm) {
           longTermGains += analysis.totalGain;
         } else {
@@ -446,3 +447,5 @@ export const PortfolioOptimizer: React.FC<PortfolioOptimizerProps> = ({
     </div>
   );
 };
+
+

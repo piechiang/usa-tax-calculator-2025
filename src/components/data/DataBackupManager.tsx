@@ -1,20 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Upload, Database, Clock, Shield, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
+import { Save, Download, Upload, Database, Clock, Shield, AlertTriangle, Trash2 } from 'lucide-react';
 
-interface BackupData {
+import type { TaxContextValue } from '../../contexts/TaxContext';
+import { toast } from '../../utils/toast';
+
+interface BackupFormData {
+  personalInfo: TaxContextValue['personalInfo'];
+  incomeData: TaxContextValue['incomeData'];
+  deductions: TaxContextValue['deductions'];
+  paymentsData: TaxContextValue['paymentsData'];
+  spouseInfo?: TaxContextValue['spouseInfo'];
+  k1Data?: TaxContextValue['k1Data'];
+  businessDetails?: TaxContextValue['businessDetails'];
+}
+
+interface BackupPayload {
+  formData: BackupFormData;
+  taxResult: TaxContextValue['taxResult'];
+  timestamp: string;
+  version: string;
+}
+
+interface BackupRecord {
   id: string;
   name: string;
   timestamp: Date;
   size: string;
-  data: any;
+  data: BackupPayload;
   version: string;
   checksum: string;
 }
 
+interface PersistedBackup extends Omit<BackupRecord, 'timestamp'> {
+  timestamp: string;
+}
+
 interface DataBackupManagerProps {
-  formData: any;
-  taxResult: any;
-  onDataRestore: (data: any) => void;
+  formData: BackupFormData;
+  taxResult: TaxContextValue['taxResult'];
+  onDataRestore: (data: BackupPayload) => void;
   t: (key: string) => string;
 }
 
@@ -24,7 +48,12 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
   onDataRestore,
   t
 }) => {
-  const [backups, setBackups] = useState<BackupData[]>([]);
+  const translate = (key: string, fallback: string): string => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
+
+  const [backups, setBackups] = useState<BackupRecord[]>([]);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
   const [backupName, setBackupName] = useState('');
@@ -43,17 +72,19 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
 
       return () => clearInterval(interval);
     }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoSaveEnabled, formData]);
 
-  const hasSignificantData = (data: any): boolean => {
-    return (
+  const hasSignificantData = (data: BackupFormData): boolean => {
+    return !!(
       (data.personalInfo?.firstName && data.personalInfo?.lastName) ||
-      (data.incomeData?.wages && parseFloat(data.incomeData.wages) > 0) ||
+      (data.incomeData?.wages && parseFloat(String(data.incomeData.wages)) > 0) ||
       (data.deductions && Object.keys(data.deductions).length > 0)
     );
   };
 
-  const generateChecksum = (data: any): string => {
+  const generateChecksum = (data: BackupPayload): string => {
     const str = JSON.stringify(data);
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -66,7 +97,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
 
   const createBackup = (name?: string) => {
     const timestamp = new Date();
-    const backupData = {
+    const backupData: BackupPayload = {
       formData,
       taxResult,
       timestamp: timestamp.toISOString(),
@@ -77,7 +108,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
     const size = `${Math.round(dataString.length / 1024)}KB`;
     const checksum = generateChecksum(backupData);
 
-    const backup: BackupData = {
+    const backup: BackupRecord = {
       id: `backup_${timestamp.getTime()}`,
       name: name || `Tax Return ${timestamp.toLocaleDateString()} ${timestamp.toLocaleTimeString()}`,
       timestamp,
@@ -95,35 +126,37 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
   };
 
   const createAutoBackup = () => {
-    const autoBackup = createBackup(`Auto-save ${new Date().toLocaleString()}`);
+    createBackup(`Auto-save ${new Date().toLocaleString()}`);
     setLastAutoSave(new Date());
   };
 
   const createManualBackup = () => {
     if (!backupName.trim()) {
-      alert('Please enter a backup name');
+      toast.warning(translate('backup.manager.alert.nameRequired', 'Please enter a backup name'));
       return;
     }
 
     createBackup(backupName);
     setBackupName('');
-    alert('Backup created successfully!');
+    toast.success(translate('backup.manager.alert.success', 'Backup created successfully!'));
   };
 
-  const restoreBackup = (backup: BackupData) => {
+  const restoreBackup = (backup: BackupRecord) => {
     try {
       // Verify checksum
       const currentChecksum = generateChecksum(backup.data);
       if (currentChecksum !== backup.checksum) {
-        alert('Backup data may be corrupted. Checksum mismatch.');
+        toast.error(translate('backup.manager.alert.checksumMismatch', 'Backup data may be corrupted. Checksum mismatch.'));
         return;
       }
 
       onDataRestore(backup.data);
       setShowRestoreConfirm(null);
-      alert('Data restored successfully!');
+      toast.success(translate('backup.manager.alert.restoreSuccess', 'Data restored successfully!'));
     } catch (error) {
-      alert('Error restoring backup: ' + (error as Error).message);
+      toast.error(
+        `${translate('backup.manager.alert.restoreError', 'Error restoring backup:')} ${(error as Error).message}`
+      );
     }
   };
 
@@ -135,7 +168,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
     }
   };
 
-  const exportBackup = (backup: BackupData) => {
+  const exportBackup = (backup: BackupRecord) => {
     const dataStr = JSON.stringify(backup.data, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
 
@@ -150,39 +183,48 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       try {
-        const importedData = JSON.parse(e.target?.result as string);
+        const importedData = JSON.parse(e.target?.result as string) as Partial<BackupPayload>;
 
         // Validate the imported data structure
-        if (!importedData.formData || !importedData.timestamp) {
+        if (!importedData.formData || !importedData.timestamp || !importedData.taxResult) {
           throw new Error('Invalid backup file format');
         }
 
         const timestamp = new Date();
-        const backup: BackupData = {
+        const payload: BackupPayload = {
+          formData: importedData.formData,
+          taxResult: importedData.taxResult,
+          version: importedData.version || 'unknown',
+          timestamp: importedData.timestamp
+        };
+
+        const backup: BackupRecord = {
           id: `imported_${timestamp.getTime()}`,
           name: `Imported from ${file.name}`,
           timestamp,
           size: `${Math.round(file.size / 1024)}KB`,
-          data: importedData,
-          version: importedData.version || 'unknown',
-          checksum: generateChecksum(importedData)
+          data: payload,
+          version: payload.version,
+          checksum: generateChecksum(payload)
         };
 
         const updatedBackups = [backup, ...backups].slice(0, 10);
         setBackups(updatedBackups);
         saveBackupsToStorage(updatedBackups);
 
-        alert('Backup imported successfully!');
+        toast.success(translate('backup.manager.alert.importSuccess', 'Backup imported successfully!'));
       } catch (error) {
-        alert('Error importing backup: ' + (error as Error).message);
+        toast.error(
+          `${translate('backup.manager.alert.importError', 'Error importing backup:')} ${(error as Error).message}`
+        );
       }
     };
     reader.readAsText(file);
   };
 
-  const saveBackupsToStorage = (backupsData: BackupData[]) => {
+  const saveBackupsToStorage = (backupsData: BackupRecord[]) => {
     try {
       localStorage.setItem('tax_calculator_backups', JSON.stringify(backupsData));
     } catch (error) {
@@ -194,11 +236,12 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
     try {
       const saved = localStorage.getItem('tax_calculator_backups');
       if (saved) {
-        const parsedBackups = JSON.parse(saved).map((b: any) => ({
-          ...b,
-          timestamp: new Date(b.timestamp)
+        const parsedBackups: PersistedBackup[] = JSON.parse(saved);
+        const normalizedBackups: BackupRecord[] = parsedBackups.map(backup => ({
+          ...backup,
+          timestamp: new Date(backup.timestamp)
         }));
-        setBackups(parsedBackups);
+        setBackups(normalizedBackups);
       }
     } catch (error) {
       console.error('Error loading backups from storage:', error);
@@ -216,7 +259,9 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center gap-2 mb-4">
         <Database className="h-5 w-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">Data Backup & Recovery</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          {translate('backup.manager.title', 'Data Backup & Recovery')}
+        </h3>
       </div>
 
       {/* Auto-Save Settings */}
@@ -224,7 +269,9 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-green-600" />
-            <span className="font-medium text-gray-900">Auto-Save Protection</span>
+            <span className="font-medium text-gray-900">
+              {translate('backup.manager.autoSave.title', 'Auto-Save Protection')}
+            </span>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -239,7 +286,10 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
           </label>
         </div>
         <p className="text-sm text-gray-600">
-          Automatically saves your data every 5 minutes to prevent data loss.
+          {translate(
+            'backup.manager.autoSave.description',
+            'Automatically saves your data every 5 minutes to prevent data loss.'
+          )}
         </p>
         {lastAutoSave && (
           <p className="text-xs text-gray-500 mt-1">
@@ -386,13 +436,15 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <div className="flex items-center gap-2 mb-2">
           <Shield className="h-4 w-4 text-blue-600" />
-          <span className="font-medium text-blue-900">Data Security</span>
+          <span className="font-medium text-blue-900">
+            {translate('backup.manager.security.title', 'Data Security')}
+          </span>
         </div>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• All data is stored locally in your browser</li>
-          <li>• Backups include checksums for data integrity verification</li>
-          <li>• No personal information is sent to external servers</li>
-          <li>• Export backups for additional security</li>
+          <li>{translate('backup.manager.security.tip1', 'All data is stored locally in your browser')}</li>
+          <li>{translate('backup.manager.security.tip2', 'Backups include checksums for data integrity verification')}</li>
+          <li>{translate('backup.manager.security.tip3', 'No personal information is sent to external servers')}</li>
+          <li>{translate('backup.manager.security.tip4', 'Export backups for additional security')}</li>
         </ul>
       </div>
     </div>

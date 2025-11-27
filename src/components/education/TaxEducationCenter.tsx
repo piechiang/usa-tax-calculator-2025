@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BookOpen, Play, CheckCircle, Star, Clock, Users, Award, ExternalLink } from 'lucide-react';
+import { toast } from '../../utils/toast';
 
 interface EducationModule {
   id: string;
@@ -28,11 +29,7 @@ interface EducationModule {
   };
 }
 
-interface TaxEducationCenterProps {
-  t: (key: string) => string;
-}
-
-export const TaxEducationCenter: React.FC<TaxEducationCenterProps> = ({ t }) => {
+export const TaxEducationCenter: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedModule, setSelectedModule] = useState<EducationModule | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,7 +208,7 @@ export const TaxEducationCenter: React.FC<TaxEducationCenterProps> = ({ t }) => 
       const totalQuestions = selectedModule?.quiz?.questions.length || 0;
       const score = Math.round((correctAnswers / totalQuestions) * 100);
 
-      alert(`Quiz completed! Your score: ${score}% (${correctAnswers}/${totalQuestions})`);
+      toast.success(`Quiz completed! Your score: ${score}% (${correctAnswers}/${totalQuestions})`, 5000);
       setShowQuiz(false);
     }
   };
@@ -353,10 +350,10 @@ export const TaxEducationCenter: React.FC<TaxEducationCenterProps> = ({ t }) => 
 
           <div className="bg-gray-50 rounded-lg p-6">
             <h4 className="text-xl font-medium mb-6">
-              {selectedModule.quiz.questions[currentQuizQuestion].question}
+              {selectedModule.quiz.questions[currentQuizQuestion]?.question}
             </h4>
             <div className="space-y-3">
-              {selectedModule.quiz.questions[currentQuizQuestion].options.map((option, index) => (
+              {selectedModule.quiz.questions[currentQuizQuestion]?.options.map((option, index) => (
                 <button
                   key={index}
                   onClick={() => handleQuizAnswer(index)}

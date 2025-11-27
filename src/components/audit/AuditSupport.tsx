@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Shield, FileCheck, Download, Eye, AlertTriangle, CheckCircle } from 'lucide-react';
 
+import type { TaxContextValue } from '../../contexts/TaxContext';
+
+type AuditSupportTab = 'documentation' | 'report' | 'checklist';
+
 interface AuditDocument {
   id: string;
   title: string;
@@ -10,9 +14,18 @@ interface AuditDocument {
   status: 'missing' | 'uploaded' | 'verified';
 }
 
+type DocumentStatus = 'missing' | 'uploaded' | 'verified';
+
+interface AuditSupportFormData {
+  personalInfo: TaxContextValue['personalInfo'];
+  incomeData: TaxContextValue['incomeData'];
+  deductions: TaxContextValue['deductions'];
+  paymentsData: TaxContextValue['paymentsData'];
+}
+
 interface AuditSupportProps {
-  formData: any;
-  taxResult: any;
+  formData: AuditSupportFormData;
+  taxResult: TaxContextValue['taxResult'];
   t: (key: string) => string;
 }
 
@@ -21,8 +34,8 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
   taxResult,
   t
 }) => {
-  const [activeTab, setActiveTab] = useState<'documentation' | 'report' | 'checklist'>('documentation');
-  const [documentStatus, setDocumentStatus] = useState<Record<string, 'missing' | 'uploaded' | 'verified'>>({});
+  const [activeTab, setActiveTab] = useState<AuditSupportTab>('documentation');
+  const [documentStatus, setDocumentStatus] = useState<Record<string, DocumentStatus>>({});
 
   const getRequiredDocuments = (): AuditDocument[] => {
     const documents: AuditDocument[] = [];
@@ -187,7 +200,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
     return documents;
   };
 
-  const updateDocumentStatus = (id: string, status: 'missing' | 'uploaded' | 'verified') => {
+  const updateDocumentStatus = (id: string, status: DocumentStatus) => {
     setDocumentStatus(prev => ({ ...prev, [id]: status }));
   };
 
@@ -238,7 +251,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
   const auditChecklist = [
     {
       item: 'Verify all income sources are reported',
-      completed: Object.values(formData.incomeData || {}).some(v => parseFloat(v as string || '0') > 0)
+      completed: Object.values(formData.incomeData || {}).some(value => parseFloat(String(value) || '0') > 0)
     },
     {
       item: 'Ensure all deductions are properly documented',
@@ -246,7 +259,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
     },
     {
       item: 'Confirm tax payments and withholdings',
-      completed: Object.values(formData.paymentsData || {}).some(v => parseFloat(v as string || '0') > 0)
+      completed: Object.values(formData.paymentsData || {}).some(value => parseFloat(String(value) || '0') > 0)
     },
     {
       item: 'Review filing status and dependents',
@@ -256,6 +269,16 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
       item: 'Double-check all calculations',
       completed: taxResult.totalTax > 0
     }
+  ];
+
+  const tabItems: Array<{
+    id: AuditSupportTab;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }> = [
+    { id: 'documentation', label: t('audit.documentation'), icon: FileCheck },
+    { id: 'report', label: t('audit.report'), icon: Download },
+    { id: 'checklist', label: t('audit.checklist'), icon: CheckCircle }
   ];
 
   const renderDocumentationTab = () => (
@@ -288,7 +311,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
                   <div className="flex items-center gap-2">
                     <select
                       value={doc.status}
-                      onChange={(e) => updateDocumentStatus(doc.id, e.target.value as any)}
+                      onChange={e => updateDocumentStatus(doc.id, e.target.value as DocumentStatus)}
                       className="text-sm border rounded px-2 py-1"
                     >
                       <option value="missing">Missing</option>
@@ -378,11 +401,11 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <h5 className="font-medium text-blue-800 mb-2">{t('audit.auditTips')}</h5>
         <ul className="text-sm text-blue-700 space-y-1">
-          <li>• Keep all supporting documents organized and accessible</li>
-          <li>• Maintain records for at least 3 years (7 years for certain situations)</li>
-          <li>• Be prepared to explain any unusual deductions or income sources</li>
-          <li>• Consider professional representation if audit is complex</li>
-          <li>• Respond to IRS communications promptly and completely</li>
+          <li>{t('audit.tips.tip1')}</li>
+          <li>{t('audit.tips.tip2')}</li>
+          <li>{t('audit.tips.tip3')}</li>
+          <li>{t('audit.tips.tip4')}</li>
+          <li>{t('audit.tips.tip5')}</li>
         </ul>
       </div>
     </div>
@@ -398,14 +421,10 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex space-x-8">
-          {[
-            { id: 'documentation', label: t('audit.documentation'), icon: FileCheck },
-            { id: 'report', label: t('audit.report'), icon: Download },
-            { id: 'checklist', label: t('audit.checklist'), icon: CheckCircle }
-          ].map(tab => (
+          {tabItems.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'

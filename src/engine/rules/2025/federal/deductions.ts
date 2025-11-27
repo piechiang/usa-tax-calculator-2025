@@ -4,16 +4,25 @@ import { dollarsToCents } from '../../../util/money';
 // Standard deductions for 2025 (converted to cents)
 // Source: IRS Rev. Proc. 2024-40, official 2025 amounts
 export const STANDARD_DEDUCTION_2025: Record<FilingStatus, number> = {
-  single: dollarsToCents(15750),
-  marriedJointly: dollarsToCents(31500),
-  marriedSeparately: dollarsToCents(15750),
-  headOfHousehold: dollarsToCents(23650),
+  single: dollarsToCents(15000),
+  marriedJointly: dollarsToCents(30000),
+  marriedSeparately: dollarsToCents(15000),
+  headOfHousehold: dollarsToCents(22500),
 };
 
 // Additional standard deduction amounts for 2025
+// Source: IRS Rev. Proc. 2024-40 §2.15
+// Note: Different amounts for unmarried vs married taxpayers
 export const ADDITIONAL_STANDARD_DEDUCTION_2025 = {
-  age65OrOlder: dollarsToCents(2000), // Per person (updated for 2025)
-  blind: dollarsToCents(2000), // Per person (updated for 2025)
+  // For unmarried taxpayers (Single, Head of Household)
+  age65OrOlderUnmarried: dollarsToCents(2000), // Per person
+  blindUnmarried: dollarsToCents(2000), // Per person
+  // For married taxpayers (MFJ, MFS, QSS)
+  age65OrOlderMarried: dollarsToCents(1600), // Per person
+  blindMarried: dollarsToCents(1600), // Per person
+  // Legacy exports for backwards compatibility - uses unmarried amounts
+  age65OrOlder: dollarsToCents(2000),
+  blind: dollarsToCents(2000),
 };
 
 // SALT (State and Local Tax) deduction cap

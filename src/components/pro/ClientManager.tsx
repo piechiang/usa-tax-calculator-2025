@@ -1,18 +1,18 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { listClients, saveClient, loadClient, deleteClient } from '../../utils/clientStorage';
+import type { TaxCalculatorSnapshot } from '../../hooks/useTaxCalculator';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  getSnapshot: () => any;
-  loadFromSnapshot: (s: any) => void;
+  getSnapshot: () => TaxCalculatorSnapshot;
+  loadFromSnapshot: (snapshot: Partial<TaxCalculatorSnapshot>) => void;
 };
 
 export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSnapshot }: Props) {
   const [clients, setClients] = useState(() => listClients());
   const [name, setName] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
-  const active = useMemo(() => clients.find(c => c.id === selected) || null, [clients, selected]);
 
   if (!isOpen) return null;
 
@@ -90,4 +90,6 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
     </div>
   );
 }
+
+
 

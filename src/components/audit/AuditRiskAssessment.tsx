@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, TrendingUp, TrendingDown, Eye, BarChart3, CheckCircle, XCircle, Info, Target, Zap } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Shield, AlertTriangle, Eye, BarChart3, CheckCircle, XCircle, Info, Target } from 'lucide-react';
+
+import type { TaxContextValue } from '../../contexts/TaxContext';
+
+type AuditView = 'overview' | 'factors' | 'recommendations' | 'protection';
 
 interface RiskFactor {
   id: string;
@@ -25,9 +29,17 @@ interface AuditProfile {
   complianceScore: number;
 }
 
+interface AuditRiskAssessmentFormData {
+  personalInfo: TaxContextValue['personalInfo'];
+  incomeData: TaxContextValue['incomeData'];
+  deductions: TaxContextValue['deductions'];
+  businessDetails?: Partial<TaxContextValue['businessDetails']>;
+  hasForeignAccounts?: boolean;
+}
+
 interface AuditRiskAssessmentProps {
-  formData: any;
-  taxResult: any;
+  formData: AuditRiskAssessmentFormData;
+  taxResult: TaxContextValue['taxResult'];
   t: (key: string) => string;
 }
 
@@ -36,34 +48,34 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
   taxResult,
   t
 }) => {
-  const [auditProfile, setAuditProfile] = useState<AuditProfile | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [selectedView, setSelectedView] = useState<'overview' | 'factors' | 'recommendations' | 'protection'>('overview');
-  const [riskFactors, setRiskFactors] = useState<RiskFactor[]>([]);
-
-  useEffect(() => {
-    analyzeAuditRisk();
-  }, [formData, taxResult]);
-
-  const analyzeAuditRisk = async () => {
-    setIsAnalyzing(true);
-
-    // Simulate AI analysis delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Calculate risk factors based on tax data
-    const factors = calculateRiskFactors();
-    const profile = generateAuditProfile(factors);
-
-    setRiskFactors(factors);
-    setAuditProfile(profile);
-    setIsAnalyzing(false);
+  const translate = (key: string, fallback: string): string => {
+    const value = t(key);
+    return value === key ? fallback : value;
   };
+  const [selectedView, setSelectedView] = useState<AuditView>('overview');
 
-  const calculateRiskFactors = (): RiskFactor[] => {
+  // Memoize round number checking
+  const checkForRoundNumbers = useCallback((): boolean => {
+    const values = [
+      formData.incomeData?.wages,
+      formData.incomeData?.interestIncome,
+      formData.deductions?.charitableContributions,
+      formData.deductions?.medicalExpenses
+    ].filter(value => value && parseFloat(String(value)) > 0);
+
+    if (values.length === 0) {
+      return false;
+    }
+
+    const roundNumbers = values.filter(value => parseFloat(String(value)) % 100 === 0).length;
+    return roundNumbers > values.length * 0.6; // More than 60% round numbers
+  }, [formData.incomeData, formData.deductions]);
+
+  // Memoize risk factors calculation
+  const riskFactors = useMemo((): RiskFactor[] => {
     const factors: RiskFactor[] = [];
-    const income = taxResult.adjustedGrossIncome || 0;
-    const deductions = formData.deductions || {};
+    const income = taxResult.adjustedGrossIncome ?? 0;
+    const deductions = formData.deductions;
 
     // High Income Risk
     if (income > 200000) {
@@ -83,7 +95,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     }
 
     // Large Charitable Deductions
-    const charitableDeductions = parseFloat(deductions.charitableContributions || '0');
+    const charitableDeductions = parseFloat(String(deductions.charitableContributions ?? '0'));
     if (charitableDeductions > income * 0.3) {
       factors.push({
         id: 'large-charitable',
@@ -101,8 +113,8 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     }
 
     // Business Loss Patterns
-    const businessIncome = parseFloat(formData.businessDetails?.grossReceipts || '0');
-    const businessExpenses = parseFloat(formData.businessDetails?.businessExpenses || '0');
+    const businessIncome = parseFloat(String(formData.businessDetails?.grossReceipts ?? '0'));
+    const businessExpenses = parseFloat(String(formData.businessDetails?.businessExpenses ?? '0'));
     if (businessIncome > 0 && businessExpenses > businessIncome) {
       factors.push({
         id: 'business-loss',
@@ -119,7 +131,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     }
 
     // Home Office Deduction
-    const homeOfficeDeduction = parseFloat(deductions.homeOffice || '0');
+    const homeOfficeDeduction = parseFloat(String(deductions.homeOffice ?? '0'));
     if (homeOfficeDeduction > 0) {
       factors.push({
         id: 'home-office',
@@ -152,7 +164,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     }
 
     // Earned Income Tax Credit
-    const eitc = taxResult.earnedIncomeCredit || 0;
+    const eitc = (taxResult as { earnedIncomeCredit?: number }).earnedIncomeCredit || 0;
     if (eitc > 0) {
       factors.push({
         id: 'eitc-claim',
@@ -184,7 +196,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     }
 
     // Large Casualty Loss
-    const casualtyLoss = parseFloat(deductions.casualtyLoss || '0');
+    const casualtyLoss = parseFloat(String(deductions.casualtyLoss ?? '0'));
     if (casualtyLoss > 10000) {
       factors.push({
         id: 'casualty-loss',
@@ -201,23 +213,12 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     }
 
     return factors;
-  };
+  }, [formData, taxResult, checkForRoundNumbers]);
 
-  const checkForRoundNumbers = (): boolean => {
-    const values = [
-      formData.incomeData?.wages,
-      formData.incomeData?.interestIncome,
-      formData.deductions?.charitableContributions,
-      formData.deductions?.medicalExpenses
-    ].filter(v => v && parseFloat(v) > 0);
-
-    const roundNumbers = values.filter(v => parseFloat(v) % 100 === 0).length;
-    return roundNumbers > values.length * 0.6; // More than 60% round numbers
-  };
-
-  const generateAuditProfile = (factors: RiskFactor[]): AuditProfile => {
+  // Memoize audit profile generation
+  const auditProfile = useMemo((): AuditProfile => {
     // Calculate overall risk score
-    const weightedRisk = factors.reduce((total, factor) => {
+    const weightedRisk = riskFactors.reduce((total, factor) => {
       return total + (factor.impact * factor.likelihood);
     }, 0);
 
@@ -231,7 +232,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     else riskLevel = 'very-high';
 
     // Calculate audit probability based on income and risk factors
-    const income = taxResult.adjustedGrossIncome || 0;
+    const income = taxResult.adjustedGrossIncome ?? 0;
     let baseAuditRate = 0.006; // 0.6% baseline
 
     if (income > 1000000) baseAuditRate = 0.039;
@@ -251,7 +252,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     ];
 
     // Add specific recommendations from high-risk factors
-    factors.filter(f => f.severity === 'high' || f.severity === 'critical')
+    riskFactors.filter(f => f.severity === 'high' || f.severity === 'critical')
       .forEach(f => recommendations.push(f.recommendation));
 
     const protectiveFactors = [
@@ -268,14 +269,14 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
       overallRisk,
       riskLevel,
       auditProbability,
-      primaryConcerns: factors.filter(f => f.severity === 'high' || f.severity === 'critical'),
+      primaryConcerns: riskFactors.filter(f => f.severity === 'high' || f.severity === 'critical'),
       protectiveFactors,
       recommendations,
       complianceScore
     };
-  };
+  }, [riskFactors, taxResult]);
 
-  const getRiskLevelColor = (level: string) => {
+  const getRiskLevelColor = (level: AuditProfile['riskLevel']) => {
     switch (level) {
       case 'very-low': return 'text-green-600 bg-green-100';
       case 'low': return 'text-green-600 bg-green-100';
@@ -286,7 +287,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     }
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: RiskFactor['severity']) => {
     switch (severity) {
       case 'low': return 'text-green-600 bg-green-100';
       case 'medium': return 'text-yellow-600 bg-yellow-100';
@@ -296,7 +297,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     }
   };
 
-  const getSeverityIcon = (severity: string) => {
+  const getSeverityIcon = (severity: RiskFactor['severity']) => {
     switch (severity) {
       case 'low': return <CheckCircle className="h-4 w-4" />;
       case 'medium': return <Info className="h-4 w-4" />;
@@ -310,40 +311,25 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
     return `${(value * 100).toFixed(2)}%`;
   };
 
-  if (isAnalyzing) {
-    return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Shield className="h-5 w-5 text-blue-600 animate-pulse" />
-          <h3 className="text-lg font-semibold text-gray-900">AI Audit Risk Assessment</h3>
-        </div>
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Analyzing your tax return for audit risk factors...</p>
-          <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!auditProfile) {
-    return null;
-  }
+  const tabItems: Array<{
+    id: AuditView;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    count?: number;
+  }> = [
+    { id: 'overview', label: translate('audit.riskAssessment.tabs.overview', 'Overview'), icon: Eye },
+    { id: 'factors', label: translate('audit.riskAssessment.tabs.factors', 'Risk Factors'), icon: AlertTriangle, count: riskFactors.length },
+    { id: 'recommendations', label: translate('audit.riskAssessment.tabs.recommendations', 'Recommendations'), icon: Target },
+    { id: 'protection', label: translate('audit.riskAssessment.tabs.protection', 'Protection Tips'), icon: Shield }
+  ];
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">AI Audit Risk Assessment</h3>
-        </div>
-        <button
-          onClick={analyzeAuditRisk}
-          className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-        >
-          <Zap className="h-4 w-4" />
-          Re-analyze
-        </button>
+      <div className="flex items-center gap-2 mb-6">
+        <Shield className="h-5 w-5 text-blue-600" />
+        <h3 className="text-lg font-semibold text-gray-900">
+          {translate('audit.riskAssessment.title', 'AI Audit Risk Assessment')}
+        </h3>
       </div>
 
       {/* Risk Overview Cards */}
@@ -351,55 +337,60 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
         <div className={`rounded-lg p-4 ${getRiskLevelColor(auditProfile.riskLevel)}`}>
           <div className="flex items-center gap-2 mb-2">
             <Target className="h-4 w-4" />
-            <span className="font-medium">Overall Risk Level</span>
+            <span className="font-medium">
+              {translate('audit.riskAssessment.overallRisk', 'Overall Risk Level')}
+            </span>
           </div>
           <div className="text-2xl font-bold capitalize">
             {auditProfile.riskLevel.replace('-', ' ')}
           </div>
           <div className="text-sm opacity-80">
-            Risk Score: {(auditProfile.overallRisk * 100).toFixed(1)}/100
+            {translate('audit.riskAssessment.riskScore', 'Risk Score')}:{' '}
+            {(auditProfile.overallRisk * 100).toFixed(1)}/100
           </div>
         </div>
 
         <div className="bg-purple-50 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <BarChart3 className="h-4 w-4 text-purple-600" />
-            <span className="font-medium text-purple-900">Audit Probability</span>
+            <span className="font-medium text-purple-900">
+              {translate('audit.riskAssessment.auditProbability', 'Audit Probability')}
+            </span>
           </div>
           <div className="text-2xl font-bold text-purple-600">
             {formatPercentage(auditProfile.auditProbability)}
           </div>
           <div className="text-sm text-purple-700">
-            National average: 0.6%
+            {translate('audit.riskAssessment.nationalAverage', 'National average: 0.6%')}
           </div>
         </div>
 
         <div className="bg-green-50 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="font-medium text-green-900">Compliance Score</span>
+            <span className="font-medium text-green-900">
+              {translate('audit.riskAssessment.complianceScore', 'Compliance Score')}
+            </span>
           </div>
           <div className="text-2xl font-bold text-green-600">
             {auditProfile.complianceScore.toFixed(0)}/100
           </div>
           <div className="text-sm text-green-700">
-            {auditProfile.complianceScore >= 80 ? 'Excellent' :
-             auditProfile.complianceScore >= 60 ? 'Good' : 'Needs Improvement'}
+            {auditProfile.complianceScore >= 80
+              ? translate('audit.riskAssessment.compliance.excellent', 'Excellent')
+              : auditProfile.complianceScore >= 60
+                ? translate('audit.riskAssessment.compliance.good', 'Good')
+                : translate('audit.riskAssessment.compliance.needsImprovement', 'Needs Improvement')}
           </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
       <div className="flex border-b border-gray-200 mb-6">
-        {[
-          { id: 'overview', label: 'Overview', icon: Eye },
-          { id: 'factors', label: 'Risk Factors', icon: AlertTriangle, count: riskFactors.length },
-          { id: 'recommendations', label: 'Recommendations', icon: Target },
-          { id: 'protection', label: 'Protection Tips', icon: Shield }
-        ].map((tab) => (
+        {tabItems.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setSelectedView(tab.id as any)}
+            onClick={() => setSelectedView(tab.id)}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
               selectedView === tab.id
                 ? 'border-blue-500 text-blue-600'
@@ -484,7 +475,7 @@ export const AuditRiskAssessment: React.FC<AuditRiskAssessmentProps> = ({
             <div>
               <h4 className="font-medium text-gray-900 mb-3">Risk Distribution</h4>
               <div className="space-y-2">
-                {['critical', 'high', 'medium', 'low'].map(severity => {
+                {(['critical', 'high', 'medium', 'low'] as const).map(severity => {
                   const count = riskFactors.filter(f => f.severity === severity).length;
                   const percentage = riskFactors.length > 0 ? (count / riskFactors.length) * 100 : 0;
 

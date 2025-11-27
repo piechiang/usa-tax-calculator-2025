@@ -1,17 +1,16 @@
-import { TaxPayerInput } from '../../types';
+import { FederalInput2025 } from '../../types';
 import { CTC_2025, EITC_2025, AOTC_2025, LLC_2025 } from '../../rules/2025/federal/credits';
 import { 
   addCents, 
   max0, 
-  multiplyCents, 
-  safeCurrencyToCents 
+  multiplyCents 
 } from '../../util/money';
 
 /**
  * Calculate Child Tax Credit with sophisticated eligibility and phase-out logic
  */
 export function calculateAdvancedCTC(
-  input: TaxPayerInput,
+  input: FederalInput2025,
   agi: number,
   taxBeforeCredits: number
 ): {
@@ -21,7 +20,7 @@ export function calculateAdvancedCTC(
   details: Array<{ name?: string; age: number; eligible: boolean; reason?: string }>;
 } {
   const currentYear = 2025;
-  const qualifyingChildren = input.qualifyingChildren || [];
+  const qualifyingChildren = input.qualifyingChildren;
   const details: Array<{ name?: string; age: number; eligible: boolean; reason?: string }> = [];
   let eligibleChildren = 0;
   
@@ -53,7 +52,7 @@ export function calculateAdvancedCTC(
   }
   
   // Fallback to legacy dependents count if no detailed children provided
-  if (qualifyingChildren.length === 0 && input.dependents) {
+  if (qualifyingChildren.length === 0 && input.dependents > 0) {
     eligibleChildren = input.dependents;
   }
   
@@ -88,10 +87,9 @@ export function calculateAdvancedCTC(
   let additionalChildTaxCredit = 0;
   if (remainingCredit > 0) {
     // Must have earned income of at least $2,500 to qualify for ACTC
-    const nToCents = (v: any) => safeCurrencyToCents(v);
     const earnedIncome = addCents(
-      nToCents(input.income?.wages),
-      nToCents(input.income?.scheduleCNet)
+      input.income.wages,
+      input.income.scheduleCNet
     );
     
     if (earnedIncome >= 250000) { // $2,500 in cents
@@ -114,7 +112,7 @@ export function calculateAdvancedCTC(
  * Calculate Earned Income Tax Credit with complex phase-in and phase-out
  */
 export function calculateAdvancedEITC(
-  input: TaxPayerInput,
+  input: FederalInput2025,
   agi: number
 ): {
   eitc: number;
@@ -128,20 +126,22 @@ export function calculateAdvancedEITC(
   
   // Step 1: Determine number of qualifying children for EITC
   let eligibleChildren = 0;
-  if (input.qualifyingChildren) {
+  if (input.qualifyingChildren.length > 0) {
     for (const child of input.qualifyingChildren) {
       const childAge = calculateAge(child.birthDate, currentYear);
-      
+
       // EITC qualifying child rules (stricter than CTC)
-      if (childAge < 19 || 
-          (childAge < 24 && child.isStudent) || 
-          child.isPermanentlyDisabled) {
+      if (
+        childAge < 19 ||
+        (childAge < 24 && child.isStudent) ||
+        child.isPermanentlyDisabled
+      ) {
         if (child.monthsLivedWithTaxpayer >= 6) {
           eligibleChildren++;
         }
       }
     }
-  } else if (input.dependents) {
+  } else if (input.dependents > 0) {
     eligibleChildren = input.dependents;
   }
   
@@ -194,10 +194,9 @@ export function calculateAdvancedEITC(
   }
   
   // Step 4: Calculate earned income (wages + self-employment)
-  const nToCents = (v: any) => safeCurrencyToCents(v);
   const earnedIncome = addCents(
-    nToCents(input.income?.wages),
-    nToCents(input.income?.scheduleCNet)
+    input.income.wages,
+    input.income.scheduleCNet
   );
   
   // Use the smaller of AGI or earned income for EITC calculation
@@ -237,7 +236,7 @@ export function calculateAdvancedEITC(
  * Calculate American Opportunity Tax Credit with expense validation
  */
 export function calculateAdvancedAOTC(
-  input: TaxPayerInput,
+  input: FederalInput2025,
   agi: number
 ): {
   aotc: number;
@@ -359,7 +358,7 @@ export function calculateAdvancedAOTC(
  * Calculate Lifetime Learning Credit
  */
 export function calculateAdvancedLLC(
-  input: TaxPayerInput,
+  input: FederalInput2025,
   agi: number
 ): {
   llc: number;
@@ -466,3 +465,4 @@ function calculateAge(birthDate: string, currentYear: number): number {
 
   return birthdayThisYear <= today ? age : age - 1;
 }
+

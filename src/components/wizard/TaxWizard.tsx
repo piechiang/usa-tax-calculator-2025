@@ -1,14 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Save, User, DollarSign, FileText, Calculator, Shield, Home, Heart, GraduationCap, Building2, HelpCircle, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Save, User, DollarSign, Calculator, Shield, Home, Heart, Building2, HelpCircle, LucideIcon } from 'lucide-react';
+
+// Type for wizard answer data
+interface WizardAnswers {
+  filingStatus?: string;
+  personalInfo?: Record<string, string>;
+  spouseInfo?: Record<string, string>;
+  hasQualifyingChildren?: string;
+  childrenCount?: number;
+  hasOtherDependents?: string;
+  hasW2Income?: string;
+  totalWages?: string;
+  federalWithholding?: string;
+  spouseHasW2Income?: string;
+  spouseTotalWages?: string;
+  hasInterestIncome?: string;
+  totalInterest?: string;
+  hasDividendIncome?: string;
+  totalDividends?: string;
+  hasCapitalGains?: string;
+  netCapitalGains?: string;
+  hasSelfEmployment?: string;
+  businessNetIncome?: string;
+  hasRentalIncome?: string;
+  netRentalIncome?: string;
+  deductionChoice?: string;
+  mortgageInterest?: string;
+  mortgageInterestAmount?: string;
+  stateLocalTaxes?: string;
+  saltAmount?: string;
+  charitableGiving?: string;
+  charitableAmount?: string;
+  childTaxCreditEligible?: string;
+  paidEducationExpenses?: string;
+  educationExpenseAmount?: string;
+  eitcEligible?: string;
+  reviewComplete?: string[];
+  [key: string]: unknown;
+}
 
 interface WizardStep {
   id: string;
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   category: 'personal' | 'income' | 'deductions' | 'credits' | 'review';
   required: boolean;
-  condition?: (data: any) => boolean;
+  condition?: (data: WizardAnswers) => boolean;
   subsections?: WizardSubsection[];
 }
 
@@ -17,7 +55,7 @@ interface WizardSubsection {
   title: string;
   description?: string;
   questions: WizardQuestion[];
-  condition?: (data: any) => boolean;
+  condition?: (data: WizardAnswers) => boolean;
 }
 
 interface WizardQuestion {
@@ -31,7 +69,7 @@ interface WizardQuestion {
     value: string;
     label: string;
     description?: string;
-    icon?: React.ComponentType<any>;
+    icon?: LucideIcon;
   }>;
   inputs?: Array<{
     field: string;
@@ -41,15 +79,15 @@ interface WizardQuestion {
     required?: boolean;
     validation?: (value: string) => string | null;
   }>;
-  validation?: (value: any) => string | null;
-  condition?: (data: any) => boolean;
+  validation?: (value: string) => string | null;
+  condition?: (data: WizardAnswers) => boolean;
   followUp?: WizardQuestion[];
 }
 
 interface TaxWizardProps {
-  onComplete: (data: any) => void;
+  onComplete: (data: WizardAnswers) => void;
   onCancel: () => void;
-  initialData?: any;
+  initialData?: WizardAnswers;
   t: (key: string) => string;
 }
 
@@ -57,12 +95,12 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
   onComplete,
   onCancel,
   initialData = {},
-  t
+  t: _t
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [currentSubsectionIndex, setCurrentSubsectionIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>(initialData);
+  const [answers, setAnswers] = useState<WizardAnswers>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -225,7 +263,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
       icon: Heart,
       category: 'personal',
       required: false,
-      condition: (data) => ['marriedJointly', 'marriedSeparately', 'headOfHousehold', 'qualifyingSurvivingSpouse'].includes(data.filingStatus),
+      condition: (data) => data.filingStatus ? ['marriedJointly', 'marriedSeparately', 'headOfHousehold', 'qualifyingSurvivingSpouse'].includes(data.filingStatus) : false,
       subsections: [
         {
           id: 'qualifying-children',
@@ -593,7 +631,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
         {
           id: 'child-tax-credit',
           title: 'Child Tax Credit',
-          condition: (data) => data.hasQualifyingChildren === 'yes' || data.childrenCount > 0,
+          condition: (data) => data.hasQualifyingChildren === 'yes' || (data.childrenCount !== undefined && data.childrenCount > 0),
           questions: [
             {
               id: 'childTaxCreditEligible',
@@ -688,6 +726,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
     }, 30000); // Save every 30 seconds
 
     return () => clearInterval(saveInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers]);
 
   // Load from localStorage on component mount
@@ -785,7 +824,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
             newErrors[input.field] = `${input.label} is required`;
           }
           if (input.validation && answers[input.field]) {
-            const validationError = input.validation(answers[input.field]);
+            const validationError = input.validation(String(answers[input.field]));
             if (validationError) {
               newErrors[input.field] = validationError;
             }
@@ -797,7 +836,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
     }
 
     if (currentQuestion.validation && answers[currentQuestion.id]) {
-      const validationError = currentQuestion.validation(answers[currentQuestion.id]);
+      const validationError = currentQuestion.validation(String(answers[currentQuestion.id]));
       if (validationError) {
         newErrors[currentQuestion.id] = validationError;
       }
@@ -835,7 +874,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
     // Mark current step as completed
     const stepId = currentStep?.id;
     if (stepId) {
-      setCompletedSteps(prev => new Set([...prev, stepId]));
+      setCompletedSteps(prev => new Set(Array.from(prev).concat(stepId)));
     }
 
     // Move to next step
@@ -888,7 +927,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
     }
   };
 
-  const handleAnswerChange = (field: string, value: any) => {
+  const handleAnswerChange = (field: string, value: unknown) => {
     setAnswers(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -948,35 +987,38 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
       case 'checkbox':
         return (
           <div className="space-y-3">
-            {currentQuestion.options?.map(option => (
-              <label
-                key={option.value}
-                className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
-                  answers[currentQuestion.id]?.includes(option.value)
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  value={option.value}
-                  checked={answers[currentQuestion.id]?.includes(option.value) || false}
-                  onChange={(e) => {
-                    const currentValues = answers[currentQuestion.id] || [];
-                    const newValues = e.target.checked
-                      ? [...currentValues, option.value]
-                      : currentValues.filter((v: string) => v !== option.value);
-                    handleAnswerChange(currentQuestion.id, newValues);
-                  }}
-                  className="sr-only"
-                />
-                <div className="flex items-start gap-3">
-                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 ${
-                    answers[currentQuestion.id]?.includes(option.value)
+            {currentQuestion.options?.map(option => {
+              const currentValues = Array.isArray(answers[currentQuestion.id]) ? answers[currentQuestion.id] as string[] : [];
+              const isChecked = currentValues.includes(option.value);
+
+              return (
+                <label
+                  key={option.value}
+                  className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
+                    isChecked
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    value={option.value}
+                    checked={isChecked}
+                    onChange={(e) => {
+                      const newValues = e.target.checked
+                        ? [...currentValues, option.value]
+                        : currentValues.filter((v: string) => v !== option.value);
+                      handleAnswerChange(currentQuestion.id, newValues);
+                    }}
+                    className="sr-only"
+                  />
+                  <div className="flex items-start gap-3">
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 ${
+                      isChecked
                       ? 'border-blue-500 bg-blue-500'
                       : 'border-gray-300'
                   }`}>
-                    {answers[currentQuestion.id]?.includes(option.value) && (
+                    {isChecked && (
                       <CheckCircle className="w-3 h-3 text-white" />
                     )}
                   </div>
@@ -988,7 +1030,8 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
                   </div>
                 </div>
               </label>
-            ))}
+              );
+            })}
           </div>
         );
 
@@ -1003,7 +1046,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
                 </label>
                 <input
                   type={input.type}
-                  value={answers[input.field] || ''}
+                  value={String(answers[input.field] || '')}
                   onChange={(e) => handleAnswerChange(input.field, e.target.value)}
                   placeholder={input.placeholder}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -1027,7 +1070,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
           <div>
             <input
               type="number"
-              value={answers[currentQuestion.id] || ''}
+              value={String(answers[currentQuestion.id] || '')}
               onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
               placeholder={currentQuestion.type === 'currency' ? '$0.00' : '0'}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -1047,7 +1090,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
         return (
           <input
             type="text"
-            value={answers[currentQuestion.id] || ''}
+            value={String(answers[currentQuestion.id] || '')}
             onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors[currentQuestion.id] ? 'border-red-500' : 'border-gray-300'
@@ -1223,7 +1266,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
                     {followUpQ.type === 'currency' || followUpQ.type === 'number' ? (
                       <input
                         type="number"
-                        value={answers[followUpQ.id] || ''}
+                        value={String(answers[followUpQ.id] || '')}
                         onChange={(e) => handleAnswerChange(followUpQ.id, e.target.value)}
                         placeholder={followUpQ.type === 'currency' ? '$0.00' : '0'}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1231,7 +1274,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
                     ) : (
                       <input
                         type="text"
-                        value={answers[followUpQ.id] || ''}
+                        value={String(answers[followUpQ.id] || '')}
                         onChange={(e) => handleAnswerChange(followUpQ.id, e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />

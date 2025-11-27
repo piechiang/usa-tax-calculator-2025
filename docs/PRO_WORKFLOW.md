@@ -35,8 +35,8 @@ const [showClientManager, setShowClientManager] = useState(false);
 
 ## CSV Importers
 
-- W‑2 CSV (columns: wages, federalWithholding, stateWithholding)
-- 1099‑B summary CSV (columns: proceeds, costBasis, term[short|long])
+- W-2 CSV (columns: wages, federalWithholding, stateWithholding)
+- 1099-B summary CSV (columns: proceeds, costBasis, term[short|long])
 
 ```ts
 import { importW2CSV, import1099BSummaryCSV } from '../utils/importers';
@@ -68,5 +68,5 @@ if (!result.success) setError('personalInfo', result.error.issues[0].message);
 
 - Add proper PDF export templates (Form 1040 summary).
 - Add user authentication and encrypted storage.
-- Extend engine to more states and forms (1099‑R, 8960, AMT, etc.).
+- Extend engine to more states and forms (1099-R, 8960, AMT, etc.).
 - Fix failing engine tests and add integration tests for UI.

@@ -1,16 +1,16 @@
 import React from 'react';
 import { FileText, DollarSign } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { ValidatedInput } from '../ui/InputField';
 
 interface IncomeFormProps {
-  incomeData: any;
-  k1Data: any;
-  businessDetails: any;
+  incomeData: Record<string, string | number>;
+  k1Data: Record<string, string | number>;
+  businessDetails: Record<string, string | number>;
   onIncomeChange: (field: string, value: string) => void;
   onK1Change: (field: string, value: string) => void;
   onBusinessDetailsChange: (field: string, value: string) => void;
   t: (key: string) => string;
-  UncontrolledInput: React.ComponentType<any>;
 }
 
 const IncomeForm: React.FC<IncomeFormProps> = ({
@@ -20,30 +20,30 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   onIncomeChange,
   onK1Change,
   onBusinessDetailsChange,
-  t,
-  UncontrolledInput
+  t
 }) => {
-  
+
   const calculateNetBusinessIncome = () => {
-    return (Number(businessDetails.grossReceipts) || 0) - 
-           (Number(businessDetails.costOfGoodsSold) || 0) - 
+    return (Number(businessDetails.grossReceipts) || 0) -
+           (Number(businessDetails.costOfGoodsSold) || 0) -
            (Number(businessDetails.businessExpenses) || 0);
   };
 
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('income.title')}</h3>
-      
+
       {/* Basic Income Fields */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('income.wages')}
           </label>
-          <UncontrolledInput
+          <ValidatedInput
             field="wages"
-            defaultValue={incomeData.wages}
+            value={String(incomeData.wages || '')}
             onChange={onIncomeChange}
+            section="income"
             type="number"
             placeholder="0"
             step="0.01"
@@ -51,15 +51,16 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             help={t('income.help.wages')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('income.interestIncome')}
           </label>
-          <UncontrolledInput
+          <ValidatedInput
             field="interestIncome"
-            defaultValue={incomeData.interestIncome}
+            value={String(incomeData.interestIncome || '')}
             onChange={onIncomeChange}
+            section="income"
             type="number"
             placeholder="0"
             step="0.01"
@@ -67,15 +68,16 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             help={t('income.help.interestIncome')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('income.dividends')}
           </label>
-          <UncontrolledInput
+          <ValidatedInput
             field="dividends"
-            defaultValue={incomeData.dividends}
+            value={String(incomeData.dividends || '')}
             onChange={onIncomeChange}
+            section="income"
             type="number"
             placeholder="0"
             step="0.01"
@@ -83,47 +85,52 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             help={t('income.help.dividends')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('income.capitalGains')}
           </label>
-          <UncontrolledInput
+          <ValidatedInput
             field="capitalGains"
-            defaultValue={incomeData.capitalGains}
+            value={String(incomeData.capitalGains || '')}
             onChange={onIncomeChange}
+            section="income"
             type="number"
             placeholder="0"
             step="0.01"
             help={t('income.help.capitalGains')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('income.businessIncome')}
           </label>
-          <UncontrolledInput
+          <ValidatedInput
             field="businessIncome"
-            defaultValue={incomeData.businessIncome}
+            value={String(incomeData.businessIncome || '')}
             onChange={onIncomeChange}
+            section="income"
             type="number"
             placeholder="0"
             step="0.01"
+            min="0"
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('income.otherIncome')}
           </label>
-          <UncontrolledInput
+          <ValidatedInput
             field="otherIncome"
-            defaultValue={incomeData.otherIncome}
+            value={String(incomeData.otherIncome || '')}
             onChange={onIncomeChange}
+            section="income"
             type="number"
             placeholder="0"
             step="0.01"
+            min="0"
           />
         </div>
       </div>
@@ -139,136 +146,151 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.ordinaryIncome')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="ordinaryIncome"
-              defaultValue={k1Data.ordinaryIncome}
+              value={String(k1Data.ordinaryIncome || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
+              min="0"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.netRentalRealEstate')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="netRentalRealEstate"
-              defaultValue={k1Data.netRentalRealEstate}
+              value={String(k1Data.netRentalRealEstate || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.otherRentalIncome')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="otherRentalIncome"
-              defaultValue={k1Data.otherRentalIncome}
+              value={String(k1Data.otherRentalIncome || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.guaranteedPayments')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="guaranteedPayments"
-              defaultValue={k1Data.guaranteedPayments}
+              value={String(k1Data.guaranteedPayments || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
+              min="0"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.interestIncome')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="k1InterestIncome"
-              defaultValue={k1Data.k1InterestIncome}
+              value={String(k1Data.k1InterestIncome || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
+              min="0"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.dividends')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="k1Dividends"
-              defaultValue={k1Data.k1Dividends}
+              value={String(k1Data.k1Dividends || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
+              min="0"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.royalties')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="royalties"
-              defaultValue={k1Data.royalties}
+              value={String(k1Data.royalties || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
+              min="0"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.netShortTermCapitalGain')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="netShortTermCapitalGain"
-              defaultValue={k1Data.netShortTermCapitalGain}
+              value={String(k1Data.netShortTermCapitalGain || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.netLongTermCapitalGain')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="netLongTermCapitalGain"
-              defaultValue={k1Data.netLongTermCapitalGain}
+              value={String(k1Data.netLongTermCapitalGain || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.k1Section.otherPortfolioIncome')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="otherPortfolioIncome"
-              defaultValue={k1Data.otherPortfolioIncome}
+              value={String(k1Data.otherPortfolioIncome || '')}
               onChange={onK1Change}
+              section="k1"
               type="number"
               placeholder="0"
               step="0.01"
@@ -288,44 +310,50 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.businessDetails.grossReceipts')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="grossReceipts"
-              defaultValue={businessDetails.grossReceipts}
+              value={String(businessDetails.grossReceipts || '')}
               onChange={onBusinessDetailsChange}
+              section="businessDetails"
               type="number"
               placeholder="0"
               step="0.01"
+              min="0"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.businessDetails.costOfGoodsSold')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="costOfGoodsSold"
-              defaultValue={businessDetails.costOfGoodsSold}
+              value={String(businessDetails.costOfGoodsSold || '')}
               onChange={onBusinessDetailsChange}
+              section="businessDetails"
               type="number"
               placeholder="0"
               step="0.01"
+              min="0"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('income.businessDetails.businessExpenses')}
             </label>
-            <UncontrolledInput
+            <ValidatedInput
               field="businessExpenses"
-              defaultValue={businessDetails.businessExpenses}
+              value={String(businessDetails.businessExpenses || '')}
               onChange={onBusinessDetailsChange}
+              section="businessDetails"
               type="number"
               placeholder="0"
               step="0.01"
+              min="0"
             />
           </div>
-          
+
           <div className="bg-white p-3 rounded border-2 border-green-300">
             <label className="block text-sm font-medium text-green-800 mb-1">
               {t('income.businessDetails.netBusinessIncome')}
@@ -340,4 +368,5 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   );
 };
 
-export default IncomeForm;
+// Memoize component to prevent unnecessary re-renders
+export default React.memo(IncomeForm);

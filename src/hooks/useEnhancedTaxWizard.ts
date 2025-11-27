@@ -6,8 +6,7 @@ import {
   TaxCalculationResult,
   UserProgress,
   ValidationError,
-  TaxDataImport,
-  FieldMapping
+  TaxDataImport
 } from '../types/EnhancedTaxTypes';
 
 interface WizardState {
@@ -36,8 +35,8 @@ interface UseEnhancedTaxWizardReturn {
   wizardState: WizardState;
 
   // Data Management
-  updateData: (path: string, value: any) => void;
-  getData: (path?: string) => any;
+  updateData: (path: string, value: unknown) => void;
+  getData: (path?: string) => unknown;
   resetData: () => void;
 
   // Validation
@@ -65,11 +64,11 @@ interface UseEnhancedTaxWizardReturn {
   restoreFromBackup: (backup: string) => void;
 
   // Prior Year Data
-  importPriorYear: (priorYearData: any) => void;
+  importPriorYear: (priorYearData: Partial<EnhancedTaxReturn>) => void;
 
   // Guidance & Help
   getGuidance: (field: string) => string[];
-  getSuggestions: (context: any) => string[];
+  getSuggestions: (context: Partial<EnhancedTaxReturn>) => string[];
 
   // Utility
   isDirty: boolean;
@@ -84,7 +83,6 @@ export const useEnhancedTaxWizard = (
     autoSave = true,
     autoSaveInterval = 30000,
     autoCalculate = true,
-    enableBackup = true,
     storageKey = 'enhancedTaxWizard'
   } = options;
 
@@ -110,9 +108,52 @@ export const useEnhancedTaxWizard = (
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const calculationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Storage functions
+  const saveToStorage = useCallback(() => {
+    try {
+      const dataToSave = {
+        data: wizardState.data,
+        progress: wizardState.progress,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+
+      setWizardState(prev => ({
+        ...prev,
+        progress: {
+          ...prev.progress,
+          lastSaved: new Date()
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to save to storage:', error);
+    }
+  }, [wizardState.data, wizardState.progress, storageKey]);
+
+  const loadFromStorage = useCallback(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsedData = JSON.parse(saved);
+        setWizardState(prev => ({
+          ...prev,
+          data: parsedData.data || {},
+          progress: parsedData.progress || prev.progress
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load from storage:', error);
+    }
+  }, [storageKey]);
+
+  const clearStorage = useCallback(() => {
+    localStorage.removeItem(storageKey);
+  }, [storageKey]);
+
   // Initialize from storage
   useEffect(() => {
     loadFromStorage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-save setup
@@ -132,159 +173,15 @@ export const useEnhancedTaxWizard = (
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [wizardState.isDirty, autoSave, autoSaveInterval]);
+  }, [wizardState.isDirty, autoSave, autoSaveInterval, saveToStorage]);
 
-  // Auto-calculate setup
-  useEffect(() => {
-    if (autoCalculate && wizardState.isDirty && !wizardState.isCalculating) {
-      if (calculationTimeoutRef.current) {
-        clearTimeout(calculationTimeoutRef.current);
-      }
-
-      calculationTimeoutRef.current = setTimeout(() => {
-        calculate();
-      }, 2000); // Debounce calculations
-    }
-
-    return () => {
-      if (calculationTimeoutRef.current) {
-        clearTimeout(calculationTimeoutRef.current);
-      }
-    };
-  }, [wizardState.data, autoCalculate]);
-
-  const updateData = useCallback((path: string, value: any) => {
-    setWizardState(prev => {
-      const newData = { ...prev.data };
-      setValueAtPath(newData, path, value);
-
-      return {
-        ...prev,
-        data: newData,
-        isDirty: true,
-        validation: {
-          ...prev.validation,
-          errors: prev.validation.errors.filter(e => e.field !== path)
-        }
-      };
-    });
-  }, []);
-
+  // getData function
   const getData = useCallback((path?: string) => {
     if (!path) return wizardState.data;
     return getValueAtPath(wizardState.data, path);
   }, [wizardState.data]);
 
-  const resetData = useCallback(() => {
-    setWizardState(prev => ({
-      ...prev,
-      data: {},
-      isDirty: false,
-      validation: { errors: [], warnings: [] },
-      calculations: null,
-      progress: {
-        completedSections: [],
-        currentSection: 'basic-info',
-        overallProgress: 0,
-        lastSaved: new Date(),
-        estimatedTimeRemaining: 0
-      }
-    }));
-    clearStorage();
-  }, []);
-
-  const validateField = useCallback((field: string): ValidationError[] => {
-    const errors: ValidationError[] = [];
-    const value = getData(field);
-
-    // Add validation logic based on field type and requirements
-    if (field === 'personalInfo.ssn') {
-      if (!value) {
-        errors.push({
-          field,
-          message: 'Social Security Number is required',
-          severity: 'error'
-        });
-      } else if (!/^\d{3}-\d{2}-\d{4}$/.test(value)) {
-        errors.push({
-          field,
-          message: 'SSN must be in format XXX-XX-XXXX',
-          severity: 'error'
-        });
-      }
-    }
-
-    if (field === 'personalInfo.dateOfBirth') {
-      if (!value) {
-        errors.push({
-          field,
-          message: 'Date of birth is required',
-          severity: 'error'
-        });
-      } else {
-        const birthDate = new Date(value);
-        const today = new Date();
-        const age = today.getFullYear() - birthDate.getFullYear();
-
-        if (age < 0 || age > 150) {
-          errors.push({
-            field,
-            message: 'Please enter a valid date of birth',
-            severity: 'error'
-          });
-        }
-      }
-    }
-
-    // Income validation
-    if (field.includes('income') && value !== undefined) {
-      const numValue = Number(value);
-      if (isNaN(numValue) || numValue < 0) {
-        errors.push({
-          field,
-          message: 'Income must be a positive number',
-          severity: 'error'
-        });
-      }
-    }
-
-    return errors;
-  }, [getData]);
-
-  const validateAll = useCallback((): ValidationError[] => {
-    const allErrors: ValidationError[] = [];
-
-    // Validate required fields based on current data
-    const personalInfo = getData('personalInfo') as Partial<PersonalInformation>;
-
-    if (personalInfo) {
-      ['firstName', 'lastName', 'ssn', 'dateOfBirth'].forEach(field => {
-        const fieldErrors = validateField(`personalInfo.${field}`);
-        allErrors.push(...fieldErrors);
-      });
-    }
-
-    // Validate filing status dependent fields
-    const filingStatus = getData('personalInfo.filingStatus');
-    if (filingStatus === 'marriedJointly' || filingStatus === 'marriedSeparately') {
-      ['spouseInfo.firstName', 'spouseInfo.lastName', 'spouseInfo.ssn'].forEach(field => {
-        const fieldErrors = validateField(field);
-        allErrors.push(...fieldErrors);
-      });
-    }
-
-    // Update validation state
-    setWizardState(prev => ({
-      ...prev,
-      validation: {
-        ...prev.validation,
-        errors: allErrors
-      }
-    }));
-
-    return allErrors;
-  }, [getData, validateField]);
-
+  // Calculate function
   const calculate = useCallback(async (): Promise<void> => {
     setWizardState(prev => ({ ...prev, isCalculating: true }));
 
@@ -351,6 +248,152 @@ export const useEnhancedTaxWizard = (
       }));
     }
   }, [getData]);
+
+  // Auto-calculate setup
+  useEffect(() => {
+    if (autoCalculate && wizardState.isDirty && !wizardState.isCalculating) {
+      if (calculationTimeoutRef.current) {
+        clearTimeout(calculationTimeoutRef.current);
+      }
+
+      calculationTimeoutRef.current = setTimeout(() => {
+        calculate();
+      }, 2000); // Debounce calculations
+    }
+
+    return () => {
+      if (calculationTimeoutRef.current) {
+        clearTimeout(calculationTimeoutRef.current);
+      }
+    };
+  }, [wizardState.isDirty, wizardState.isCalculating, autoCalculate, calculate]);
+
+  const updateData = useCallback((path: string, value: unknown) => {
+    setWizardState(prev => {
+      const newData = { ...prev.data };
+      setValueAtPath(newData, path, value);
+
+      return {
+        ...prev,
+        data: newData,
+        isDirty: true,
+        validation: {
+          ...prev.validation,
+          errors: prev.validation.errors.filter(e => e.field !== path)
+        }
+      };
+    });
+  }, []);
+
+  const resetData = useCallback(() => {
+    setWizardState(prev => ({
+      ...prev,
+      data: {},
+      isDirty: false,
+      validation: { errors: [], warnings: [] },
+      calculations: null,
+      progress: {
+        completedSections: [],
+        currentSection: 'basic-info',
+        overallProgress: 0,
+        lastSaved: new Date(),
+        estimatedTimeRemaining: 0
+      }
+    }));
+    clearStorage();
+  }, [clearStorage]);
+
+  const validateField = useCallback((field: string): ValidationError[] => {
+    const errors: ValidationError[] = [];
+    const value = getData(field);
+
+    // Add validation logic based on field type and requirements
+    if (field === 'personalInfo.ssn') {
+      if (!value) {
+        errors.push({
+          field,
+          message: 'Social Security Number is required',
+          severity: 'error'
+        });
+      } else if (typeof value === 'string' && !/^\d{3}-\d{2}-\d{4}$/.test(value)) {
+        errors.push({
+          field,
+          message: 'SSN must be in format XXX-XX-XXXX',
+          severity: 'error'
+        });
+      }
+    }
+
+    if (field === 'personalInfo.dateOfBirth') {
+      if (!value) {
+        errors.push({
+          field,
+          message: 'Date of birth is required',
+          severity: 'error'
+        });
+      } else if (typeof value === 'string' || typeof value === 'number') {
+        const birthDate = new Date(value);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+
+        if (age < 0 || age > 150) {
+          errors.push({
+            field,
+            message: 'Please enter a valid date of birth',
+            severity: 'error'
+          });
+        }
+      }
+    }
+
+    // Income validation
+    if (field.includes('income') && value !== undefined) {
+      const numValue = Number(value);
+      if (isNaN(numValue) || numValue < 0) {
+        errors.push({
+          field,
+          message: 'Income must be a positive number',
+          severity: 'error'
+        });
+      }
+    }
+
+    return errors;
+  }, [getData]);
+
+  const validateAll = useCallback((): ValidationError[] => {
+    const allErrors: ValidationError[] = [];
+
+    // Validate required fields based on current data
+    const personalInfo = getData('personalInfo') as Partial<PersonalInformation>;
+
+    if (personalInfo) {
+      ['firstName', 'lastName', 'ssn', 'dateOfBirth'].forEach(field => {
+        const fieldErrors = validateField(`personalInfo.${field}`);
+        allErrors.push(...fieldErrors);
+      });
+    }
+
+    // Validate filing status dependent fields
+    const filingStatus = getData('personalInfo.filingStatus');
+    if (filingStatus === 'marriedJointly' || filingStatus === 'marriedSeparately') {
+      ['spouseInfo.firstName', 'spouseInfo.lastName', 'spouseInfo.ssn'].forEach(field => {
+        const fieldErrors = validateField(field);
+        allErrors.push(...fieldErrors);
+      });
+    }
+
+    // Update validation state
+    setWizardState(prev => ({
+      ...prev,
+      validation: {
+        ...prev.validation,
+        errors: allErrors
+      }
+    }));
+
+    return allErrors;
+  }, [getData, validateField]);
 
   const updateProgress = useCallback((section: string, completed: boolean) => {
     setWizardState(prev => {
@@ -426,47 +469,6 @@ export const useEnhancedTaxWizard = (
     }
   }, [wizardState]);
 
-  const saveToStorage = useCallback(() => {
-    try {
-      const dataToSave = {
-        data: wizardState.data,
-        progress: wizardState.progress,
-        timestamp: new Date().toISOString()
-      };
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-
-      setWizardState(prev => ({
-        ...prev,
-        progress: {
-          ...prev.progress,
-          lastSaved: new Date()
-        }
-      }));
-    } catch (error) {
-      console.error('Failed to save to storage:', error);
-    }
-  }, [wizardState.data, wizardState.progress, storageKey]);
-
-  const loadFromStorage = useCallback(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsedData = JSON.parse(saved);
-        setWizardState(prev => ({
-          ...prev,
-          data: parsedData.data || {},
-          progress: parsedData.progress || prev.progress
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to load from storage:', error);
-    }
-  }, [storageKey]);
-
-  const clearStorage = useCallback(() => {
-    localStorage.removeItem(storageKey);
-  }, [storageKey]);
-
   const createBackup = useCallback((): string => {
     const backup = {
       data: wizardState.data,
@@ -494,7 +496,7 @@ export const useEnhancedTaxWizard = (
     }
   }, []);
 
-  const importPriorYear = useCallback((priorYearData: any) => {
+  const importPriorYear = useCallback((priorYearData: Partial<EnhancedTaxReturn>) => {
     const mappedData = mapPreviousYearData(priorYearData);
     setWizardState(prev => ({
       ...prev,
@@ -523,17 +525,18 @@ export const useEnhancedTaxWizard = (
     return guidance[field] || [];
   }, []);
 
-  const getSuggestions = useCallback((context: any): string[] => {
+  const getSuggestions = useCallback((_context: Partial<EnhancedTaxReturn>): string[] => {
     const suggestions: string[] = [];
 
     // Income-based suggestions
-    const totalIncome = getData('totalIncome') || 0;
+    const totalIncome = (getData('totalIncome') as number) || 0;
     if (totalIncome > 100000) {
       suggestions.push('Consider maximizing retirement contributions for tax savings');
     }
 
     // Deduction suggestions
-    const hasCharitableGiving = getData('itemizedDeductions')?.some((d: any) => d.category === 'charity');
+    const itemizedDeductions = getData('itemizedDeductions') as Array<{ category: string }> | undefined;
+    const hasCharitableGiving = itemizedDeductions?.some(d => d.category === 'charity');
     if (!hasCharitableGiving && totalIncome > 50000) {
       suggestions.push('Consider charitable contributions for additional deductions');
     }
@@ -583,23 +586,33 @@ export const useEnhancedTaxWizard = (
 };
 
 // Helper functions
-const setValueAtPath = (obj: any, path: string, value: any) => {
+const setValueAtPath = (obj: Record<string, unknown>, path: string, value: unknown): void => {
   const keys = path.split('.');
-  let current = obj;
+  let current: Record<string, unknown> = obj;
 
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i];
-    if (!(key in current) || typeof current[key] !== 'object') {
+    if (key && (!(key in current) || typeof current[key] !== 'object')) {
       current[key] = {};
     }
-    current = current[key];
+    if (key) {
+      current = current[key] as Record<string, unknown>;
+    }
   }
 
-  current[keys[keys.length - 1]] = value;
+  const lastKey = keys[keys.length - 1];
+  if (lastKey) {
+    current[lastKey] = value;
+  }
 };
 
-const getValueAtPath = (obj: any, path: string) => {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
+const getValueAtPath = (obj: Record<string, unknown>, path: string): unknown => {
+  return path.split('.').reduce((current: unknown, key: string) => {
+    if (current && typeof current === 'object') {
+      return (current as Record<string, unknown>)[key];
+    }
+    return undefined;
+  }, obj);
 };
 
 const getStandardDeduction = (filingStatus?: string): number => {
@@ -614,7 +627,7 @@ const getStandardDeduction = (filingStatus?: string): number => {
   return standardDeductions[filingStatus as keyof typeof standardDeductions] || 15750;
 };
 
-const calculateFederalTax = (taxableIncome: number, filingStatus?: string): number => {
+const calculateFederalTax = (taxableIncome: number, _filingStatus?: string): number => {
   // Simplified tax calculation for 2025
   const brackets = {
     single: [
@@ -641,7 +654,7 @@ const calculateFederalTax = (taxableIncome: number, filingStatus?: string): numb
   return Math.round(tax);
 };
 
-const getMarginalTaxRate = (taxableIncome: number, filingStatus?: string): number => {
+const getMarginalTaxRate = (taxableIncome: number, _filingStatus?: string): number => {
   // Return the marginal tax rate based on income
   if (taxableIncome <= 11925) return 10;
   if (taxableIncome <= 48375) return 12;
@@ -652,7 +665,7 @@ const getMarginalTaxRate = (taxableIncome: number, filingStatus?: string): numbe
   return 37;
 };
 
-const mapPreviousYearData = (priorYearData: any): Partial<EnhancedTaxReturn> => {
+const mapPreviousYearData = (priorYearData: Partial<EnhancedTaxReturn>): Partial<EnhancedTaxReturn> => {
   // Map previous year data to current year structure
   return {
     personalInfo: {
@@ -680,20 +693,20 @@ const mapPreviousYearData = (priorYearData: any): Partial<EnhancedTaxReturn> => 
   };
 };
 
-const convertToCSV = (data: any): string => {
+const convertToCSV = (data: Record<string, unknown>): string => {
   // Convert tax data to CSV format
   const headers = ['Field', 'Value'];
   const rows = [headers.join(',')];
 
-  const flattenObject = (obj: any, prefix = ''): void => {
+  const flattenObject = (obj: Record<string, unknown>, prefix = ''): void => {
     Object.keys(obj).forEach(key => {
       const value = obj[key];
       const fullKey = prefix ? `${prefix}.${key}` : key;
 
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        flattenObject(value, fullKey);
+        flattenObject(value as Record<string, unknown>, fullKey);
       } else {
-        rows.push(`"${fullKey}","${value || ''}"`);
+        rows.push(`"${fullKey}","${value !== null && value !== undefined ? String(value) : ''}"`);
       }
     });
   };

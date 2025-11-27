@@ -4,32 +4,46 @@
   "description": "Modern 2025 USA tax calculator with a typed engine and a React UI. Accountant-friendly workflows with client management and data import/export.",
   "private": true,
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
+    "antd": "^5.27.4",
     "decimal.js": "^10.6.0",
     "i18next": "^21.6.16",
     "lucide-react": "^0.263.1",
+    "pdfmake": "^0.2.20",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^11.15.3",
     "recharts": "^3.1.2",
-    "zod": "^3.23.8"
+    "use-deep-compare-effect": "^1.8.1",
+    "zod": "^3.25.76"
   },
   "scripts": {
-    "prebuild": "npm run build:engine || node -e \"require('fs').mkdirSync('src/engine-dist',{recursive:true})\"",
-    "prestart": "npm run build:engine || node -e \"require('fs').mkdirSync('src/engine-dist',{recursive:true})\"",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "build:full": "tsc -p tsconfig.engine.json && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
     "test:engine": "vitest run",
     "test:engine:watch": "vitest",
     "build:engine": "tsc -p tsconfig.engine.json",
-    "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}'",
-    "eject": "react-scripts eject"
+    "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint src --ext .ts,.tsx,.js,.jsx --fix",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.0",
     "@types/node": "^24.5.2",
+    "@types/pdfmake": "^0.2.9",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint-plugin-unused-imports": "^4.2.0",
     "fast-check": "^4.2.0",
-    "react-scripts": "5.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.4",
     "typescript": "^4.9.5",
+    "vite": "^7.2.4",
     "vitest": "^3.2.4"
   },
   "browserslist": {
@@ -42,6 +56,18 @@
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
+    ]
+  },
+  "overrides": {
+    "@svgr/plugin-svgo": "^8.1.0",
+    "svgo": "^3.0.0",
+    "css-select": "^5.1.0",
+    "nth-check": "^2.1.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
     ]
   }
 }

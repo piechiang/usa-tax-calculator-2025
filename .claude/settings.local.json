@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run test:engine:*)"
+      "Bash(npm run test:engine:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

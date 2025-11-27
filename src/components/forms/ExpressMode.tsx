@@ -3,9 +3,9 @@
  * "少填、准填、不怕填" - 10-15个问题覆盖80%场景
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, Button, Typography, Form, Input, Select, Radio, Checkbox, Upload, Progress } from 'antd';
-import { CameraOutlined, QuestionCircleOutlined, CalculatorOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { CameraOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import Form1099B from './Form1099B';
 
 const { Title, Text, Paragraph } = Typography;
@@ -214,7 +214,7 @@ const EXPRESS_QUESTIONS = [
     title: '1099-B 投资买卖收益',
     subtitle: '股票、基金、债券等买卖收益',
     condition: (answers) => answers.income_sources?.includes('investment'),
-    helpText: '📊 上传Consolidated 1099-B或手动输入交易记录',
+    helpText: '上传Consolidated 1099-B或手动输入交易记录',
     description: '这里处理所有投资买卖的资本利得和损失'
   },
   {
@@ -279,15 +279,33 @@ const EXPRESS_QUESTIONS = [
   }
 ];
 
+// Type definitions for Express Mode data
+interface ExpressModeAnswers {
+  user_type?: string;
+  income_sources?: string[];
+  has_tuition?: string;
+  visa_status?: string;
+  filing_status?: string;
+  basic_info?: Record<string, string | number>;
+  w2_income?: { method: string; file?: File; wages?: string; federalWithholding?: string };
+  tuition_info?: Record<string, string | number>;
+  investment_income?: Record<string, string | number>;
+  form_1099b?: unknown;
+  dependents?: { children: Array<{ age: string; has_ssn: boolean; relationship: string }> };
+  residency_test?: { days: Record<string, string>; totalDays?: number; isResident?: boolean; recommendation?: string };
+  tax_savings_opportunities?: Record<string, string | number>;
+  [key: string]: unknown;
+}
+
 interface ExpressModeProps {
-  onComplete: (data: any) => void;
-  initialData?: any;
+  onComplete: (data: ExpressModeAnswers) => void;
+  initialData?: ExpressModeAnswers;
 }
 
 const ExpressMode: React.FC<ExpressModeProps> = ({ onComplete, initialData = {} }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState(initialData);
-  const [form] = Form.useForm();
+  const [_form] = Form.useForm(); // Unused but required by Ant Design Form API
 
   // 根据条件过滤显示的问题
   const visibleQuestions = EXPRESS_QUESTIONS.filter(q => 
@@ -697,7 +715,7 @@ const W2Upload = ({ question, value, onChange }) => {
   );
 };
 
-const DependentsList = ({ question, value = { children: [] }, onChange }) => {
+const DependentsList = ({ question: _question, value = { children: [] }, onChange }) => {
   const addChild = () => {
     const newChildren = [...(value.children || []), { age: '', has_ssn: false, relationship: 'son' }];
     onChange({ ...value, children: newChildren });
@@ -767,10 +785,10 @@ const DependentsList = ({ question, value = { children: [] }, onChange }) => {
   );
 };
 
-const ResidencyCalculator = ({ question, value, onChange }) => {
+const ResidencyCalculator = ({ question: _question, value, onChange }) => {
   const [days, setDays] = useState(value?.days || { year2025: '', year2024: '', year2023: '' });
-  
-  const calculateResidency = () => {
+
+  const _calculateResidency = () => {
     const current = parseInt(days.year2025) || 0;
     const previous1 = Math.floor((parseInt(days.year2024) || 0) / 3);
     const previous2 = Math.floor((parseInt(days.year2023) || 0) / 6);

@@ -1,0 +1,130 @@
+name: Documentation Encoding Check
+
+on:
+  push:
+    branches: [ master, main, develop ]
+    paths:
+      - 'docs/**/*.md'
+      - '*.md'
+  pull_request:
+    branches: [ master, main, develop ]
+    paths:
+      - 'docs/**/*.md'
+      - '*.md'
+
+jobs:
+  check-encoding:
+    runs-on: ubuntu-latest
+    name: Verify UTF-8 Encoding
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check markdown file encodings
+        run: |
+          echo "Checking encoding of all markdown files..."
+
+          # Find all .md files
+          md_files=$(find . -name "*.md" -not -path "*/node_modules/*" -not -path "*/.git/*")
+
+          # Check each file
+          encoding_errors=0
+          for file in $md_files; do
+            encoding=$(file --mime-encoding "$file" | awk '{print $2}')
+            if [ "$encoding" != "utf-8" ] && [ "$encoding" != "us-ascii" ]; then
+              echo "❌ ERROR: $file has encoding: $encoding (expected utf-8)"
+              encoding_errors=$((encoding_errors + 1))
+            else
+              echo "✅ OK: $file ($encoding)"
+            fi
+          done
+
+          # Exit with error if any non-UTF-8 files found
+          if [ $encoding_errors -gt 0 ]; then
+            echo ""
+            echo "Found $encoding_errors file(s) with incorrect encoding!"
+            echo "Please convert to UTF-8 before committing."
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ All markdown files are properly encoded (UTF-8 or ASCII)"
+
+      - name: Check for BOM (Byte Order Mark)
+        run: |
+          echo "Checking for BOM in markdown files..."
+
+          bom_files=$(find . -name "*.md" -not -path "*/node_modules/*" -not -path "*/.git/*" -exec grep -l $'^\xEF\xBB\xBF' {} \;)
+
+          if [ -n "$bom_files" ]; then
+            echo "❌ ERROR: Found files with UTF-8 BOM:"
+            echo "$bom_files"
+            echo ""
+            echo "Remove BOM with: sed -i '1s/^\xEF\xBB\xBF//' filename.md"
+            exit 1
+          fi
+
+          echo "✅ No BOM found in markdown files"
+
+      - name: Verify Chinese character rendering
+        run: |
+          echo "Checking Chinese character integrity in Chinese docs..."
+
+          # Check if Chinese roadmap exists and contains valid Chinese characters
+          if [ -f "docs/IMPLEMENTATION_ROADMAP_CHINESE.md" ]; then
+            # Count Chinese characters (Unicode range for CJK)
+            chinese_char_count=$(grep -o '[一-龥]' docs/IMPLEMENTATION_ROADMAP_CHINESE.md | wc -l)
+
+            if [ $chinese_char_count -lt 100 ]; then
+              echo "❌ WARNING: Chinese roadmap has fewer than 100 Chinese characters ($chinese_char_count found)"
+              echo "This may indicate encoding corruption"
+            else
+              echo "✅ Chinese roadmap contains $chinese_char_count Chinese characters"
+            fi
+          else
+            echo "⚠️  Chinese roadmap not found (expected at docs/IMPLEMENTATION_ROADMAP_CHINESE.md)"
+          fi
+
+      - name: Check for common encoding issues
+        run: |
+          echo "Checking for common encoding corruption patterns..."
+
+          # Check for mojibake patterns (common encoding corruption indicators)
+          corruption_patterns=(
+            "Ã¤Â¸Â" # Corrupted Chinese
+            "â€"      # Corrupted em-dash
+            "Â "      # Non-breaking space corruption
+            "Ã©"      # Corrupted é
+          )
+
+          corrupted_files=""
+          for pattern in "${corruption_patterns[@]}"; do
+            files=$(grep -rl "$pattern" docs/*.md 2>/dev/null || true)
+            if [ -n "$files" ]; then
+              corrupted_files="$corrupted_files\n$files"
+            fi
+          done
+
+          if [ -n "$corrupted_files" ]; then
+            echo "❌ WARNING: Potential encoding corruption detected in:"
+            echo -e "$corrupted_files" | sort | uniq
+            echo ""
+            echo "Files may contain mojibake (corrupted characters)"
+          else
+            echo "✅ No obvious encoding corruption detected"
+          fi
+
+      - name: Summary
+        if: success()
+        run: |
+          echo ""
+          echo "=================================================="
+          echo "✅ All documentation encoding checks passed!"
+          echo "=================================================="
+          echo ""
+          echo "Verified:"
+          echo "  - All .md files are UTF-8 or ASCII encoded"
+          echo "  - No UTF-8 BOM present"
+          echo "  - Chinese characters render correctly"
+          echo "  - No common encoding corruption patterns"

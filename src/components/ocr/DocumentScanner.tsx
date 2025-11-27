@@ -1,12 +1,14 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, FileText, Scan, CheckCircle, AlertCircle, RotateCw, Crop, Download, Trash2, Edit3, Save } from 'lucide-react';
+import { Camera, Upload, FileText, Scan, CheckCircle, AlertCircle, RotateCw, Trash2 } from 'lucide-react';
+import { toast } from '../../utils/toast';
+import { useModalAccessibility } from '../../hooks/useModalAccessibility';
 
 interface ScannedDocument {
   id: string;
   name: string;
   type: 'w2' | '1099' | 'receipt' | 'form' | 'other';
   imageUrl: string;
-  extractedData: any;
+  extractedData: ExtractedData;
   confidence: number;
   status: 'processing' | 'completed' | 'error' | 'review';
   timestamp: Date;
@@ -21,14 +23,45 @@ interface ExtractedField {
   needsReview: boolean;
 }
 
+type DocumentType = ScannedDocument['type'];
+
+type ExtractedData =
+  | {
+      employerName: string;
+      employerEIN: string;
+      employeeSSN: string;
+      wages: string;
+      federalWithholding: string;
+      stateWithholding: string;
+      socialSecurityWages: string;
+      medicareWages: string;
+    }
+  | {
+      payerName: string;
+      payerTIN: string;
+      recipientTIN: string;
+      interestIncome: string;
+      dividends: string;
+      federalWithholding: string;
+    }
+  | {
+      vendor: string;
+      date: string;
+      amount: string;
+      category: string;
+      description: string;
+    }
+  | {
+      documentType: string;
+      text: string;
+    };
+
 interface DocumentScannerProps {
-  onDataExtracted: (data: any, documentType: string) => void;
-  t: (key: string) => string;
+  onDataExtracted: (data: ExtractedData, documentType: DocumentType) => void;
 }
 
 export const DocumentScanner: React.FC<DocumentScannerProps> = ({
-  onDataExtracted,
-  t
+  onDataExtracted
 }) => {
   const [documents, setDocuments] = useState<ScannedDocument[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -42,16 +75,19 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Simulate OCR processing
-  const processDocument = useCallback(async (file: File, documentType: string) => {
+  const processDocument = useCallback(async (file: File, documentType: DocumentType) => {
     const documentId = `doc_${Date.now()}`;
 
     // Create document entry
     const newDocument: ScannedDocument = {
       id: documentId,
       name: file.name,
-      type: documentType as any,
+      type: documentType,
       imageUrl: URL.createObjectURL(file),
-      extractedData: {},
+      extractedData: {
+        documentType,
+        text: ''
+      },
       confidence: 0,
       status: 'processing',
       timestamp: new Date(),
@@ -64,9 +100,9 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     // Simulate processing delay
     setTimeout(() => {
       // Simulate OCR extraction based on document type
-      let extractedData = {};
+      let extractedData: ExtractedData;
       let fields: ExtractedField[] = [];
-      let confidence = Math.random() * 0.3 + 0.7; // 70-100% confidence
+      const confidence = Math.random() * 0.3 + 0.7; // 70-100% confidence
 
       switch (documentType) {
         case 'w2':
@@ -162,9 +198,10 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (!file) continue;
 
       // Auto-detect document type based on filename or content
-      let documentType = 'other';
+      let documentType: DocumentType = 'other';
       const fileName = file.name.toLowerCase();
 
       if (fileName.includes('w2') || fileName.includes('w-2')) {
@@ -196,7 +233,7 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please use file upload instead.');
+      toast.error('Unable to access camera. Please use file upload instead.');
     }
   };
 
@@ -232,6 +269,17 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
     setShowCamera(false);
   };
 
+  // Modal accessibility hooks
+  const cameraModal = useModalAccessibility({
+    isOpen: showCamera,
+    onClose: stopCamera,
+  });
+
+  const reviewModal = useModalAccessibility({
+    isOpen: !!selectedDocument,
+    onClose: () => setSelectedDocument(null),
+  });
+
   const approveExtraction = (document: ScannedDocument) => {
     onDataExtracted(document.extractedData, document.type);
     setDocuments(prev =>
@@ -253,11 +301,13 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
   };
 
   const deleteDocument = (documentId: string) => {
-    if (confirm('Are you sure you want to delete this document?')) {
+    // TODO: Replace with proper confirmation modal
+    if (window.confirm('Are you sure you want to delete this document?')) {
       setDocuments(prev => prev.filter(doc => doc.id !== documentId));
       if (selectedDocument?.id === documentId) {
         setSelectedDocument(null);
       }
+      toast.success('Document deleted successfully');
     }
   };
 
@@ -331,11 +381,24 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
       {/* Camera Modal */}
       {showCamera && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-2xl w-full mx-4">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={cameraModal.handleBackdropClick}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="camera-modal-title"
+        >
+          <div
+            ref={cameraModal.modalRef}
+            className="bg-white rounded-lg p-4 max-w-2xl w-full mx-4"
+          >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Capture Document</h3>
-              <button onClick={stopCamera} className="text-gray-500 hover:text-gray-700">
+              <h3 id="camera-modal-title" className="text-lg font-semibold">Capture Document</h3>
+              <button
+                onClick={stopCamera}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label="Close camera modal"
+              >
                 ✕
               </button>
             </div>
@@ -502,14 +565,24 @@ export const DocumentScanner: React.FC<DocumentScannerProps> = ({
 
       {/* Review Modal */}
       {selectedDocument && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={reviewModal.handleBackdropClick}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-modal-title"
+        >
+          <div
+            ref={reviewModal.modalRef}
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          >
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">Review Extracted Data</h3>
+                <h3 id="review-modal-title" className="text-xl font-semibold text-gray-900">Review Extracted Data</h3>
                 <button
                   onClick={() => setSelectedDocument(null)}
                   className="text-gray-400 hover:text-gray-600"
+                  aria-label="Close review modal"
                 >
                   ✕
                 </button>

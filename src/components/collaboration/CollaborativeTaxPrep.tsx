@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Share2, MessageCircle, Eye, Edit3, Lock, Unlock, Video, Phone, CheckCircle, AlertCircle, Clock, UserPlus, Settings } from 'lucide-react';
+import { Users, Share2, MessageCircle, Eye, Edit3, Lock, CheckCircle, Clock, UserPlus, Settings } from 'lucide-react';
 
 interface Collaborator {
   id: string;
@@ -36,26 +36,41 @@ interface ActivityLog {
   timestamp: Date;
 }
 
+interface User {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: 'owner' | 'preparer' | 'reviewer' | 'client';
+}
+
+interface FormData {
+  wages?: string | number;
+  filingStatus?: string;
+  interestIncome?: string | number;
+  federalWithholding?: string | number;
+  [key: string]: string | number | boolean | undefined;
+}
+
 interface CollaborativeTaxPrepProps {
-  formData: any;
-  onDataChange: (field: string, value: any) => void;
-  t: (key: string) => string;
+  currentUser?: User;
+  formData?: FormData;
+  onDataChange?: (field: string, value: string | number) => void;
 }
 
 export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
-  formData,
-  onDataChange,
-  t
+  currentUser,
+  formData = {},
+  onDataChange = () => {}
 }) => {
   const [isCollaborationActive, setIsCollaborationActive] = useState(false);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
-  const [currentUser] = useState<Collaborator>({
-    id: 'current-user',
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'owner',
+  const defaultUser: Collaborator = {
+    id: currentUser?.id || 'current-user',
+    name: currentUser?.name || 'John Doe',
+    email: currentUser?.email || 'john@example.com',
+    role: currentUser?.role || 'owner',
     status: 'online',
     permissions: {
       canEdit: true,
@@ -64,7 +79,7 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
       canInvite: true
     },
     lastActive: new Date()
-  });
+  };
 
   const [selectedView, setSelectedView] = useState<'workspace' | 'comments' | 'activity' | 'settings'>('workspace');
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -73,40 +88,44 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
   const [cursors, setCursors] = useState<Record<string, { field: string; user: Collaborator }>>({});
 
   // Real-time cursor tracking
-  const cursorUpdateRef = useRef<NodeJS.Timeout>();
+  const cursorUpdateRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
+    const preparer: Collaborator = {
+      id: 'preparer-1',
+      name: 'Sarah Johnson',
+      email: 'sarah@taxprep.com',
+      role: 'preparer',
+      status: 'online',
+      permissions: {
+        canEdit: true,
+        canView: true,
+        canComment: true,
+        canInvite: false
+      },
+      lastActive: new Date()
+    };
+
+    const reviewer: Collaborator = {
+      id: 'reviewer-1',
+      name: 'Michael Chen',
+      email: 'michael@cpagroup.com',
+      role: 'reviewer',
+      status: 'offline',
+      permissions: {
+        canEdit: false,
+        canView: true,
+        canComment: true,
+        canInvite: false
+      },
+      lastActive: new Date(Date.now() - 3600000) // 1 hour ago
+    };
+
     // Simulate initial collaborators
     setCollaborators([
-      currentUser,
-      {
-        id: 'preparer-1',
-        name: 'Sarah Johnson',
-        email: 'sarah@taxprep.com',
-        role: 'preparer',
-        status: 'online',
-        permissions: {
-          canEdit: true,
-          canView: true,
-          canComment: true,
-          canInvite: false
-        },
-        lastActive: new Date()
-      },
-      {
-        id: 'reviewer-1',
-        name: 'Michael Chen',
-        email: 'michael@cpagroup.com',
-        role: 'reviewer',
-        status: 'offline',
-        permissions: {
-          canEdit: false,
-          canView: true,
-          canComment: true,
-          canInvite: false
-        },
-        lastActive: new Date(Date.now() - 3600000) // 1 hour ago
-      }
+      defaultUser,
+      preparer,
+      reviewer
     ]);
 
     // Simulate some comments
@@ -115,7 +134,7 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
         id: 'comment-1',
         field: 'personalInfo.wages',
         message: 'Please verify this amount with your W-2 form. The amount seems unusually high.',
-        author: collaborators[1] || currentUser,
+        author: preparer,
         timestamp: new Date(Date.now() - 1800000), // 30 minutes ago
         resolved: false,
         replies: []
@@ -127,30 +146,31 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
       {
         id: 'activity-1',
         type: 'join',
-        user: collaborators[1] || currentUser,
+        user: preparer,
         description: 'Sarah Johnson joined the collaboration session',
         timestamp: new Date(Date.now() - 7200000) // 2 hours ago
       },
       {
         id: 'activity-2',
         type: 'edit',
-        user: currentUser,
+        user: defaultUser,
         field: 'personalInfo.wages',
         description: 'Updated wages amount',
         timestamp: new Date(Date.now() - 3600000) // 1 hour ago
       }
     ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const startCollaboration = () => {
     setIsCollaborationActive(true);
-    addActivity('join', currentUser, 'Started collaboration session');
+    addActivity('join', defaultUser, 'Started collaboration session');
   };
 
   const stopCollaboration = () => {
     setIsCollaborationActive(false);
     setCursors({});
-    addActivity('leave', currentUser, 'Ended collaboration session');
+    addActivity('leave', defaultUser, 'Ended collaboration session');
   };
 
   const addActivity = (type: ActivityLog['type'], user: Collaborator, description: string, field?: string) => {
@@ -170,13 +190,13 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
       id: `comment_${Date.now()}`,
       field,
       message,
-      author: currentUser,
+      author: defaultUser,
       timestamp: new Date(),
       resolved: false,
       replies: []
     };
     setComments(prev => [...prev, comment]);
-    addActivity('comment', currentUser, `Added comment on ${field}`, field);
+    addActivity('comment', defaultUser, `Added comment on ${field}`, field);
   };
 
   const resolveComment = (commentId: string) => {
@@ -191,11 +211,18 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
     if (!newInvite.email || !newInvite.role) return;
 
     // Simulate sending invitation
+    const roleMap: Record<string, Collaborator['role']> = {
+      'owner': 'owner',
+      'preparer': 'preparer',
+      'reviewer': 'reviewer',
+      'client': 'client'
+    };
+
     const newCollaborator: Collaborator = {
       id: `collab_${Date.now()}`,
-      name: newInvite.email.split('@')[0],
+      name: newInvite.email.split('@')[0] || 'User',
       email: newInvite.email,
-      role: newInvite.role as any,
+      role: roleMap[newInvite.role] || 'client',
       status: 'offline',
       permissions: {
         canEdit: newInvite.role === 'preparer',
@@ -226,14 +253,14 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
     // Update cursor position
     setCursors(prev => ({
       ...prev,
-      [currentUser.id]: { field, user: currentUser }
+      [defaultUser.id]: { field, user: defaultUser }
     }));
 
     // Clear cursor after inactivity
     cursorUpdateRef.current = setTimeout(() => {
       setCursors(prev => {
         const newCursors = { ...prev };
-        delete newCursors[currentUser.id];
+        delete newCursors[defaultUser.id];
         return newCursors;
       });
       setActiveField(null);
@@ -314,25 +341,28 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
               { id: 'comments', label: 'Comments', icon: MessageCircle, count: comments.filter(c => !c.resolved).length },
               { id: 'activity', label: 'Activity', icon: Clock },
               { id: 'settings', label: 'Settings', icon: Settings }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setSelectedView(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
-                  selectedView === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
+            ].map((tab) => {
+              const viewId = tab.id as 'workspace' | 'comments' | 'activity' | 'settings';
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setSelectedView(viewId)}
+                  className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
+                    selectedView === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -359,7 +389,7 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
                   </div>
                   {cursors[collaborator.id] && (
                     <div className="text-xs text-blue-600">
-                      Editing: {cursors[collaborator.id].field}
+                      Editing: {cursors[collaborator.id]?.field}
                     </div>
                   )}
                 </div>
@@ -405,7 +435,7 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
                   onChange={(e) => {
                     onDataChange('wages', e.target.value);
                     updateCursor('personalInfo.wages');
-                    addActivity('edit', currentUser, 'Updated wages amount', 'personalInfo.wages');
+                    addActivity('edit', defaultUser, 'Updated wages amount', 'personalInfo.wages');
                   }}
                   onFocus={() => updateCursor('personalInfo.wages')}
                   className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -438,7 +468,7 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
                   onChange={(e) => {
                     onDataChange('filingStatus', e.target.value);
                     updateCursor('personalInfo.filingStatus');
-                    addActivity('edit', currentUser, 'Changed filing status', 'personalInfo.filingStatus');
+                    addActivity('edit', defaultUser, 'Changed filing status', 'personalInfo.filingStatus');
                   }}
                   onFocus={() => updateCursor('personalInfo.filingStatus')}
                   className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -463,7 +493,7 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
                   onChange={(e) => {
                     onDataChange('interestIncome', e.target.value);
                     updateCursor('incomeData.interestIncome');
-                    addActivity('edit', currentUser, 'Updated interest income', 'incomeData.interestIncome');
+                    addActivity('edit', defaultUser, 'Updated interest income', 'incomeData.interestIncome');
                   }}
                   onFocus={() => updateCursor('incomeData.interestIncome')}
                   className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -481,7 +511,7 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
                   onChange={(e) => {
                     onDataChange('federalWithholding', e.target.value);
                     updateCursor('paymentsData.federalWithholding');
-                    addActivity('edit', currentUser, 'Updated federal withholding', 'paymentsData.federalWithholding');
+                    addActivity('edit', defaultUser, 'Updated federal withholding', 'paymentsData.federalWithholding');
                   }}
                   onFocus={() => updateCursor('paymentsData.federalWithholding')}
                   className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -501,7 +531,7 @@ export const CollaborativeTaxPrep: React.FC<CollaborativeTaxPrepProps> = ({
                 type="text"
                 placeholder="Type your comment..."
                 className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                     addComment(activeField || 'general', e.currentTarget.value);
                     e.currentTarget.value = '';

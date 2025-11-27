@@ -36,7 +36,7 @@ export function saveClient(name: string, snapshot: Snapshot, id?: string): Clien
   const row: ClientIndexItem = {
     id: clientId,
     name,
-    createdAt: existingIdx >= 0 ? index[existingIdx].createdAt : now,
+    createdAt: existingIdx >= 0 && index[existingIdx] ? index[existingIdx]!.createdAt : now,
     updatedAt: now
   };
   localStorage.setItem(CLIENT_KEY(clientId), JSON.stringify(parsed.data));

@@ -1,18 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Calculator, Target, Lightbulb, BarChart3, DollarSign } from 'lucide-react';
+import { Calculator, Target, Lightbulb, BarChart3, DollarSign } from 'lucide-react';
+
+interface FormData {
+  incomeData?: {
+    wages?: string;
+    capitalGains?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface TaxResult {
+  totalTax: number;
+  [key: string]: unknown;
+}
 
 interface TaxScenario {
   id: string;
   name: string;
   description: string;
-  changes: Record<string, any>;
+  changes: Record<string, unknown>;
   projectedSavings: number;
   feasibility: 'high' | 'medium' | 'low';
 }
 
 interface TaxPlannerProps {
-  formData: any;
-  taxResult: any;
+  formData: FormData;
+  taxResult: TaxResult;
   t: (key: string) => string;
 }
 
@@ -23,15 +37,16 @@ export const TaxPlanner: React.FC<TaxPlannerProps> = ({
 }) => {
   const [scenarios, setScenarios] = useState<TaxScenario[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
-  const [customScenario, setCustomScenario] = useState<Record<string, any>>({});
+  const [_customScenario, _setCustomScenario] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     generateTaxScenarios();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, taxResult]);
 
   const generateTaxScenarios = () => {
     const income = parseFloat(formData.incomeData?.wages || '0');
-    const currentTax = taxResult.totalTax;
+    const _currentTax = taxResult.totalTax;
     const scenarios: TaxScenario[] = [];
 
     // Scenario 1: Maximize 401k contribution
@@ -258,7 +273,7 @@ export const TaxPlanner: React.FC<TaxPlannerProps> = ({
         </h4>
 
         <div className="space-y-3">
-          {yearlyProjection().map((projection, index) => (
+          {yearlyProjection().map((projection) => (
             <div key={projection.year} className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="font-medium">{projection.year}</span>
               <div className="flex gap-6 text-sm">

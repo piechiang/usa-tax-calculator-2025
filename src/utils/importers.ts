@@ -20,7 +20,9 @@ const parseNumber = (s: string) => {
 export function importW2CSV(csv: string): W2Row[] {
   const lines = csv.split(/\r?\n/).filter(Boolean);
   if (lines.length === 0) return [];
-  const header = lines[0].toLowerCase();
+  const firstLine = lines[0];
+  if (!firstLine) return [];
+  const header = firstLine.toLowerCase();
   const hasHeader = /wage|box\s*1|federal|withholding|box\s*2/.test(header);
   const rows = (hasHeader ? lines.slice(1) : lines).map((l) => l.split(',').map((c) => c.trim()));
   return rows.map((cols) => ({
@@ -33,7 +35,9 @@ export function importW2CSV(csv: string): W2Row[] {
 export function import1099BSummaryCSV(csv: string): B1099SummaryRow[] {
   const lines = csv.split(/\r?\n/).filter(Boolean);
   if (lines.length === 0) return [];
-  const header = lines[0].toLowerCase();
+  const firstLine = lines[0];
+  if (!firstLine) return [];
+  const header = firstLine.toLowerCase();
   const hasHeader = /proceeds|basis|term|short|long/.test(header);
   const rows = (hasHeader ? lines.slice(1) : lines).map((l) => l.split(',').map((c) => c.trim()));
   return rows.map((cols) => ({

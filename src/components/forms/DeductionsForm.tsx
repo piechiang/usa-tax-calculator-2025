@@ -2,10 +2,18 @@ import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
 
 interface DeductionsFormProps {
-  deductions: any;
-  onChange: (field: string, value: string) => void;
+  deductions: Record<string, string | number | boolean>;
+  onChange: (field: string, value: string | number | boolean) => void;
   t: (key: string) => string;
-  ValidatedInput: React.ComponentType<any>;
+  ValidatedInput: React.ComponentType<{
+    field: string;
+    value: string | number;
+    onChange: (field: string, value: string) => void;
+    section?: string;
+    type?: string;
+    placeholder?: string;
+    [key: string]: unknown;
+  }>;
 }
 
 const DeductionsForm: React.FC<DeductionsFormProps> = ({
@@ -15,7 +23,7 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
   ValidatedInput
 }) => {
   // Use the itemizedTotal from state that's auto-calculated in the handler
-  const itemizedTotal = deductions.itemizedTotal || 0;
+  const itemizedTotal = Number(deductions.itemizedTotal) || 0;
 
   return (
     <div className="space-y-6">
@@ -26,18 +34,18 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
           <label className="flex items-center">
             <input
               type="radio"
-              checked={deductions.useStandardDeduction}
+              checked={Boolean(deductions.useStandardDeduction)}
               onChange={() => onChange('useStandardDeduction', true)}
               className="mr-2"
             />
             <span className="text-sm sm:text-base">
-              {t('deductions.standardDeduction')} {formatCurrency(deductions.standardDeduction)}
+              {t('deductions.standardDeduction')} {formatCurrency(Number(deductions.standardDeduction) || 0)}
             </span>
           </label>
           <label className="flex items-center">
             <input
               type="radio"
-              checked={!deductions.useStandardDeduction}
+              checked={!Boolean(deductions.useStandardDeduction)}
               onChange={() => onChange('useStandardDeduction', false)}
               className="mr-2"
             />
@@ -46,7 +54,7 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
         </div>
       </div>
 
-      {!deductions.useStandardDeduction && (
+      {!Boolean(deductions.useStandardDeduction) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -54,7 +62,7 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
             </label>
             <ValidatedInput
               field="mortgageInterest"
-              value={deductions.mortgageInterest}
+              value={String(deductions.mortgageInterest || '')}
               onChange={onChange}
               section="deductions"
               type="number"
@@ -70,7 +78,7 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
             </label>
             <ValidatedInput
               field="stateLocalTaxes"
-              value={deductions.stateLocalTaxes}
+              value={String(deductions.stateLocalTaxes || '')}
               onChange={onChange}
               section="deductions"
               type="number"
@@ -87,7 +95,7 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
             </label>
             <ValidatedInput
               field="charitableContributions"
-              value={deductions.charitableContributions}
+              value={String(deductions.charitableContributions || '')}
               onChange={onChange}
               section="deductions"
               type="number"
@@ -103,7 +111,7 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
             </label>
             <ValidatedInput
               field="medicalExpenses"
-              value={deductions.medicalExpenses}
+              value={String(deductions.medicalExpenses || '')}
               onChange={onChange}
               section="deductions"
               type="number"
@@ -119,7 +127,7 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
             </label>
             <ValidatedInput
               field="otherItemized"
-              value={deductions.otherItemized}
+              value={String(deductions.otherItemized || '')}
               onChange={onChange}
               section="deductions"
               type="number"
@@ -136,9 +144,9 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
             <div className="text-lg font-bold text-blue-700">
               {formatCurrency(itemizedTotal)}
             </div>
-            {itemizedTotal < deductions.standardDeduction && (
+            {itemizedTotal < (Number(deductions.standardDeduction) || 0) && (
               <div className="text-xs text-blue-600 mt-1">
-                💡 Standard deduction is higher ({formatCurrency(deductions.standardDeduction)})
+                💡 Standard deduction is higher ({formatCurrency(Number(deductions.standardDeduction) || 0)})
               </div>
             )}
           </div>
@@ -148,4 +156,5 @@ const DeductionsForm: React.FC<DeductionsFormProps> = ({
   );
 };
 
-export default DeductionsForm;
+// Memoize component to prevent unnecessary re-renders
+export default React.memo(DeductionsForm);

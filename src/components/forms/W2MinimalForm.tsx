@@ -5,21 +5,43 @@
 
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Upload, Radio, Typography, Space, Alert, Divider, Tooltip, message } from 'antd';
-import { CameraOutlined, EditOutlined, QuestionCircleOutlined, CheckCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import type { UploadChangeParam } from 'antd/es/upload';
+import type { UploadFile } from 'antd/es/upload/interface';
+import { CameraOutlined, EditOutlined, QuestionCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
 
+interface W2Data {
+  id?: number;
+  wages: string;
+  federalWithholding: string;
+  socialSecurityWages: string;
+  socialSecurityWithheld: string;
+  medicareWages: string;
+  medicareWithheld: string;
+  stateWages?: string;
+  stateWithheld?: string;
+  employerName?: string;
+  employerEIN?: string;
+  confidence?: number;
+}
+
+interface W2FormData {
+  method?: string;
+  w2Data?: W2Data[];
+}
+
 interface W2MinimalFormProps {
-  onComplete: (data: any) => void;
-  defaultValues?: any;
+  onComplete: (data: W2Data[]) => void;
+  defaultValues?: W2FormData;
   allowMultiple?: boolean;
 }
 
 const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues = {}, allowMultiple = true }) => {
   const [inputMethod, setInputMethod] = useState(defaultValues.method || 'upload');
   const [w2Data, setW2Data] = useState(defaultValues.w2Data || []);
-  const [currentW2, setCurrentW2] = useState({
+  const [currentW2, setCurrentW2] = useState<Omit<W2Data, 'id' | 'confidence'>>({
     wages: '',
     federalWithholding: '',
     socialSecurityWages: '',
@@ -35,7 +57,13 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
   const [form] = Form.useForm();
 
   // W-2字段配置 - 最小必要集
-  const W2_FIELDS = [
+  const W2_FIELDS: Array<{
+    key: keyof Omit<W2Data, 'id' | 'confidence'>;
+    label: string;
+    required: boolean;
+    help: string;
+    prefix: string | null;
+  }> = [
     {
       key: 'employerName',
       label: '雇主名称',
@@ -88,14 +116,14 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
   ];
 
   // 模拟OCR识别（实际项目中对接真实OCR服务）
-  const simulateOCR = async (file) => {
+  const simulateOCR = async (_file: File) => {
     setUploading(true);
     
     // 模拟API调用延迟
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // 模拟识别结果
-    const mockResult = {
+    const mockResult: Omit<W2Data, 'id'> = {
       employerName: 'ACME Corporation',
       wages: '75000.00',
       federalWithholding: '8500.00',
@@ -105,11 +133,13 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
       medicareWithheld: '1087.50',
       stateWages: '75000.00',
       stateWithheld: '3500.00',
+      employerEIN: '',
       confidence: 0.95
     };
 
     setUploading(false);
-    setCurrentW2(mockResult);
+    const { confidence: _confidence, ...w2Data } = mockResult;
+    setCurrentW2(w2Data);
     form.setFieldsValue(mockResult);
     
     message.success('W-2识别成功！请核对信息是否正确');
@@ -117,8 +147,9 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
     return mockResult;
   };
 
-  const handleUpload = async (info) => {
-    const { file } = info;
+  const handleUpload = async (info: UploadChangeParam<UploadFile>) => {
+    const file = info.file.originFileObj as File;
+    if (!file) return;
     
     if (file.size > 10 * 1024 * 1024) {
       message.error('文件大小不能超过10MB');
@@ -133,13 +164,14 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
     }
   };
 
-  const handleFieldChange = (field, value) => {
+  const handleFieldChange = (field: keyof Omit<W2Data, 'id' | 'confidence'>, value: string) => {
     // 自动格式化金额
+    let formattedValue = value;
     if (field !== 'employerName' && field !== 'employerEIN') {
-      value = value.replace(/[^\d.]/g, ''); // 只保留数字和小数点
+      formattedValue = value.replace(/[^\d.]/g, ''); // 只保留数字和小数点
     }
-    
-    const newData = { ...currentW2, [field]: value };
+
+    const newData = { ...currentW2, [field]: formattedValue };
     setCurrentW2(newData);
     
     // 自动填充相关字段
@@ -185,8 +217,8 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
     message.success('W-2信息已添加');
   };
 
-  const removeW2 = (index) => {
-    const newW2Data = w2Data.filter((_, i) => i !== index);
+  const removeW2 = (index: number) => {
+    const newW2Data = w2Data.filter((_w2, i) => i !== index);
     setW2Data(newW2Data);
     message.success('W-2信息已删除');
   };
@@ -211,7 +243,7 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
     onComplete(finalData);
   };
 
-  const formatCurrency = (value) => {
+  const formatCurrency = (value: string): string => {
     if (!value) return '';
     const num = parseFloat(value);
     return isNaN(num) ? '' : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

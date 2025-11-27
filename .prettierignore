@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+build/
+dist/
+src/engine-dist/
+
+# Package locks
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Test coverage
+coverage/
+
+# Git
+.git/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store

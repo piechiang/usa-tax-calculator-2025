@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
 import { FileText, Download, Eye, Printer } from 'lucide-react';
+import type { PersonalInfo, TaxResult, SpouseInfo } from '../../types/CommonTypes';
+import type { UIIncomeData, UIDeductions, UIPaymentsData } from '../../utils/engineAdapter';
+
+// Use consolidated types from engineAdapter
+type IncomeData = UIIncomeData;
+
+interface Deductions extends UIDeductions {
+  useStandardDeduction?: boolean;
+  standardDeduction?: number;
+  itemizedTotal?: number;
+}
+
+type PaymentsData = UIPaymentsData;
 
 interface FormData {
-  personalInfo: any;
-  incomeData: any;
-  deductions: any;
-  taxResult: any;
-  spouseInfo?: any;
+  personalInfo: PersonalInfo;
+  incomeData: IncomeData;
+  deductions: Deductions;
+  taxResult: TaxResult;
+  spouseInfo?: SpouseInfo;
+  paymentsData?: PaymentsData;
 }
 
 interface TaxFormGeneratorProps {
@@ -137,9 +151,11 @@ export const TaxFormGenerator: React.FC<TaxFormGeneratorProps> = ({
         <div class="refund-section">
           <h2>Refund or Amount Owed</h2>
           <div class="line-items">
-            ${taxResult.balance >= 0 ?
-              `<div class="line refund">22. Amount you owe: $${taxResult.balance.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>` :
-              `<div class="line refund">23. Overpaid amount (refund): $${Math.abs(taxResult.balance).toLocaleString('en-US', {minimumFractionDigits: 2})}</div>`
+            ${taxResult.balance > 0 ?
+              `<div class="line refund">23. Overpaid amount (refund): $${taxResult.balance.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>` :
+              taxResult.balance < 0 ?
+              `<div class="line refund">22. Amount you owe: $${Math.abs(taxResult.balance).toLocaleString('en-US', {minimumFractionDigits: 2})}</div>` :
+              `<div class="line refund">Balance: $0.00 (No refund or amount owed)</div>`
             }
           </div>
         </div>

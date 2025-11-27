@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { BarChart3, TrendingUp, Calendar, ArrowUpDown } from 'lucide-react';
+
+import type { TaxContextValue } from '../../contexts/TaxContext';
 
 interface YearData {
   year: number;
@@ -11,8 +13,13 @@ interface YearData {
   deductions: number;
 }
 
+interface CurrentYearData {
+  taxResult?: Partial<TaxContextValue['taxResult']>;
+  deductions?: Partial<TaxContextValue['deductions']>;
+}
+
 interface MultiYearComparisonProps {
-  currentYearData: any;
+  currentYearData: CurrentYearData;
   t: (key: string) => string;
 }
 
@@ -20,17 +27,27 @@ export const MultiYearComparison: React.FC<MultiYearComparisonProps> = ({
   currentYearData,
   t
 }) => {
-  const [historicalData, setHistoricalData] = useState<YearData[]>([]);
   const [selectedMetric, setSelectedMetric] = useState<keyof YearData>('totalTax');
   const [comparisonPeriod, setComparisonPeriod] = useState<3 | 5 | 10>(5);
 
-  useEffect(() => {
-    generateHistoricalData();
-  }, [currentYearData, comparisonPeriod]);
+  // Memoize marginal rate calculation
+  const getMarginalRate = useCallback((income: number): number => {
+    // 2025 tax brackets (simplified)
+    if (income <= 11600) return 10;
+    if (income <= 47150) return 12;
+    if (income <= 100525) return 22;
+    if (income <= 191950) return 24;
+    if (income <= 243725) return 32;
+    if (income <= 609350) return 35;
+    return 37;
+  }, []);
 
-  const generateHistoricalData = () => {
+  // Memoize historical data generation
+  const historicalData = useMemo((): YearData[] => {
     const currentYear = new Date().getFullYear();
     const years: YearData[] = [];
+    const currentTaxResult = currentYearData.taxResult ?? {};
+    const currentDeductions = currentYearData.deductions ?? {};
 
     // Generate sample historical data (in a real app, this would come from stored data)
     for (let i = comparisonPeriod - 1; i >= 0; i--) {
@@ -41,18 +58,18 @@ export const MultiYearComparison: React.FC<MultiYearComparisonProps> = ({
         // Use actual current year data
         years.push({
           year,
-          income: currentYearData.taxResult?.adjustedGrossIncome || 0,
-          totalTax: currentYearData.taxResult?.totalTax || 0,
-          effectiveRate: currentYearData.taxResult?.effectiveRate || 0,
-          marginalRate: getMarginalRate(currentYearData.taxResult?.adjustedGrossIncome || 0),
-          refund: currentYearData.taxResult?.balance < 0 ? Math.abs(currentYearData.taxResult.balance) : 0,
-          deductions: currentYearData.deductions?.useStandardDeduction
-            ? currentYearData.deductions.standardDeduction
-            : currentYearData.deductions?.itemizedTotal || 0
+          income: currentTaxResult.adjustedGrossIncome ?? 0,
+          totalTax: currentTaxResult.totalTax ?? 0,
+          effectiveRate: currentTaxResult.effectiveRate ?? 0,
+          marginalRate: getMarginalRate(currentTaxResult.adjustedGrossIncome ?? 0),
+          refund: currentTaxResult.balance && currentTaxResult.balance < 0 ? Math.abs(currentTaxResult.balance) : 0,
+          deductions: currentDeductions.useStandardDeduction
+            ? Number(currentDeductions.standardDeduction ?? 0)
+            : Number(currentDeductions.itemizedTotal ?? 0)
         });
       } else {
         // Generate realistic historical data with some variation
-        const baseIncome = (currentYearData.taxResult?.adjustedGrossIncome || 50000) * (0.95 + Math.random() * 0.1);
+        const baseIncome = (currentTaxResult.adjustedGrossIncome ?? 50000) * (0.95 + Math.random() * 0.1);
         const baseTax = baseIncome * 0.18; // Approximate tax rate
 
         years.push({
@@ -67,39 +84,46 @@ export const MultiYearComparison: React.FC<MultiYearComparisonProps> = ({
       }
     }
 
-    setHistoricalData(years);
-  };
+    return years;
+  }, [currentYearData, comparisonPeriod, getMarginalRate]);
 
-  const getMarginalRate = (income: number): number => {
-    // 2025 tax brackets (simplified)
-    if (income <= 11600) return 10;
-    if (income <= 47150) return 12;
-    if (income <= 100525) return 22;
-    if (income <= 191950) return 24;
-    if (income <= 243725) return 32;
-    if (income <= 609350) return 35;
-    return 37;
-  };
-
-  const calculateTrends = () => {
+  // Memoize trends calculation
+  const trends = useMemo(() => {
     if (historicalData.length < 2) return null;
 
     const latest = historicalData[historicalData.length - 1];
     const previous = historicalData[historicalData.length - 2];
 
-    return {
-      incomeChange: ((latest.income - previous.income) / previous.income) * 100,
-      taxChange: ((latest.totalTax - previous.totalTax) / previous.totalTax) * 100,
-      effectiveRateChange: latest.effectiveRate - previous.effectiveRate,
-      averageRefund: historicalData.reduce((sum, year) => sum + year.refund, 0) / historicalData.length
+    if (!latest || !previous) return null;
+
+    const computePercentageChange = (current: number, prior: number): number => {
+      if (prior === 0) {
+        return 0;
+      }
+      return ((current - prior) / prior) * 100;
     };
-  };
 
-  const getMaxValue = (metric: keyof YearData): number => {
-    return Math.max(...historicalData.map(year => year[metric] as number));
-  };
+    const averageRefund =
+      historicalData.reduce((sum, year) => sum + year.refund, 0) / historicalData.length;
 
-  const formatValue = (value: number, metric: keyof YearData): string => {
+    return {
+      incomeChange: computePercentageChange(latest.income, previous.income),
+      taxChange: computePercentageChange(latest.totalTax, previous.totalTax),
+      effectiveRateChange: latest.effectiveRate - previous.effectiveRate,
+      averageRefund
+    };
+  }, [historicalData]);
+
+  // Memoize max value calculation
+  const getMaxValue = useCallback((metric: keyof YearData): number => {
+    if (historicalData.length === 0) {
+      return 0;
+    }
+    return Math.max(...historicalData.map(year => year[metric]));
+  }, [historicalData]);
+
+  // Memoize format value function
+  const formatValue = useCallback((value: number, metric: keyof YearData): string => {
     switch (metric) {
       case 'effectiveRate':
       case 'marginalRate':
@@ -109,9 +133,10 @@ export const MultiYearComparison: React.FC<MultiYearComparisonProps> = ({
       default:
         return `$${value.toLocaleString()}`;
     }
-  };
+  }, []);
 
-  const getMetricColor = (metric: keyof YearData): string => {
+  // Memoize metric color function
+  const getMetricColor = useCallback((metric: keyof YearData): string => {
     switch (metric) {
       case 'income': return 'bg-blue-500';
       case 'totalTax': return 'bg-red-500';
@@ -121,9 +146,7 @@ export const MultiYearComparison: React.FC<MultiYearComparisonProps> = ({
       case 'deductions': return 'bg-indigo-500';
       default: return 'bg-gray-500';
     }
-  };
-
-  const trends = calculateTrends();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -172,7 +195,7 @@ export const MultiYearComparison: React.FC<MultiYearComparisonProps> = ({
         {/* Chart */}
         <div className="relative h-64 bg-gray-50 rounded-lg p-4">
           <div className="flex items-end justify-between h-full">
-            {historicalData.map((yearData, index) => {
+            {historicalData.map((yearData) => {
               const value = yearData[selectedMetric] as number;
               const maxValue = getMaxValue(selectedMetric);
               const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
@@ -352,3 +375,5 @@ export const MultiYearComparison: React.FC<MultiYearComparisonProps> = ({
     </div>
   );
 };
+
+

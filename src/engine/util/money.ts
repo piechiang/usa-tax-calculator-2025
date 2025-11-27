@@ -54,7 +54,7 @@ export const roundToCents = (amount: number): number => {
 };
 
 // Validate currency amount
-export const isValidCurrency = (amount: any): boolean => {
+export const isValidCurrency = (amount: unknown): boolean => {
   if (amount === null || amount === undefined) return true;
   if (typeof amount === 'string') {
     const num = parseFloat(amount);
@@ -64,7 +64,7 @@ export const isValidCurrency = (amount: any): boolean => {
 };
 
 // Safe currency conversion with validation
-export const safeCurrencyToCents = (amount: any): number => {
+export const safeCurrencyToCents = (amount: unknown): number => {
   if (amount === null || amount === undefined || amount === '') return 0;
 
   // Strings are interpreted as dollars (e.g., "1234.56")
@@ -85,7 +85,7 @@ export const safeCurrencyToCents = (amount: any): number => {
 // Heuristic conversion: accept either dollars or cents when a number is provided.
 // - Numbers >= 1,000,000 are treated as cents (already in cents)
 // - Numbers < 1,000,000 are treated as dollars
-export const toCentsFlexible = (amount: any): number => {
+export const toCentsFlexible = (amount: unknown): number => {
   if (amount === null || amount === undefined || amount === '') return 0;
   if (typeof amount === 'string') return safeCurrencyToCents(amount);
   if (typeof amount === 'number') {

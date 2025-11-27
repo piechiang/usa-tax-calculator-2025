@@ -5,8 +5,8 @@
 Phase 2 focuses on expanding state tax coverage by implementing 8-10 additional high-priority states. This phase builds on the successful completion of Phase 1.5, which delivered 5 state engines (IL, GA, VA, MA, NJ) with 100% test pass rate.
 
 **Start Date:** October 30, 2025
-**Status:** IN PROGRESS - 6 States Complete (OH, NC, CO, AZ, CT, OR) ✅ Week 2 COMPLETE!
-**Current Test Count:** 503 tests (110 added in Phase 2)
+**Status:** IN PROGRESS - 8 States Complete (OH, NC, CO, AZ, CT, OR, MN, SC) ✅ Week 3 in progress
+**Current Test Count:** 534 tests (141 added in Phase 2)
 **Previous Test Count:** 393 tests
 **Test Pass Rate:** 100%
 
@@ -30,9 +30,9 @@ Phase 2 focuses on expanding state tax coverage by implementing 8-10 additional 
 | 4 | Arizona (AZ) | 7.4M | Flat (2.5%) | ✅ **COMPLETE** |
 | 5 | Connecticut (CT) | 3.6M | Progressive (7 brackets) | ✅ **COMPLETE** |
 | 6 | Oregon (OR) | 4.2M | Progressive (4 brackets) | ✅ **COMPLETE** |
-| 7 | Minnesota (MN) | 5.7M | Progressive (4 brackets) | 🔜 Next |
-| 8 | Wisconsin (WI) | 5.9M | Progressive (4 brackets) | ⏳ Planned |
-| 9 | South Carolina (SC) | 5.3M | Progressive (6 brackets) | ⏳ Planned |
+| 7 | Minnesota (MN) | 5.7M | Progressive (4 brackets) | ✅ **COMPLETE** |
+| 8 | Wisconsin (WI) | 5.9M | Progressive (4 brackets) | 🔜 Next |
+| 9 | South Carolina (SC) | 5.3M | Progressive (3 brackets) | ✅ **COMPLETE** |
 | 10 | Alabama (AL) | 5.1M | Progressive (3 brackets) | ⏳ Planned |
 
 **Total Population Covered**: ~65.5 million additional residents
@@ -361,6 +361,8 @@ Overall: 503/503 passing (100%)
   - **Arizona: 21 tests** ⭐ Phase 2
   - **Connecticut: 21 tests** ⭐ Phase 2
   - **Oregon: 25 tests** ⭐ Phase 2
+  - **Minnesota: 16 tests** ⭐ Phase 2
+  - **South Carolina: 15 tests** ⭐ Phase 2
 - **Pass Rate**: 100%
 
 #### Code Metrics
@@ -412,12 +414,13 @@ Notes:
 **Target**: 65 total tests added
 **Actual**: 67 tests added (21 AZ + 21 CT + 25 OR) - **103% of target** 🎉
 
-### Week 3: Progressive Tax States (Part 2)
-- **Minnesota (MN)**: 4 brackets, state-specific deductions
-- **Wisconsin (WI)**: 4 brackets, standard deduction
-- **South Carolina (SC)**: 6 brackets
+### Week 3: Progressive Tax States (Part 2) - IN PROGRESS
+- **Minnesota (MN)**: ✅ Complete - 16 tests, ~2 hours - 4 brackets (5.35%-9.85%)
+- **South Carolina (SC)**: ✅ Complete - 15 tests, ~2 hours - 3 brackets (0%, 3%, 6.2%)
+- **Wisconsin (WI)**: 🔜 Next - 4 brackets, standard deduction
 
 **Target**: 60 total tests added
+**Actual so far**: 31 tests added (16 MN + 15 SC) - **52% of target**
 
 ### Week 4: Final States + Documentation
 - **Alabama (AL)**: 3 brackets (2%-5%)
@@ -612,30 +615,33 @@ Notes:
 
 ## Conclusion
 
-Phase 2 is progressing excellently with **4 states successfully implemented**: Ohio, North Carolina, Colorado, and Arizona! The diverse tax structures (progressive, simple flat, flat with addback, and flat with multiple deductions) demonstrate the flexibility and robustness of our architecture. Implementation times remain consistent and patterns are well established.
+Phase 2 is progressing excellently with **8 states successfully implemented**: Ohio, North Carolina, Colorado, Arizona, Connecticut, Oregon, Minnesota, and South Carolina! The diverse tax structures demonstrate the flexibility and robustness of our architecture. Implementation times remain consistent and patterns are well established.
 
 **Key Metrics:**
 - ✅ Ohio: 11/11 tests passing (~4 hours implementation)
 - ✅ North Carolina: 15/15 tests passing (~2.5 hours implementation)
 - ✅ Colorado: 17/17 tests passing (~3 hours implementation)
 - ✅ Arizona: 21/21 tests passing (~3.5 hours implementation)
-- ✅ Overall: 457/457 tests passing (100%)
-- ✅ Combined: 64 new tests added in Phase 2
+- ✅ Connecticut: 21/21 tests passing (~4 hours implementation)
+- ✅ Oregon: 25/25 tests passing (~4 hours implementation)
+- ✅ Minnesota: 16/16 tests passing (~2 hours implementation)
+- ✅ South Carolina: 15/15 tests passing (~2 hours implementation)
+- ✅ Overall: 534/534 tests passing (100%)
+- ✅ Combined: 141 new tests added in Phase 2
 - ✅ Zero regressions
-- ✅ Average implementation time: 3.25 hours per state
+- ✅ Average implementation time: ~3 hours per state
 
 **Implementation Velocity:**
-- Week 1 target: 3 states, 33 tests
-- Week 1 actual: 3 states complete (OH, NC, CO), 43 tests - **130% of target** 🎉
-- Week 1 status: **COMPLETE** ✅
-- Week 2 progress: 1 state complete (AZ), 21 tests - **32% of Week 2 target**
-- Overall Phase 2: 4 of 10 states (40% complete)
+- Week 1: 3 states complete (OH, NC, CO), 43 tests - **130% of target** 🎉 ✅
+- Week 2: 3 states complete (AZ, CT, OR), 67 tests - **103% of target** 🎉 ✅
+- Week 3: 2 states complete (MN, SC), 31 tests - **52% of target** (in progress)
+- Overall Phase 2: 8 of 10 states (80% complete)
 
-**Next Milestone:** Connecticut implementation (Complex progressive system with 7 brackets)
+**Next Milestone:** Wisconsin implementation (4 bracket progressive system)
 
 ---
 
-**Document Version:** 1.3
-**Last Updated:** November 1, 2025
-**Phase Status:** IN PROGRESS - Week 1 COMPLETE, Week 2 in progress (4 of 10 states)
-**Progress:** 40% complete
+**Document Version:** 1.4
+**Last Updated:** November 21, 2025
+**Phase Status:** IN PROGRESS - Weeks 1-2 COMPLETE, Week 3 in progress (8 of 10 states)
+**Progress:** 80% complete

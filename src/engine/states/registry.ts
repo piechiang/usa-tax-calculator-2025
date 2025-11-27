@@ -21,12 +21,49 @@ import { computeCO2025 } from './CO/2025/computeCO2025';
 import { computeAZ2025 } from './AZ/2025/computeAZ2025';
 import { computeCT2025 } from './CT/2025/computeCT2025';
 import { computeOR2025 } from './OR/2025/computeOR2025';
+import { computeMN2025 } from './MN/2025/computeMN2025';
+import { computeSC2025 } from './SC/2025/computeSC2025';
+import { computeWI2025 } from './WI/2025/computeWI2025';
+import { computeAL2025 } from './AL/2025/computeAL2025';
+import { computeMI2025 } from './MI/2025/computeMI2025';
+import { computeIN2025 } from './IN/2025/computeIN2025';
+import { computeMO2025 } from './MO/2025/computeMO2025';
+import { computeKY2025 } from './KY/2025/computeKY2025';
+import { computeTN2025 } from './TN/2025/computeTN2025';
+import { computeLA2025 } from './LA/2025/computeLA2025';
+import { computeIA2025 } from './IA/2025/computeIA2025';
+import { computeTX2025 } from './TX/2025/computeTX2025';
+import { computeFL2025 } from './FL/2025/computeFL2025';
+import { computeNM2025 } from './NM/2025/computeNM2025';
+import { computeAK2025 } from './AK/2025/computeAK2025';
+import { computeNV2025 } from './NV/2025/computeNV2025';
+import { computeSD2025 } from './SD/2025/computeSD2025';
+import { computeWY2025 } from './WY/2025/computeWY2025';
+import { computeWA2025 } from './WA/2025/computeWA2025';
+import { computeNH2025 } from './NH/2025/computeNH2025';
 
 /**
  * State configurations
  * Source: State tax authority websites, updated for 2025 tax year
  */
 export const STATE_CONFIGS: Record<string, StateConfig> = {
+  // States with income tax
+  AL: {
+    code: 'AL',
+    name: 'Alabama',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://www.revenue.alabama.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true,
+    hasPersonalExemption: false, // Only dependent exemptions, no personal exemptions
+    implemented: true,
+    notes: '3-bracket progressive (2%-5%), unique federal income tax deduction, income-based dependent exemptions'
+  },
+
   // States with no income tax
   AK: {
     code: 'AK',
@@ -35,13 +72,13 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://tax.alaska.gov',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'No state income tax'
+    notes: 'No state income tax, unique Permanent Fund Dividend (PFD) pays residents $1,000-$3,000 annually from oil revenue'
   },
   FL: {
     code: 'FL',
@@ -50,13 +87,13 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://floridarevenue.com',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'No state income tax'
+    notes: 'No state income tax - constitutionally prohibited. Popular retirement destination. Revenue from sales tax (6-8%), property tax (0.82% avg), tourism taxes.'
   },
   NV: {
     code: 'NV',
@@ -65,13 +102,13 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://tax.nv.gov',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'No state income tax'
+    notes: 'No state income tax, gaming (casino) revenue funds state operations, popular for businesses and high-income individuals'
   },
   NH: {
     code: 'NH',
@@ -80,13 +117,13 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://revenue.nh.gov',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'Interest and dividends tax repealed for 2025+'
+    notes: 'No income tax (2025+), Interest & Dividends Tax repealed Jan 1 2025, no sales tax, highest property taxes, "Live Free or Die"'
   },
   SD: {
     code: 'SD',
@@ -95,13 +132,13 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://dor.sd.gov',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'No state income tax'
+    notes: 'No state income tax, strong trust industry, no corporate/personal property tax, business-friendly'
   },
   TN: {
     code: 'TN',
@@ -110,13 +147,13 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://tn.gov/revenue',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'Hall income tax repealed in 2021'
+    notes: 'No state income tax - Hall Tax (6% on investment income) eliminated January 1, 2021. One of 9 states with no income tax.'
   },
   TX: {
     code: 'TX',
@@ -125,13 +162,13 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://comptroller.texas.gov',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'No state income tax'
+    notes: 'No state income tax - constitutionally prohibited without voter approval. One of 9 states with no income tax. Revenue from sales tax (8.20% avg) and property tax (1.36% effective rate).'
   },
   WA: {
     code: 'WA',
@@ -140,13 +177,28 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://dor.wa.gov',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'No state income tax (capital gains tax applies to limited high-income scenarios)'
+    notes: 'No state income tax on wages/salaries, 7% capital gains tax (2022+) on gains > $262k, tech hub (Seattle, Microsoft, Amazon)'
+  },
+  WI: {
+    code: 'WI',
+    name: 'Wisconsin',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'progressive',
+    authoritativeSource: 'https://www.revenue.wi.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '4-bracket progressive system (3.54%-7.65%), sliding scale standard deduction, state EITC (4%-34% of federal)'
   },
   WY: {
     code: 'WY',
@@ -155,13 +207,13 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasLocalTax: false,
     taxType: 'none',
     authoritativeSource: 'https://revenue.wyo.gov',
-    lastUpdated: '2025-01-01',
+    lastUpdated: '2025-01-22',
     taxYear: 2025,
     hasStateEITC: false,
     hasStandardDeduction: false,
     hasPersonalExemption: false,
     implemented: true,
-    notes: 'No state income tax'
+    notes: 'No state income tax, constitutional protection, mineral extraction revenue, lowest population state'
   },
 
   // Implemented states with income tax
@@ -245,6 +297,66 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     implemented: true,
     notes: 'Flat 4.95% rate, property tax credit (5%), retirement income fully exempt'
   },
+  IA: {
+    code: 'IA',
+    name: 'Iowa',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'flat',
+    authoritativeSource: 'https://revenue.iowa.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true, // $2,210 single / $5,450 MFJ
+    hasPersonalExemption: false,
+    implemented: true,
+    notes: 'Flat 3.8% rate (NEW for 2025 - reduced from 5.7% in 2024), Senate File 2442, retirement income fully exempt, sixth-lowest rate among 41 states with income tax'
+  },
+  IN: {
+    code: 'IN',
+    name: 'Indiana',
+    hasTax: true,
+    hasLocalTax: true, // All 92 counties have local income tax (0.5%-3%)
+    taxType: 'flat',
+    authoritativeSource: 'https://www.in.gov/dor',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    hasStandardDeduction: false, // No standard deduction, only personal exemptions
+    hasPersonalExemption: true, // $1,000 taxpayer/spouse, $1,500 dependents
+    implemented: true,
+    notes: 'Flat 3.0% state rate, county taxes 0.5%-3%, state EITC 10% of federal (non-refundable)'
+  },
+  KY: {
+    code: 'KY',
+    name: 'Kentucky',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'flat',
+    authoritativeSource: 'https://revenue.ky.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true, // $3,270 single / $6,540 MFJ
+    hasPersonalExemption: false, // No personal exemptions
+    implemented: true,
+    notes: 'Flat 4.0% rate (reducing to 3.5% in 2026), child care credit 20% of federal, pension income exemption up to $31,110'
+  },
+  LA: {
+    code: 'LA',
+    name: 'Louisiana',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'flat',
+    authoritativeSource: 'https://revenue.louisiana.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true, // $12,500 single / $25,000 MFJ
+    hasPersonalExemption: false, // Eliminated in 2025 reform
+    implemented: true,
+    notes: 'Flat 3.0% rate (NEW for 2025 - replaced 3-bracket system), standard deduction increased, personal/dependent exemptions eliminated (Act 11 of 2024)'
+  },
   GA: {
     code: 'GA',
     name: 'Georgia',
@@ -290,6 +402,21 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     implemented: true,
     notes: '5% base rate + 4% millionaire surtax (9% on income over ~$1.08M), no standard deduction'
   },
+  MI: {
+    code: 'MI',
+    name: 'Michigan',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'flat',
+    authoritativeSource: 'https://www.michigan.gov/treasury',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    hasStandardDeduction: false, // No standard deduction, only personal exemptions
+    hasPersonalExemption: true, // $5,000 per person (taxpayer + spouse + dependents)
+    implemented: true,
+    notes: 'Flat 4.25% rate, personal exemptions ($5,000 each), state EITC 30% of federal (refundable)'
+  },
   NJ: {
     code: 'NJ',
     name: 'New Jersey',
@@ -304,6 +431,21 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     hasPersonalExemption: true,   // $1,000 age 65+, $1,500 per dependent
     implemented: true,
     notes: '8 brackets (1.4%-10.75%), property tax deduction up to $15k, $50 refundable credit option'
+  },
+  NM: {
+    code: 'NM',
+    name: 'New Mexico',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://www.tax.newmexico.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true, // $15,000 single / $30,000 MFJ
+    hasPersonalExemption: true, // $2,500 per person
+    implemented: true,
+    notes: '5 brackets (1.5%-5.9%), HB 252 (2024) restructured brackets for 2025, first major change since 2005, lowered rates for low/middle income'
   },
   OH: {
     code: 'OH',
@@ -396,15 +538,68 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     implemented: true,
     notes: '4 brackets (4.75%-9.90%), federal tax deduction ($6,100/$12,200), personal exemption credit ($256 per person, phaseout > $100k/$200k), elderly/blind additional deduction'
   },
+  MN: {
+    code: 'MN',
+    name: 'Minnesota',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://www.revenue.state.mn.us',
+    lastUpdated: '2025-11-03',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true,   // $14,950 single / $29,900 MFJ
+    hasPersonalExemption: false,  // Uses dependent exemption instead
+    implemented: true,
+    notes: '4 brackets (5.35%-9.85%), generous standard deduction, dependent exemption ($4,900 per dependent)'
+  },
+  MO: {
+    code: 'MO',
+    name: 'Missouri',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://dor.mo.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true, // $15,000 single / $30,000 MFJ / $22,500 HOH
+    hasPersonalExemption: false, // Uses dependent exemption ($1,200 per dependent)
+    implemented: true,
+    notes: '8 brackets (0%-4.7%), federal tax deduction ($5k/$10k cap), dependent exemptions'
+  },
+  SC: {
+    code: 'SC',
+    name: 'South Carolina',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://dor.sc.gov',
+    lastUpdated: '2025-11-03',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true,   // $15,000 single / $30,000 MFJ (federal amounts)
+    hasPersonalExemption: true,   // $2,800 per person
+    implemented: true,
+    notes: '3 brackets (0%, 3%, 6.2%), simple structure, personal and dependent exemptions ($2,800 each)'
+  },
 
   // Placeholder for remaining states
-  // TODO: Add remaining 29 states
+  // TODO: Add remaining 27 states
 };
 
 /**
  * Registry of implemented state calculators
  */
 export const STATE_REGISTRY: StateRegistry = {
+  AK: {
+    config: STATE_CONFIGS.AK!,
+    calculator: computeAK2025
+  },
+  AL: {
+    config: STATE_CONFIGS.AL!,
+    calculator: computeAL2025
+  },
   AZ: {
     config: STATE_CONFIGS.AZ!,
     calculator: computeAZ2025
@@ -429,6 +624,22 @@ export const STATE_REGISTRY: StateRegistry = {
     config: STATE_CONFIGS.IL!,
     calculator: computeIL2025
   },
+  IA: {
+    config: STATE_CONFIGS.IA!,
+    calculator: computeIA2025
+  },
+  IN: {
+    config: STATE_CONFIGS.IN!,
+    calculator: computeIN2025
+  },
+  KY: {
+    config: STATE_CONFIGS.KY!,
+    calculator: computeKY2025
+  },
+  LA: {
+    config: STATE_CONFIGS.LA!,
+    calculator: computeLA2025
+  },
   MA: {
     config: STATE_CONFIGS.MA!,
     calculator: computeMA2025
@@ -437,6 +648,18 @@ export const STATE_REGISTRY: StateRegistry = {
     config: STATE_CONFIGS.MD!,
     calculator: computeMD2025
   },
+  MI: {
+    config: STATE_CONFIGS.MI!,
+    calculator: computeMI2025
+  },
+  MN: {
+    config: STATE_CONFIGS.MN!,
+    calculator: computeMN2025
+  },
+  MO: {
+    config: STATE_CONFIGS.MO!,
+    calculator: computeMO2025
+  },
   NC: {
     config: STATE_CONFIGS.NC!,
     calculator: computeNC2025
@@ -444,6 +667,18 @@ export const STATE_REGISTRY: StateRegistry = {
   NJ: {
     config: STATE_CONFIGS.NJ!,
     calculator: computeNJ2025
+  },
+  NH: {
+    config: STATE_CONFIGS.NH!,
+    calculator: computeNH2025
+  },
+  NM: {
+    config: STATE_CONFIGS.NM!,
+    calculator: computeNM2025
+  },
+  NV: {
+    config: STATE_CONFIGS.NV!,
+    calculator: computeNV2025
   },
   NY: {
     config: STATE_CONFIGS.NY!,
@@ -461,13 +696,45 @@ export const STATE_REGISTRY: StateRegistry = {
     config: STATE_CONFIGS.PA!,
     calculator: computePA2025
   },
+  SC: {
+    config: STATE_CONFIGS.SC!,
+    calculator: computeSC2025
+  },
+  SD: {
+    config: STATE_CONFIGS.SD!,
+    calculator: computeSD2025
+  },
+  WI: {
+    config: STATE_CONFIGS.WI!,
+    calculator: computeWI2025
+  },
+  WY: {
+    config: STATE_CONFIGS.WY!,
+    calculator: computeWY2025
+  },
+  WA: {
+    config: STATE_CONFIGS.WA!,
+    calculator: computeWA2025
+  },
   VA: {
     config: STATE_CONFIGS.VA!,
     calculator: computeVA2025
   },
+  TN: {
+    config: STATE_CONFIGS.TN!,
+    calculator: computeTN2025
+  },
+  TX: {
+    config: STATE_CONFIGS.TX!,
+    calculator: computeTX2025
+  },
+  FL: {
+    config: STATE_CONFIGS.FL!,
+    calculator: computeFL2025
+  },
   // No-tax states use the same null calculator
   ...Object.fromEntries(
-    ['AK', 'FL', 'NV', 'NH', 'SD', 'TN', 'TX', 'WA', 'WY'].map(code => [
+    ['AK', 'NV', 'NH', 'SD', 'WA', 'WY'].map(code => [
       code,
       {
         config: STATE_CONFIGS[code],

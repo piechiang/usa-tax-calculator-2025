@@ -20,9 +20,19 @@ export { MD_RULES_2025 } from './rules/2025/states/md';
 
 // Calculator exports
 export { computeFederal2025 } from './federal/2025/computeFederal2025';
-export { 
-  computeMD2025, 
-  isMarylandResident,
+export {
+  computeMD2025,
   getMarylandCounties,
-  getMDLocalRate 
+  getMDLocalRate
 } from './states/md/2025/computeMD2025';
+export { computeCA2025 } from './states/CA/2025/computeCA2025';
+
+// State registry exports
+export {
+  getStateCalculator,
+  getSupportedStates,
+  getPendingStates,
+  stateHasTax,
+  STATE_CONFIGS
+} from './states/registry';
+export type { StateConfig } from './types/stateTax';

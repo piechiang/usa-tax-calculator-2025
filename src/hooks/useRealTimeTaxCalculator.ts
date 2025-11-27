@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import useDeepCompareEffect from 'use-deep-compare-effect';
 import { useTaxCalculator } from './useTaxCalculator';
+
+import type { TaxResult } from '../types/CommonTypes';
 
 interface RealTimeCalculatorState {
   isCalculating: boolean;
   lastCalculated: Date | null;
-  previousTaxResult: any;
+  previousTaxResult: TaxResult | null;
   calculationCount: number;
   averageCalculationTime: number;
   realTimeEnabled: boolean;
@@ -24,9 +27,8 @@ export const useRealTimeTaxCalculator = () => {
     debounceDelay: 500 // 500ms debounce by default
   });
 
-  const debounceRef = useRef<NodeJS.Timeout>();
-  const calculationStartTime = useRef<number>();
-  const previousDataRef = useRef<string>('');
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const calculationStartTime = useRef<number | undefined>(undefined);
 
   // Debounced calculation function
   const debouncedCalculate = useCallback(() => {
@@ -69,21 +71,9 @@ export const useRealTimeTaxCalculator = () => {
     }, realTimeState.debounceDelay);
   }, [taxCalculator, realTimeState.realTimeEnabled, realTimeState.debounceDelay]);
 
-  // Monitor data changes for real-time calculation
-  useEffect(() => {
-    const currentData = JSON.stringify({
-      personalInfo: taxCalculator.personalInfo,
-      incomeData: taxCalculator.incomeData,
-      deductions: taxCalculator.deductions,
-      paymentsData: taxCalculator.paymentsData,
-      k1Data: taxCalculator.k1Data,
-      businessDetails: taxCalculator.businessDetails,
-      spouseInfo: taxCalculator.spouseInfo
-    });
-
-    // Only calculate if data has actually changed
-    if (currentData !== previousDataRef.current && realTimeState.realTimeEnabled) {
-      previousDataRef.current = currentData;
+  // Monitor data changes for real-time calculation using deep comparison
+  useDeepCompareEffect(() => {
+    if (realTimeState.realTimeEnabled) {
       debouncedCalculate();
     }
   }, [
@@ -94,7 +84,6 @@ export const useRealTimeTaxCalculator = () => {
     taxCalculator.k1Data,
     taxCalculator.businessDetails,
     taxCalculator.spouseInfo,
-    debouncedCalculate,
     realTimeState.realTimeEnabled
   ]);
 
@@ -109,8 +98,8 @@ export const useRealTimeTaxCalculator = () => {
 
   // Enhanced change handlers that trigger real-time calculation
   const enhancedHandlers = {
-    handlePersonalInfoChange: (field: any, value: any) => {
-      taxCalculator.handlePersonalInfoChange(field, value);
+    handlePersonalInfoChange: (field: string, value: string | boolean | number) => {
+      taxCalculator.handlePersonalInfoChange(field as never, value);
       // Real-time calculation will be triggered by useEffect
     },
 
@@ -119,7 +108,7 @@ export const useRealTimeTaxCalculator = () => {
       // Real-time calculation will be triggered by useEffect
     },
 
-    handleDeductionChange: (field: any, value: any) => {
+    handleDeductionChange: (field: string, value: string | boolean) => {
       taxCalculator.handleDeductionChange(field, value);
       // Real-time calculation will be triggered by useEffect
     },
@@ -129,8 +118,8 @@ export const useRealTimeTaxCalculator = () => {
       // Real-time calculation will be triggered by useEffect
     },
 
-    handleSpouseInfoChange: (field: any, value: any) => {
-      taxCalculator.handleSpouseInfoChange(field, value);
+    handleSpouseInfoChange: (field: string, value: string | boolean | number) => {
+      taxCalculator.handleSpouseInfoChange(field as never, value);
       // Real-time calculation will be triggered by useEffect
     },
 
@@ -139,7 +128,7 @@ export const useRealTimeTaxCalculator = () => {
       // Real-time calculation will be triggered by useEffect
     },
 
-    handleBusinessDetailsChange: (field: any, value: string) => {
+    handleBusinessDetailsChange: (field: string, value: string) => {
       taxCalculator.handleBusinessDetailsChange(field, value);
       // Real-time calculation will be triggered by useEffect
     }

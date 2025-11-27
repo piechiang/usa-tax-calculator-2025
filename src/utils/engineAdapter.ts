@@ -1,139 +1,953 @@
-// Adapter to convert UI data structures to engine format
-import { calculateTaxResults } from './taxCalculations';
+// Adapter to convert UI data structures to engine format with strong typing
+import { computeFederal2025 } from '../engine';
+import type {
+  FederalInput2025,
+  FederalResult2025,
+  FilingStatus,
+} from '../engine/types';
+import type { StateResult, StateTaxInput } from '../engine/types/stateTax';
+import { safeCurrencyToCents } from '../engine/util/money';
+import { getStateCalculator } from '../engine/states/registry';
 
-// Federal 1040 engine temporarily disabled due to TypeScript compilation issues
-let computeFederal1040 = null, convertUIToFederal1040Input = null;
-console.log('🔧 Advanced Federal 1040 engine temporarily disabled - under development');
+// Logger utility - only logs in development mode
+const logger = {
+  log: (message: string) => {
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log(message);
+    }
+  },
+  warn: (message: string) => {
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.warn(message);
+    }
+  },
+  error: (message: string, error?: unknown) => {
+    // Always log errors
+    // eslint-disable-next-line no-console
+    console.error(message, error);
+  },
+};
 
-// Legacy engine fallback
-let computeFederal2025, computeMD2025;
-try {
-  const engine = require('../engine-dist/index.js');
-  computeFederal2025 = engine.computeFederal2025;
-  computeMD2025 = engine.computeMD2025;
-} catch (error) {
-  console.warn('Legacy engine not available:', error.message);
-  computeFederal2025 = null;
-  computeMD2025 = null;
+/**
+ * Runtime validation error class for type-safe error handling
+ */
+class ValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly field?: string,
+    public readonly value?: unknown
+  ) {
+    super(message);
+    this.name = 'ValidationError';
+  }
 }
 
 /**
- * Convert UI data to engine input format
+ * Validate that a value is a valid number (not NaN, not Infinity)
  */
-export function convertUIToEngineInput(personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo) {
-  const input: any = {
-    filingStatus: personalInfo.filingStatus,
-    primary: {
-      birthDate: personalInfo.birthDate || null,
-      isBlind: personalInfo.isBlind || false,
-      ssn: personalInfo.ssn,
+function validateNumber(value: number, fieldName: string): void {
+  if (typeof value !== 'number') {
+    throw new ValidationError(
+      `${fieldName} must be a number, got ${typeof value}`,
+      fieldName,
+      value
+    );
+  }
+  if (isNaN(value)) {
+    throw new ValidationError(`${fieldName} is NaN`, fieldName, value);
+  }
+  if (!isFinite(value)) {
+    throw new ValidationError(`${fieldName} is not finite`, fieldName, value);
+  }
+}
+
+/**
+ * Validate that a value is non-negative
+ */
+function validateNonNegative(value: number, fieldName: string): void {
+  validateNumber(value, fieldName);
+  if (value < 0) {
+    throw new ValidationError(
+      `${fieldName} must be non-negative, got ${value}`,
+      fieldName,
+      value
+    );
+  }
+}
+
+/**
+ * Validate filing status
+ */
+function validateFilingStatus(status: FilingStatus): void {
+  const validStatuses: FilingStatus[] = [
+    'single',
+    'marriedJointly',
+    'marriedSeparately',
+    'headOfHousehold',
+  ];
+  if (!validStatuses.includes(status)) {
+    throw new ValidationError(
+      `Invalid filing status: ${status}`,
+      'filingStatus',
+      status
+    );
+  }
+}
+
+/**
+ * Validate FederalInput2025 structure
+ */
+function validateFederalInput(input: FederalInput2025): void {
+  validateFilingStatus(input.filingStatus);
+
+  // Validate income fields
+  validateNonNegative(input.income.wages, 'income.wages');
+  validateNonNegative(input.income.interest, 'income.interest');
+  validateNonNegative(input.income.dividends.ordinary, 'income.dividends.ordinary');
+  validateNonNegative(input.income.dividends.qualified, 'income.dividends.qualified');
+  validateNumber(input.income.capGainsNet, 'income.capGainsNet'); // Can be negative
+  validateNumber(input.income.scheduleCNet, 'income.scheduleCNet'); // Can be negative
+  validateNumber(input.income.businessIncome, 'income.businessIncome'); // Can be negative
+
+  // Validate payments
+  validateNonNegative(input.payments.federalWithheld, 'payments.federalWithheld');
+  validateNonNegative(input.payments.estPayments, 'payments.estPayments');
+  validateNonNegative(input.payments.eitcAdvance, 'payments.eitcAdvance');
+
+  // Ensure stateWithheld is NOT in federal payments
+  if ('stateWithheld' in input.payments) {
+    const paymentsWithState = input.payments as FederalInput2025['payments'] & { stateWithheld?: number };
+    throw new ValidationError(
+      'stateWithheld should not be in federal payments - it belongs to state tax calculation',
+      'payments.stateWithheld',
+      paymentsWithState.stateWithheld
+    );
+  }
+
+  // Validate dependents
+  validateNonNegative(input.dependents, 'dependents');
+  if (!Number.isInteger(input.dependents)) {
+    throw new ValidationError(
+      `dependents must be an integer, got ${input.dependents}`,
+      'dependents',
+      input.dependents
+    );
+  }
+}
+
+/**
+ * Validate FederalResult2025 output
+ */
+function validateFederalResult(result: FederalResult2025): void {
+  validateNumber(result.agi, 'agi');
+  validateNumber(result.taxableIncome, 'taxableIncome');
+  validateNonNegative(result.standardDeduction, 'standardDeduction');
+  validateNonNegative(result.taxBeforeCredits, 'taxBeforeCredits');
+  validateNonNegative(result.totalTax, 'totalTax');
+  validateNonNegative(result.totalPayments, 'totalPayments');
+  validateNumber(result.refundOrOwe, 'refundOrOwe');
+
+  // Validate credits (optional fields)
+  if (result.credits.ctc !== undefined) {
+    validateNonNegative(result.credits.ctc, 'credits.ctc');
+  }
+  if (result.credits.eitc !== undefined) {
+    validateNonNegative(result.credits.eitc, 'credits.eitc');
+  }
+  if (result.credits.aotc !== undefined) {
+    validateNonNegative(result.credits.aotc, 'credits.aotc');
+  }
+  if (result.credits.llc !== undefined) {
+    validateNonNegative(result.credits.llc, 'credits.llc');
+  }
+  if (result.credits.otherNonRefundable !== undefined) {
+    validateNonNegative(result.credits.otherNonRefundable, 'credits.otherNonRefundable');
+  }
+  if (result.credits.otherRefundable !== undefined) {
+    validateNonNegative(result.credits.otherRefundable, 'credits.otherRefundable');
+  }
+}
+
+/**
+ * Validate StateTaxInput structure
+ */
+function validateStateTaxInput(input: StateTaxInput): void {
+  validateFilingStatus(input.filingStatus);
+  validateNonNegative(input.stateWithheld, 'stateWithheld');
+
+  // stateEstPayments is optional
+  if (input.stateEstPayments !== undefined) {
+    validateNonNegative(input.stateEstPayments, 'stateEstPayments');
+  }
+
+  if (!input.state || input.state.length !== 2) {
+    throw new ValidationError(
+      `Invalid state code: ${input.state}`,
+      'state',
+      input.state
+    );
+  }
+
+  // Validate federal result if present
+  if (input.federalResult) {
+    validateFederalResult(input.federalResult);
+  }
+}
+
+/**
+ * UI Type Definitions for Tax Data Conversion
+ * These types represent the data structure from UI forms (strings/mixed types)
+ * before conversion to engine format (numbers in cents)
+ */
+
+/**
+ * Personal information from UI (primary taxpayer)
+ */
+export interface UIPersonalInfo {
+  filingStatus: string;
+  birthDate?: string | null;
+  isBlind?: boolean;
+  ssn?: string;
+  dependents?: number | string;
+  state?: string;
+  county?: string;
+  city?: string;
+  /** @deprecated Use 'state' field instead */
+  isMaryland?: boolean;
+}
+
+/**
+ * Income data from UI forms (all amounts as strings)
+ */
+export interface UIIncomeData {
+  wages?: string;
+  interestIncome?: string;
+  dividends?: string;
+  qualifiedDividends?: string;
+  capitalGains?: string;
+  netShortTermCapitalGain?: string;
+  netLongTermCapitalGain?: string;
+  businessIncome?: string;
+  retirementIncome?: string;
+  socialSecurityBenefits?: string;
+  unemployment?: string;
+  otherIncome?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * Schedule K-1 partnership/S-corp income from UI
+ */
+export interface UIK1Data {
+  ordinaryIncome?: string;
+  netRentalRealEstate?: string;
+  k1InterestIncome?: string;
+  royalties?: string;
+  guaranteedPayments?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * Business details from UI
+ */
+export interface UIBusinessDetails {
+  businessExpenses?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * Tax payments and withholding from UI
+ */
+export interface UIPaymentsData {
+  federalWithholding?: string;
+  stateWithholding?: string;
+  estimatedTaxPayments?: string;
+  otherPayments?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * Deductions and adjustments from UI
+ */
+export interface UIDeductions {
+  studentLoanInterest?: string;
+  hsaContribution?: string;
+  iraContribution?: string;
+  selfEmploymentTaxDeduction?: string;
+  itemizeDeductions?: boolean;
+  useStandardDeduction?: boolean; // User's explicit choice for deduction type
+  stateLocalTaxes?: string;
+  mortgageInterest?: string;
+  charitableContributions?: string;
+  medicalExpenses?: string;
+  otherItemized?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
+/**
+ * Spouse information from UI (for joint filing)
+ */
+export interface UISpouseInfo {
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string | null;
+  isBlind?: boolean;
+  ssn?: string;
+  wages?: string;
+  interestIncome?: string;
+  dividends?: string;
+  capitalGains?: string;
+  businessIncome?: string;
+  otherIncome?: string;
+  federalWithholding?: string;
+  stateWithholding?: string;
+  [key: string]: string | boolean | null | undefined;
+}
+
+interface EngineConversionResult {
+  federalInput: FederalInput2025;
+  stateCode: string | null;
+  county?: string;
+  city?: string;
+}
+
+interface PersonIncome {
+  wages: number;
+  interest: number;
+  dividendsOrdinary: number;
+  dividendsQualified: number;
+  capitalGainsLong: number;
+  capitalGainsShort: number;
+  scheduleCNet: number;
+  otherIncome: number;
+}
+
+const VALID_FILING_STATUSES: FilingStatus[] = [
+  'single',
+  'marriedJointly',
+  'marriedSeparately',
+  'headOfHousehold',
+];
+
+const normalizeFilingStatus = (rawStatus: string): FilingStatus => {
+  if (VALID_FILING_STATUSES.includes(rawStatus as FilingStatus)) {
+    return rawStatus as FilingStatus;
+  }
+  logger.warn(`Unknown filing status "${rawStatus}" received from UI. Defaulting to "single".`);
+  return 'single';
+};
+
+const parseDependents = (value: number | string | undefined): number => {
+  if (value === undefined || value === null || value === '') return 0;
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isNaN(parsed) ? 0 : Math.max(parsed, 0);
+};
+
+const createPrimaryIncome = (incomeData: UIIncomeData): PersonIncome => {
+  const shortTerm = safeCurrencyToCents(incomeData.netShortTermCapitalGain);
+  const netLong = safeCurrencyToCents(incomeData.netLongTermCapitalGain);
+  const totalCap = safeCurrencyToCents(incomeData.capitalGains);
+  const longTerm = netLong !== 0 ? netLong : totalCap;
+
+  return {
+    wages: safeCurrencyToCents(incomeData.wages),
+    interest: safeCurrencyToCents(incomeData.interestIncome),
+    dividendsOrdinary: safeCurrencyToCents(incomeData.dividends),
+    dividendsQualified: safeCurrencyToCents(incomeData.qualifiedDividends),
+    capitalGainsLong: longTerm,
+    capitalGainsShort: shortTerm,
+    scheduleCNet: safeCurrencyToCents(incomeData.businessIncome),
+    otherIncome: safeCurrencyToCents(incomeData.otherIncome),
+  };
+};
+
+const createSpouseIncome = (spouseInfo: UISpouseInfo): PersonIncome => ({
+  wages: safeCurrencyToCents(spouseInfo.wages),
+  interest: safeCurrencyToCents(spouseInfo.interestIncome),
+  dividendsOrdinary: safeCurrencyToCents(spouseInfo.dividends),
+  dividendsQualified: 0,
+  capitalGainsLong: safeCurrencyToCents(spouseInfo.capitalGains),
+  capitalGainsShort: 0,
+  scheduleCNet: safeCurrencyToCents(spouseInfo.businessIncome),
+  otherIncome: safeCurrencyToCents(spouseInfo.otherIncome),
+});
+
+const buildJointIncome = (
+  primaryIncome: PersonIncome,
+  spouseIncome: PersonIncome | null,
+  k1Data: UIK1Data,
+): FederalInput2025['income'] => {
+  const k1Ordinary = safeCurrencyToCents(k1Data.ordinaryIncome);
+  const k1Passive = safeCurrencyToCents(k1Data.netRentalRealEstate);
+  const k1Portfolio = safeCurrencyToCents(k1Data.k1InterestIncome);
+  const royalties = safeCurrencyToCents(k1Data.royalties);
+  const guaranteedPayments = safeCurrencyToCents(k1Data.guaranteedPayments);
+
+  const wages = primaryIncome.wages + (spouseIncome?.wages ?? 0);
+  const interest = primaryIncome.interest + (spouseIncome?.interest ?? 0);
+  const dividendsOrdinary = primaryIncome.dividendsOrdinary + (spouseIncome?.dividendsOrdinary ?? 0);
+  const dividendsQualified =
+    primaryIncome.dividendsQualified + (spouseIncome?.dividendsQualified ?? 0);
+  const scheduleCNet = primaryIncome.scheduleCNet + (spouseIncome?.scheduleCNet ?? 0);
+  const capitalGainsLong = primaryIncome.capitalGainsLong + (spouseIncome?.capitalGainsLong ?? 0);
+  const capitalGainsShort =
+    primaryIncome.capitalGainsShort + (spouseIncome?.capitalGainsShort ?? 0);
+  const otherIncome = primaryIncome.otherIncome + (spouseIncome?.otherIncome ?? 0);
+
+  return {
+    wages,
+    interest,
+    dividends: {
+      ordinary: dividendsOrdinary,
+      qualified: dividendsQualified,
     },
-    dependents: parseInt(personalInfo.dependents) || 0,
-    
-    // Location info
-    state: personalInfo.isMaryland ? 'MD' : (personalInfo.state || null),
-    county: personalInfo.county,
-    isMaryland: personalInfo.isMaryland,
-    
-    income: {
-      wages: parseFloat(incomeData.wages) || 0,
-      interest: parseFloat(incomeData.interestIncome) || 0,
-      dividends: {
-        ordinary: parseFloat(incomeData.dividends) || 0,
-        qualified: 0, // Could be split from dividends in advanced version
-      },
-      capGains: parseFloat(incomeData.capitalGains) || 0,
-      scheduleCNet: parseFloat(incomeData.businessIncome) || 0,
-      k1: {
-        ordinaryBusinessIncome: parseFloat(k1Data.ordinaryIncome) || 0,
-        passiveIncome: parseFloat(k1Data.netRentalRealEstate) || 0,
-        portfolioIncome: parseFloat(k1Data.k1InterestIncome) || 0,
-      },
-      other: {
-        otherIncome: parseFloat(incomeData.otherIncome) || 0,
-        royalties: parseFloat(k1Data.royalties) || 0,
-        guaranteedPayments: parseFloat(k1Data.guaranteedPayments) || 0,
-      },
+    capGainsNet: capitalGainsLong,
+    capitalGainsDetail: {
+      shortTerm: capitalGainsShort,
+      longTerm: capitalGainsLong,
     },
-    
-    adjustments: {
-      studentLoanInterest: parseFloat(deductions.studentLoanInterest) || 0,
-      hsaDeduction: parseFloat(deductions.hsaContribution) || 0,
-      iraDeduction: parseFloat(deductions.iraContribution) || 0,
-      seTaxDeduction: parseFloat(deductions.selfEmploymentTaxDeduction) || 0,
-      businessExpenses: parseFloat(businessDetails.businessExpenses) || 0,
+    scheduleCNet,
+    businessIncome: 0,
+    k1: {
+      ordinaryBusinessIncome: k1Ordinary,
+      passiveIncome: k1Passive,
+      portfolioIncome: k1Portfolio,
     },
-    
-    itemized: {
-      stateLocalTaxes: parseFloat(deductions.stateLocalTaxes) || 0,
-      mortgageInterest: parseFloat(deductions.mortgageInterest) || 0,
-      charitable: parseFloat(deductions.charitableContributions) || 0,
-      medical: parseFloat(deductions.medicalExpenses) || 0,
-      other: parseFloat(deductions.otherItemized) || 0,
-    },
-    
-    payments: {
-      federalWithheld: parseFloat(paymentsData.federalWithholding) || 0,
-      stateWithheld: parseFloat(paymentsData.stateWithholding) || 0,
-      estPayments: parseFloat(paymentsData.estimatedTaxPayments) || 0,
-      eitcAdvance: parseFloat(paymentsData.otherPayments) || 0,
+    other: {
+      otherIncome,
+      royalties,
+      guaranteedPayments,
     },
   };
-  
-  // Add spouse information if filing jointly
-  if (personalInfo.filingStatus === 'marriedJointly' && spouseInfo) {
-    input.spouse = {
-      firstName: spouseInfo.firstName,
-      lastName: spouseInfo.lastName,
-      birthDate: spouseInfo.birthDate || null,
-      isBlind: spouseInfo.isBlind || false,
+};
+
+const buildSeparateIncome = (
+  personIncome: PersonIncome,
+  includeHouseholdK1: boolean,
+  jointIncome: FederalInput2025['income'],
+): FederalInput2025['income'] => ({
+  wages: personIncome.wages,
+  interest: personIncome.interest,
+  dividends: {
+    ordinary: personIncome.dividendsOrdinary,
+    qualified: personIncome.dividendsQualified,
+  },
+  capGainsNet: personIncome.capitalGainsLong,
+  capitalGainsDetail: {
+    shortTerm: personIncome.capitalGainsShort,
+    longTerm: personIncome.capitalGainsLong,
+  },
+  scheduleCNet: personIncome.scheduleCNet,
+  businessIncome: 0,
+  k1: includeHouseholdK1
+    ? {
+        ordinaryBusinessIncome: jointIncome.k1.ordinaryBusinessIncome,
+        passiveIncome: jointIncome.k1.passiveIncome,
+        portfolioIncome: jointIncome.k1.portfolioIncome,
+      }
+    : {
+        ordinaryBusinessIncome: 0,
+        passiveIncome: 0,
+        portfolioIncome: 0,
+      },
+  other: includeHouseholdK1
+    ? {
+        otherIncome: personIncome.otherIncome,
+        royalties: jointIncome.other.royalties,
+        guaranteedPayments: jointIncome.other.guaranteedPayments,
+      }
+    : {
+        otherIncome: personIncome.otherIncome,
+        royalties: 0,
+        guaranteedPayments: 0,
+      },
+});
+
+const buildJointPayments = (
+  paymentsData: UIPaymentsData,
+  spouseInfo: UISpouseInfo,
+  filingStatus: FilingStatus,
+): FederalInput2025['payments'] => {
+  const includeSpouse = filingStatus === 'marriedJointly';
+
+  return {
+    federalWithheld:
+      safeCurrencyToCents(paymentsData.federalWithholding) +
+      (includeSpouse ? safeCurrencyToCents(spouseInfo.federalWithholding) : 0),
+    estPayments: safeCurrencyToCents(paymentsData.estimatedTaxPayments),
+    eitcAdvance: safeCurrencyToCents(paymentsData.otherPayments),
+  };
+};
+
+/**
+ * Calculate total state withholding from payments data
+ * NOTE: State withholding is NOT part of federal input - it belongs to state tax calculation
+ */
+const calculateStateWithheld = (
+  paymentsData: UIPaymentsData,
+  spouseInfo: UISpouseInfo,
+  filingStatus: FilingStatus,
+): number => {
+  const includeSpouse = filingStatus === 'marriedJointly';
+  return (
+    safeCurrencyToCents(paymentsData.stateWithholding) +
+    (includeSpouse ? safeCurrencyToCents(spouseInfo.stateWithholding) : 0)
+  );
+};
+
+const buildTaxpayerPayments = (paymentsData: UIPaymentsData): FederalInput2025['payments'] => ({
+  federalWithheld: safeCurrencyToCents(paymentsData.federalWithholding),
+  estPayments: safeCurrencyToCents(paymentsData.estimatedTaxPayments),
+  eitcAdvance: safeCurrencyToCents(paymentsData.otherPayments),
+  // stateWithheld removed - not part of federal input
+});
+
+const buildSpousePayments = (spouseInfo: UISpouseInfo): FederalInput2025['payments'] => ({
+  federalWithheld: safeCurrencyToCents(spouseInfo.federalWithholding),
+  estPayments: 0,
+  eitcAdvance: 0,
+  // stateWithheld removed - not part of federal input
+});
+
+/**
+ * Convert UI data to engine input format (strongly typed)
+ */
+export function convertUIToEngineInput(
+  personalInfo: UIPersonalInfo,
+  incomeData: UIIncomeData,
+  k1Data: UIK1Data,
+  businessDetails: UIBusinessDetails,
+  paymentsData: UIPaymentsData,
+  deductions: UIDeductions,
+  spouseInfo: UISpouseInfo,
+): EngineConversionResult {
+  const filingStatus = normalizeFilingStatus(personalInfo.filingStatus);
+  const dependents = parseDependents(personalInfo.dependents);
+
+  const primary: FederalInput2025['primary'] = {
+    birthDate: personalInfo.birthDate || undefined,
+    isBlind: Boolean(personalInfo.isBlind),
+    ssn: personalInfo.ssn,
+  };
+
+  const spouse: FederalInput2025['spouse'] | undefined =
+    filingStatus === 'marriedJointly'
+      ? {
+          firstName: spouseInfo.firstName,
+          lastName: spouseInfo.lastName,
+          birthDate: spouseInfo.birthDate || undefined,
+          isBlind: Boolean(spouseInfo.isBlind),
+          ssn: spouseInfo.ssn,
+        }
+      : undefined;
+
+  const primaryIncome = createPrimaryIncome(incomeData);
+  const spouseIncome = filingStatus === 'marriedJointly' ? createSpouseIncome(spouseInfo) : null;
+  const income = buildJointIncome(primaryIncome, spouseIncome, k1Data);
+
+  const adjustments: FederalInput2025['adjustments'] = {
+    studentLoanInterest: safeCurrencyToCents(deductions.studentLoanInterest),
+    hsaDeduction: safeCurrencyToCents(deductions.hsaContribution),
+    iraDeduction: safeCurrencyToCents(deductions.iraContribution),
+    seTaxDeduction: 0,
+    businessExpenses: safeCurrencyToCents(businessDetails.businessExpenses),
+  };
+
+  // Respect user's explicit deduction choice
+  // If useStandardDeduction is true (or itemizeDeductions is false), force all itemized to 0
+  const shouldForceStandard = deductions.useStandardDeduction === true || deductions.itemizeDeductions === false;
+  // If itemizeDeductions is explicitly true, force itemized even if standard is higher
+  const shouldForceItemized = deductions.itemizeDeductions === true;
+
+  const itemized: FederalInput2025['itemized'] = shouldForceStandard
+    ? {
+        // Force standard deduction by zeroing all itemized amounts
+        stateLocalTaxes: 0,
+        mortgageInterest: 0,
+        charitable: 0,
+        medical: 0,
+        other: 0,
+      }
+    : {
+        // User chose itemized or didn't specify - use actual values
+        stateLocalTaxes: safeCurrencyToCents(deductions.stateLocalTaxes),
+        mortgageInterest: safeCurrencyToCents(deductions.mortgageInterest),
+        charitable: safeCurrencyToCents(deductions.charitableContributions),
+        medical: safeCurrencyToCents(deductions.medicalExpenses),
+        other: safeCurrencyToCents(deductions.otherItemized),
+      };
+
+  const payments = buildJointPayments(paymentsData, spouseInfo, filingStatus);
+
+  const federalInput: FederalInput2025 = {
+    filingStatus,
+    primary,
+    spouse,
+    dependents,
+    qualifyingChildren: [],
+    qualifyingRelatives: [],
+    educationExpenses: [],
+    income,
+    adjustments,
+    itemized,
+    forceItemized: shouldForceItemized,
+    payments,
+  };
+
+  // Use state field (primary), fall back to isMaryland for backward compatibility
+  const stateCode = personalInfo.state || (personalInfo.isMaryland ? 'MD' : null);
+
+  return {
+    federalInput,
+    stateCode,
+    county: personalInfo.county || undefined,
+    city: personalInfo.city || undefined,
+  };
+}
+
+/**
+ * Build state tax input from federal results
+ * Universal function for all states
+ */
+const buildStateTaxInput = (
+  stateCode: string,
+  county: string | undefined,
+  city: string | undefined,
+  filingStatus: FilingStatus,
+  federalResult: FederalResult2025,
+  stateWithheld: number,
+  stateEstPayments = 0,
+): StateTaxInput => ({
+  federalResult,
+  state: stateCode,
+  county,
+  city,
+  filingStatus,
+  stateWithheld,
+  stateEstPayments,
+});
+
+export interface UITaxResult {
+  adjustedGrossIncome: number;
+  taxableIncome: number;
+  federalTax: number;
+  standardDeduction: number;
+  itemizedDeduction: number;
+  deductionType?: 'standard' | 'itemized';
+  childTaxCredit: number;
+  earnedIncomeCredit: number;
+  educationCredits: number;
+  selfEmploymentTax: number;
+  netInvestmentIncomeTax: number;
+  additionalMedicareTax: number;
+  totalPayments: number;
+  refundOrOwe: number;
+  balance: number;
+  stateTax: number;        // Generic state tax (replaces marylandTax)
+  localTax: number;
+  totalTax: number;
+  afterTaxIncome: number;
+  effectiveRate: number;
+  marginalRate: number;
+  // Legacy field for backward compatibility
+  marylandTax: number;     // Deprecated: use stateTax instead
+}
+
+export interface TaxCalculationResult {
+  success: boolean;
+  result: UITaxResult;
+  federalDetails?: FederalResult2025;
+  stateDetails?: StateResult;
+  error?: string;
+  engine: 'v2-2025' | 'error';
+}
+
+/**
+ * Enhanced tax calculation using the new engine
+ */
+export function calculateTaxResultsWithEngine(
+  personalInfo: UIPersonalInfo,
+  incomeData: UIIncomeData,
+  k1Data: UIK1Data,
+  businessDetails: UIBusinessDetails,
+  paymentsData: UIPaymentsData,
+  deductions: UIDeductions,
+  spouseInfo: UISpouseInfo,
+): TaxCalculationResult {
+  try {
+    const conversion = convertUIToEngineInput(
+      personalInfo,
+      incomeData,
+      k1Data,
+      businessDetails,
+      paymentsData,
+      deductions,
+      spouseInfo,
+    );
+
+    // Runtime validation of federal input
+    validateFederalInput(conversion.federalInput);
+
+    const federalResult = computeFederal2025(conversion.federalInput);
+
+    // Runtime validation of federal output
+    validateFederalResult(federalResult);
+
+    let stateResult: StateResult | undefined;
+    if (conversion.stateCode) {
+      const stateCalc = getStateCalculator(conversion.stateCode);
+      if (stateCalc) {
+        const stateWithheld = calculateStateWithheld(paymentsData, spouseInfo, conversion.federalInput.filingStatus);
+        const stateInput = buildStateTaxInput(
+          conversion.stateCode,
+          conversion.county,
+          conversion.city,
+          conversion.federalInput.filingStatus,
+          federalResult,
+          stateWithheld,
+        );
+        // Runtime validation of state input
+        validateStateTaxInput(stateInput);
+        stateResult = stateCalc.calculator(stateInput);
+      }
+    }
+
+    const uiResult = convertEngineToUIResult(
+      federalResult,
+      stateResult ?? null,
+      conversion.federalInput.filingStatus,
+      conversion.stateCode,
+    );
+
+    return {
+      success: true,
+      result: uiResult,
+      federalDetails: federalResult,
+      stateDetails: stateResult,
+      engine: 'v2-2025',
+    };
+  } catch (error) {
+    logger.error('Tax calculation error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown tax calculation error',
+      result: getEmptyTaxResult(),
+      engine: 'error',
+    };
+  }
+}
+
+export interface FilingComparison {
+  joint: {
+    totalTax: number;
+    federalTax: number;
+    stateTax: number;
+  };
+  separate: {
+    totalTax: number;
+    federalTax: number;
+    stateTax: number;
+  };
+  recommended: string;
+  savings: number;
+}
+
+/**
+ * Calculate filing comparison using the new engine
+ */
+export function calculateFilingComparisonWithEngine(
+  personalInfo: UIPersonalInfo,
+  incomeData: UIIncomeData,
+  spouseInfo: UISpouseInfo,
+  paymentsData: UIPaymentsData,
+): FilingComparison | null {
+  const filingStatus = normalizeFilingStatus(personalInfo.filingStatus);
+  if (filingStatus !== 'marriedJointly') {
+    return null;
+  }
+
+  try {
+    const conversion = convertUIToEngineInput(
+      personalInfo,
+      incomeData,
+      {},
+      {},
+      paymentsData,
+      {},
+      spouseInfo,
+    );
+
+    const jointFederal = computeFederal2025(conversion.federalInput);
+    const stateWithheldJoint = calculateStateWithheld(paymentsData, spouseInfo, 'marriedJointly');
+
+    let jointState: StateResult | undefined;
+    if (conversion.stateCode) {
+      const stateCalc = getStateCalculator(conversion.stateCode);
+      if (stateCalc) {
+        const stateInput = buildStateTaxInput(
+          conversion.stateCode,
+          conversion.county,
+          conversion.city,
+          'marriedJointly',
+          jointFederal,
+          stateWithheldJoint,
+        );
+        jointState = stateCalc.calculator(stateInput);
+      }
+    }
+
+    const dependents = parseDependents(personalInfo.dependents);
+    const primaryIncome = createPrimaryIncome(incomeData);
+    const spouseIncome = createSpouseIncome(spouseInfo);
+    const jointIncome = conversion.federalInput.income;
+
+    const taxpayerInput: FederalInput2025 = {
+      filingStatus: 'marriedSeparately',
+      primary: conversion.federalInput.primary,
+      spouse: undefined,
+      dependents,
+      qualifyingChildren: conversion.federalInput.qualifyingChildren,
+      qualifyingRelatives: conversion.federalInput.qualifyingRelatives,
+      educationExpenses: conversion.federalInput.educationExpenses,
+      income: buildSeparateIncome(primaryIncome, true, jointIncome),
+      adjustments: conversion.federalInput.adjustments,
+      itemized: conversion.federalInput.itemized,
+      payments: buildTaxpayerPayments(paymentsData),
+    };
+
+    const spousePrimary: FederalInput2025['primary'] = {
+      birthDate: spouseInfo.birthDate || undefined,
+      isBlind: Boolean(spouseInfo.isBlind),
       ssn: spouseInfo.ssn,
     };
-    
-    // Add spouse income to totals
-    input.income.wages += parseFloat(spouseInfo.wages) || 0;
-    input.income.interest += parseFloat(spouseInfo.interestIncome) || 0;
-    input.income.dividends.ordinary += parseFloat(spouseInfo.dividends) || 0;
-    input.income.capGains += parseFloat(spouseInfo.capitalGains) || 0;
-    input.income.scheduleCNet += parseFloat(spouseInfo.businessIncome) || 0;
-    
-    // Add spouse payments
-    input.payments.federalWithheld += parseFloat(spouseInfo.federalWithholding) || 0;
-    input.payments.stateWithheld += parseFloat(spouseInfo.stateWithholding) || 0;
+
+    const spouseInput: FederalInput2025 = {
+      filingStatus: 'marriedSeparately',
+      primary: spousePrimary,
+      spouse: undefined,
+      dependents: 0,
+      qualifyingChildren: [],
+      qualifyingRelatives: [],
+      educationExpenses: [],
+      income: buildSeparateIncome(spouseIncome, false, jointIncome),
+      adjustments: {
+        studentLoanInterest: 0,
+        hsaDeduction: 0,
+        iraDeduction: 0,
+        seTaxDeduction: 0,
+        businessExpenses: 0,
+      },
+      itemized: {
+        stateLocalTaxes: 0,
+        mortgageInterest: 0,
+        charitable: 0,
+        medical: 0,
+        other: 0,
+      },
+      payments: buildSpousePayments(spouseInfo),
+    };
+
+    const taxpayerFederal = computeFederal2025(taxpayerInput);
+    const spouseFederal = computeFederal2025(spouseInput);
+
+    const taxpayerStateWithheld = safeCurrencyToCents(paymentsData.stateWithholding);
+    const spouseStateWithheld = safeCurrencyToCents(spouseInfo.stateWithholding);
+
+    let taxpayerState: StateResult | undefined;
+    let spouseState: StateResult | undefined;
+
+    if (conversion.stateCode) {
+      const stateCalc = getStateCalculator(conversion.stateCode);
+      if (stateCalc) {
+        const taxpayerInput = buildStateTaxInput(
+          conversion.stateCode,
+          conversion.county,
+          conversion.city,
+          'marriedSeparately',
+          taxpayerFederal,
+          taxpayerStateWithheld,
+        );
+        taxpayerState = stateCalc.calculator(taxpayerInput);
+
+        const spouseInput = buildStateTaxInput(
+          conversion.stateCode,
+          conversion.county,
+          conversion.city,
+          'marriedSeparately',
+          spouseFederal,
+          spouseStateWithheld,
+        );
+        spouseState = stateCalc.calculator(spouseInput);
+      }
+    }
+
+    const jointTotalTax = jointFederal.totalTax + (jointState?.totalStateLiability ?? 0);
+    const separateTotalTax =
+      taxpayerFederal.totalTax +
+      spouseFederal.totalTax +
+      (taxpayerState?.totalStateLiability ?? 0) +
+      (spouseState?.totalStateLiability ?? 0);
+
+    const recommended = jointTotalTax <= separateTotalTax ? 'joint' : 'separate';
+
+    return {
+      joint: {
+        totalTax: Math.round(jointTotalTax / 100),
+        federalTax: Math.round(jointFederal.totalTax / 100),
+        stateTax: Math.round((jointState?.totalStateLiability ?? 0) / 100),
+      },
+      separate: {
+        totalTax: Math.round(separateTotalTax / 100),
+        federalTax: Math.round((taxpayerFederal.totalTax + spouseFederal.totalTax) / 100),
+        stateTax: Math.round(
+          ((taxpayerState?.totalStateLiability ?? 0) + (spouseState?.totalStateLiability ?? 0)) /
+            100,
+        ),
+      },
+      recommended,
+      savings: Math.abs(jointTotalTax - separateTotalTax) / 100,
+    };
+  } catch (error) {
+    logger.error('Filing comparison error:', error);
+    return null;
   }
-  
-  return input;
 }
 
 /**
  * Convert engine result to UI-compatible format
  */
-export function convertEngineToUIResult(federalResult, stateResult = null) {
-  const result = {
-    // Basic amounts (convert from cents to dollars)
+export function convertEngineToUIResult(
+  federalResult: FederalResult2025,
+  stateResult: StateResult | null = null,
+  filingStatus: FilingStatus = 'single',
+  stateCode: string | null = null,
+): UITaxResult {
+  const standardDeduction = Math.round(federalResult.standardDeduction / 100);
+  const itemizedDeduction = federalResult.itemizedDeduction
+    ? Math.round(federalResult.itemizedDeduction / 100)
+    : 0;
+
+  const result: UITaxResult = {
     adjustedGrossIncome: Math.round(federalResult.agi / 100),
     taxableIncome: Math.round(federalResult.taxableIncome / 100),
     federalTax: Math.round(federalResult.totalTax / 100),
-    
-    // Deductions
-    standardDeduction: Math.round(federalResult.standardDeduction / 100),
-    itemizedDeduction: federalResult.itemizedDeduction ? Math.round(federalResult.itemizedDeduction / 100) : 0,
-    
-    // Credits
-    childTaxCredit: Math.round((federalResult.credits.ctc || 0) / 100),
-    earnedIncomeCredit: Math.round((federalResult.credits.eitc || 0) / 100),
-    educationCredits: Math.round(((federalResult.credits.aotc || 0) + (federalResult.credits.llc || 0)) / 100),
-    
-    // Additional taxes
-    selfEmploymentTax: Math.round((federalResult.additionalTaxes?.seTax || 0) / 100),
-    netInvestmentIncomeTax: Math.round((federalResult.additionalTaxes?.niit || 0) / 100),
-    additionalMedicareTax: Math.round((federalResult.additionalTaxes?.medicareSurtax || 0) / 100),
-    
-    // Payments and balance
+    standardDeduction,
+    itemizedDeduction,
+    deductionType: itemizedDeduction > standardDeduction ? 'itemized' : 'standard',
+    childTaxCredit: Math.round((federalResult.credits.ctc ?? 0) / 100),
+    earnedIncomeCredit: Math.round((federalResult.credits.eitc ?? 0) / 100),
+    educationCredits: Math.round(
+      ((federalResult.credits.aotc ?? 0) + (federalResult.credits.llc ?? 0)) / 100,
+    ),
+    selfEmploymentTax: Math.round((federalResult.additionalTaxes?.seTax ?? 0) / 100),
+    netInvestmentIncomeTax: Math.round((federalResult.additionalTaxes?.niit ?? 0) / 100),
+    additionalMedicareTax: Math.round((federalResult.additionalTaxes?.medicareSurtax ?? 0) / 100),
     totalPayments: Math.round(federalResult.totalPayments / 100),
     refundOrOwe: Math.round(federalResult.refundOrOwe / 100),
-    
-    // State tax (if applicable)
+    balance: Math.round(federalResult.refundOrOwe / 100),
+    stateTax: 0,
     marylandTax: 0,
     localTax: 0,
     totalTax: Math.round(federalResult.totalTax / 100),
@@ -141,428 +955,110 @@ export function convertEngineToUIResult(federalResult, stateResult = null) {
     effectiveRate: 0,
     marginalRate: 0,
   };
-  
-  // Add state tax information
+
   if (stateResult) {
-    result.marylandTax = Math.round((stateResult.stateTax || 0) / 100);
-    result.localTax = Math.round((stateResult.localTax || 0) / 100);
-    result.totalTax = result.federalTax + result.marylandTax + result.localTax;
+    result.stateTax = Math.round(stateResult.totalStateLiability / 100);
+    // Only set marylandTax if state is actually Maryland (for backward compatibility)
+    result.marylandTax = stateCode?.toUpperCase() === 'MD' ? result.stateTax : 0;
+    result.localTax = Math.round(stateResult.localTax / 100);
+    result.totalTax = result.federalTax + result.stateTax + result.localTax;
   }
-  
-  // Calculate derived values
+
   result.afterTaxIncome = result.adjustedGrossIncome - result.totalTax;
-  result.effectiveRate = result.adjustedGrossIncome > 0 ? (result.totalTax / result.adjustedGrossIncome) : 0;
-  
-  // Marginal rate calculation (simplified - would need more sophisticated logic)
-  result.marginalRate = calculateMarginalRate(result.adjustedGrossIncome, result.federalTax);
-  
+  result.effectiveRate = result.adjustedGrossIncome > 0 ? result.totalTax / result.adjustedGrossIncome : 0;
+  // Use taxable income (not AGI) for marginal rate calculation
+  result.marginalRate = calculateMarginalRate(result.taxableIncome, filingStatus);
+
   return result;
 }
 
 /**
- * Calculate marginal tax rate (simplified)
+ * Calculate marginal tax rate based on taxable income and filing status
+ * Uses 2025 federal tax brackets from IRS Rev. Proc. 2024-40
  */
-function calculateMarginalRate(agi, federalTax) {
-  // This is a simplified calculation
-  // In a full implementation, would use the actual bracket logic
-  if (agi <= 0) return 0;
-  
-  // Rough marginal rate based on AGI ranges
-  if (agi <= 11925) return 0.10;
-  if (agi <= 48475) return 0.12;
-  if (agi <= 103350) return 0.22;
-  if (agi <= 197300) return 0.24;
-  if (agi <= 250525) return 0.32;
-  if (agi <= 626350) return 0.35;
+function calculateMarginalRate(
+  taxableIncomeDollars: number,
+  filingStatus: FilingStatus
+): number {
+  if (taxableIncomeDollars <= 0) return 0;
+
+  // 2025 Federal Tax Brackets (amounts in dollars)
+  const brackets: Record<FilingStatus, Array<{ max: number; rate: number }>> = {
+    single: [
+      { max: 11925, rate: 0.10 },
+      { max: 48475, rate: 0.12 },
+      { max: 103350, rate: 0.22 },
+      { max: 197300, rate: 0.24 },
+      { max: 250525, rate: 0.32 },
+      { max: 626350, rate: 0.35 },
+      { max: Infinity, rate: 0.37 },
+    ],
+    marriedJointly: [
+      { max: 23850, rate: 0.10 },
+      { max: 96950, rate: 0.12 },
+      { max: 206700, rate: 0.22 },
+      { max: 394600, rate: 0.24 },
+      { max: 501050, rate: 0.32 },
+      { max: 751600, rate: 0.35 },
+      { max: Infinity, rate: 0.37 },
+    ],
+    marriedSeparately: [
+      { max: 11925, rate: 0.10 },
+      { max: 48475, rate: 0.12 },
+      { max: 103350, rate: 0.22 },
+      { max: 197300, rate: 0.24 },
+      { max: 250525, rate: 0.32 },
+      { max: 375800, rate: 0.35 },
+      { max: Infinity, rate: 0.37 },
+    ],
+    headOfHousehold: [
+      { max: 17000, rate: 0.10 },
+      { max: 64850, rate: 0.12 },
+      { max: 103350, rate: 0.22 },
+      { max: 197300, rate: 0.24 },
+      { max: 250500, rate: 0.32 },
+      { max: 626350, rate: 0.35 },
+      { max: Infinity, rate: 0.37 },
+    ],
+  };
+
+  const statusBrackets = brackets[filingStatus];
+  for (const bracket of statusBrackets) {
+    if (taxableIncomeDollars <= bracket.max) {
+      return bracket.rate;
+    }
+  }
+
+  // Should never reach here due to Infinity bracket, but return max rate as fallback
   return 0.37;
 }
 
 /**
- * Enhanced tax calculation using the new engine
+ * Return an empty tax result object with all fields initialized to zero
+ * Used when tax calculation fails or encounters an error
  */
-export function calculateTaxResultsWithEngine(personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo) {
-  try {
-    // Priority 1: Use new Federal 1040 engine if available
-    if (computeFederal1040 && convertUIToFederal1040Input) {
-      console.log('🚀 Using advanced Federal 1040 engine (2025)');
-      
-      // Convert UI data to Federal 1040 input format
-      const uiInput: any = {
-        filingStatus: personalInfo.filingStatus,
-        birthDate: personalInfo.birthDate || null,
-        isBlind: personalInfo.isBlind || false,
-        wages: parseFloat(incomeData.wages) || 0,
-        federalWithholding: parseFloat(paymentsData.federalWithholding) || 0,
-        interestIncome: parseFloat(incomeData.interestIncome) || 0,
-        dividends: parseFloat(incomeData.dividends) || 0,
-        capitalGains: parseFloat(incomeData.capitalGains) || 0,
-        businessIncome: parseFloat(incomeData.businessIncome) || 0,
-        retirementIncome: parseFloat(incomeData.retirementIncome) || 0,
-        socialSecurityBenefits: parseFloat(incomeData.socialSecurityBenefits) || 0,
-        unemployment: parseFloat(incomeData.unemployment) || 0,
-        otherIncome: parseFloat(incomeData.otherIncome) || 0,
-        hsaContribution: parseFloat(deductions.hsaContribution) || 0,
-        iraContribution: parseFloat(deductions.iraContribution) || 0,
-        studentLoanInterest: parseFloat(deductions.studentLoanInterest) || 0,
-        itemizeDeductions: deductions.itemizeDeductions,
-        stateLocalTaxes: parseFloat(deductions.stateLocalTaxes) || 0,
-        mortgageInterest: parseFloat(deductions.mortgageInterest) || 0,
-        charitableContributions: parseFloat(deductions.charitableContributions) || 0,
-        medicalExpenses: parseFloat(deductions.medicalExpenses) || 0,
-        otherDeductions: parseFloat(deductions.otherItemized) || 0,
-        estimatedPayments: parseFloat(paymentsData.estimatedTaxPayments) || 0,
-        dependents: personalInfo.dependents || 0,
-      };
-      
-      // Add spouse information if applicable
-      if (spouseInfo && personalInfo.filingStatus === 'marriedJointly') {
-        uiInput.spouseAge = calculateAge(spouseInfo.birthDate) || null;
-        uiInput.spouseBlind = spouseInfo.isBlind || false;
-        uiInput.spouseWages = parseFloat(spouseInfo.wages) || 0;
-        uiInput.spouseFederalWithholding = parseFloat(spouseInfo.federalWithholding) || 0;
-      }
-      
-      const federal1040Input = convertUIToFederal1040Input(uiInput);
-      const federal1040Result = computeFederal1040(federal1040Input);
-      
-      // Convert Federal 1040 result back to UI format
-      const uiResult = convertFederal1040ToUIResult(federal1040Result, personalInfo);
-      
-      return {
-        success: true,
-        result: uiResult,
-        federalDetails: federal1040Result,
-        stateDetails: null, // State tax calculation would be separate
-        calculationSteps: federal1040Result.calculationSteps,
-        engine: 'Federal1040-2025',
-      };
-    }
-    
-    // Priority 2: Use legacy engine if available
-    else if (computeFederal2025 && computeMD2025) {
-      console.log('⚡ Using legacy tax engine');
-      
-      // Convert UI data to engine format
-      const engineInput = convertUIToEngineInput(
-        personalInfo, 
-        incomeData, 
-        k1Data, 
-        businessDetails, 
-        paymentsData, 
-        deductions, 
-        spouseInfo
-      );
-      
-      // Calculate federal taxes
-      const federalResult = computeFederal2025(engineInput);
-      
-      // Calculate state taxes if Maryland resident
-      let stateResult = null;
-      if (personalInfo.isMaryland) {
-        stateResult = computeMD2025(engineInput, federalResult);
-      }
-      
-      // Convert back to UI format
-      const uiResult = convertEngineToUIResult(federalResult, stateResult);
-      
-      return {
-        success: true,
-        result: uiResult,
-        federalDetails: federalResult,
-        stateDetails: stateResult,
-        engine: 'Legacy-2025',
-      };
-    }
-    
-    // Priority 3: Fallback to original calculations
-    else {
-      console.log('📊 Using fallback tax calculations');
-      
-      const result = calculateTaxResults(
-        personalInfo,
-        incomeData,
-        k1Data,
-        businessDetails,
-        paymentsData,
-        deductions
-      );
-      
-      return {
-        success: true,
-        result: result,
-        federalDetails: null,
-        stateDetails: null,
-        engine: 'Fallback-Simple',
-      };
-    }
-    
-  } catch (error) {
-    console.error('❌ Tax calculation error:', error);
-    
-    // Try fallback calculation if engine fails
-    try {
-      console.log('🔄 Attempting fallback calculation...');
-      const result = calculateTaxResults(
-        personalInfo,
-        incomeData,
-        k1Data,
-        businessDetails,
-        paymentsData,
-        deductions
-      );
-      
-      return {
-        success: true,
-        result: result,
-        federalDetails: null,
-        stateDetails: null,
-        engine: 'Fallback-Emergency',
-        warning: 'Advanced engine failed, using simplified calculations',
-      };
-    } catch (fallbackError) {
-      console.error('❌ Fallback calculation also failed:', fallbackError);
-      return {
-        success: false,
-        error: `Primary engine error: ${error.message}. Fallback error: ${fallbackError.message}`,
-        result: null,
-      };
-    }
-  }
-}
-
-/**
- * Calculate filing comparison using the new engine
- */
-export function calculateFilingComparisonWithEngine(personalInfo, incomeData, spouseInfo, paymentsData) {
-  if (personalInfo.filingStatus !== 'marriedJointly') {
-    return null;
-  }
-  
-  try {
-    // Use engine if available, otherwise fallback to original calculations
-    if (computeFederal2025 && computeMD2025) {
-      console.log('Using advanced engine for filing comparison');
-      
-      // Create base input
-      const baseInput = convertUIToEngineInput(
-        personalInfo, 
-        incomeData, 
-        {}, // k1Data
-        {}, // businessDetails
-        paymentsData, 
-        {}, // deductions
-        spouseInfo
-      );
-      
-      // Calculate joint filing
-      const jointInput = { ...baseInput, filingStatus: 'marriedJointly' };
-      const jointFederal = computeFederal2025(jointInput);
-      const jointState = personalInfo.isMaryland ? computeMD2025(jointInput, jointFederal) : null;
-      
-      // Calculate separate filing using actual taxpayer income (not spouse income)
-      const taxpayerIncome = {
-        wages: parseFloat(incomeData.wages) || 0,
-        interest: parseFloat(incomeData.interestIncome) || 0,
-        dividends: {
-          ordinary: parseFloat(incomeData.dividends) || 0,
-          qualified: parseFloat(incomeData.qualifiedDividends) || 0,
-        },
-        capitalGains: {
-          shortTerm: parseFloat(incomeData.netShortTermCapitalGain) || 0,
-          longTerm: parseFloat(incomeData.netLongTermCapitalGain) || 0,
-        },
-        business: parseFloat(incomeData.businessIncome) || 0,
-        other: parseFloat(incomeData.otherIncome) || 0,
-      };
-
-      const taxpayerPayments = {
-        federalWithheld: parseFloat(paymentsData.federalWithholding) || 0,
-        stateWithheld: parseFloat(paymentsData.stateWithholding) || 0,
-        estPayments: parseFloat(paymentsData.estimatedTaxPayments) || 0,
-        eitcAdvance: parseFloat(paymentsData.otherPayments) || 0,
-      };
-
-      const separateInput = {
-        ...baseInput,
-        filingStatus: 'marriedSeparately',
-        income: taxpayerIncome,
-        payments: taxpayerPayments,
-      };
-      
-      // Calculate taxpayer's separate filing
-      const taxpayerFederal = computeFederal2025(separateInput);
-      const taxpayerState = personalInfo.isMaryland ? computeMD2025(separateInput, taxpayerFederal) : null;
-
-      // Calculate spouse's separate filing using spouse income
-      const spouseIncome = {
-        wages: parseFloat(spouseInfo.wages) || 0,
-        interest: parseFloat(spouseInfo.interestIncome) || 0,
-        dividends: {
-          ordinary: parseFloat(spouseInfo.dividends) || 0,
-          qualified: 0, // Spouse qualified dividends not tracked separately
-        },
-        capitalGains: {
-          shortTerm: parseFloat(spouseInfo.capitalGains) || 0,
-          longTerm: 0, // Spouse capital gains not tracked separately
-        },
-        business: parseFloat(spouseInfo.businessIncome) || 0,
-        other: parseFloat(spouseInfo.otherIncome) || 0,
-      };
-
-      const spousePayments = {
-        federalWithheld: parseFloat(spouseInfo.federalWithholding) || 0,
-        stateWithheld: parseFloat(spouseInfo.stateWithholding) || 0,
-        estPayments: 0, // Spouse estimated payments not tracked separately
-        eitcAdvance: 0, // Spouse other payments not tracked separately
-      };
-
-      const spouseSeparateInput = {
-        ...baseInput,
-        filingStatus: 'marriedSeparately',
-        income: spouseIncome,
-        payments: spousePayments,
-        personalInfo: {
-          ...baseInput.personalInfo,
-          dependents: 0, // Spouse cannot claim same dependents
-        },
-      };
-
-      const spouseFederal = computeFederal2025(spouseSeparateInput);
-      const spouseState = personalInfo.isMaryland ? computeMD2025(spouseSeparateInput, spouseFederal) : null;
-
-      // Calculate combined separate filing totals
-      const separateTotalTax = (taxpayerFederal.totalTax + (taxpayerState?.totalStateLiability || 0)) +
-                              (spouseFederal.totalTax + (spouseState?.totalStateLiability || 0));
-      const jointTotalTax = jointFederal.totalTax + (jointState?.totalStateLiability || 0);
-      
-      const recommended = jointTotalTax <= separateTotalTax ? 'joint' : 'separate';
-      
-      return {
-        joint: {
-          totalTax: Math.round(jointTotalTax / 100),
-          federalTax: Math.round(jointFederal.totalTax / 100),
-          stateTax: Math.round((jointState?.totalStateLiability || 0) / 100),
-        },
-        separate: {
-          totalTax: Math.round(separateTotalTax / 100),
-          federalTax: Math.round((taxpayerFederal.totalTax + spouseFederal.totalTax) / 100),
-          stateTax: Math.round(((taxpayerState?.totalStateLiability || 0) + (spouseState?.totalStateLiability || 0)) / 100),
-        },
-        recommended,
-        savings: Math.abs(jointTotalTax - separateTotalTax) / 100,
-      };
-      
-    } else {
-      console.log('Using fallback filing comparison');
-      
-      // Import the original function
-      const { calculateFilingComparison } = require('./taxCalculations');
-      
-      return calculateFilingComparison(personalInfo, incomeData, spouseInfo, paymentsData);
-    }
-    
-  } catch (error) {
-    console.error('Filing comparison error:', error);
-    return null;
-  }
-}
-
-/**
- * Convert Federal 1040 result back to UI format
- */
-function convertFederal1040ToUIResult(federal1040Result, personalInfo) {
+export function getEmptyTaxResult(): UITaxResult {
   return {
-    // Core amounts
-    adjustedGrossIncome: federal1040Result.adjustedGrossIncome,
-    taxableIncome: federal1040Result.taxableIncome,
-    federalTax: federal1040Result.totalTax,
-    
-    // Deductions
-    standardDeduction: federal1040Result.standardDeduction,
-    itemizedDeduction: federal1040Result.itemizedDeduction,
-    deductionUsed: federal1040Result.deductionUsed,
-    
-    // Credits
-    childTaxCredit: extractChildTaxCredit(federal1040Result),
-    earnedIncomeCredit: extractEarnedIncomeCredit(federal1040Result),
-    educationCredits: extractEducationCredits(federal1040Result),
-    
-    // Additional taxes
-    selfEmploymentTax: federal1040Result.selfEmploymentTax,
-    netInvestmentIncomeTax: federal1040Result.netInvestmentIncomeTax,
-    additionalMedicareTax: federal1040Result.additionalMedicareTax,
-    alternativeMinimumTax: federal1040Result.alternativeMinimumTax,
-    
-    // Payments and balance
-    totalPayments: federal1040Result.totalPayments,
-    refundOrOwe: federal1040Result.refundOwed,
-    
-    // State tax (placeholder - would need separate calculation)
+    adjustedGrossIncome: 0,
+    taxableIncome: 0,
+    federalTax: 0,
+    standardDeduction: 0,
+    itemizedDeduction: 0,
+    childTaxCredit: 0,
+    earnedIncomeCredit: 0,
+    educationCredits: 0,
+    selfEmploymentTax: 0,
+    netInvestmentIncomeTax: 0,
+    additionalMedicareTax: 0,
+    totalPayments: 0,
+    refundOrOwe: 0,
+    balance: 0,
+    stateTax: 0,
     marylandTax: 0,
     localTax: 0,
-    totalTax: federal1040Result.totalTax,
-    
-    // Calculated fields
-    afterTaxIncome: federal1040Result.adjustedGrossIncome - federal1040Result.totalTax,
-    effectiveRate: federal1040Result.effectiveTaxRate,
-    marginalRate: federal1040Result.marginalTaxRate,
-    
-    // Additional info
-    qbiDeduction: federal1040Result.qbiDeduction,
-    totalIncome: federal1040Result.totalIncome,
-    
-    // Engine metadata
-    engineUsed: 'Federal1040-2025',
-    calculationSteps: federal1040Result.calculationSteps,
-    errors: federal1040Result.errors,
-    warnings: federal1040Result.warnings,
+    totalTax: 0,
+    afterTaxIncome: 0,
+    effectiveRate: 0,
+    marginalRate: 0,
   };
-}
-
-/**
- * Extract Child Tax Credit from calculation steps
- */
-function extractChildTaxCredit(result) {
-  const ctcStep = result.calculationSteps.find(step => 
-    step.description.toLowerCase().includes('child tax credit')
-  );
-  return ctcStep ? ctcStep.amount : 0;
-}
-
-/**
- * Extract Earned Income Credit from calculation steps
- */
-function extractEarnedIncomeCredit(result) {
-  const eitcStep = result.calculationSteps.find(step => 
-    step.description.toLowerCase().includes('earned income credit')
-  );
-  return eitcStep ? eitcStep.amount : 0;
-}
-
-/**
- * Extract Education Credits from calculation steps
- */
-function extractEducationCredits(result) {
-  const educStep = result.calculationSteps.find(step => 
-    step.description.toLowerCase().includes('education credit')
-  );
-  return educStep ? educStep.amount : 0;
-}
-
-/**
- * Calculate age from birth date
- */
-function calculateAge(birthDate) {
-  if (!birthDate) return null;
-  
-  const birth = new Date(birthDate);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  
-  return age;
 }

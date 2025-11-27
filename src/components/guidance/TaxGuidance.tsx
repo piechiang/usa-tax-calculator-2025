@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { HelpCircle, Info, AlertTriangle, CheckCircle, ExternalLink, Book, Calculator, DollarSign, FileText, Users, ChevronDown } from 'lucide-react';
+import { HelpCircle, Info, AlertTriangle, CheckCircle, ExternalLink, Book, Calculator, DollarSign, FileText, Users, ChevronDown, LucideIcon } from 'lucide-react';
 
 interface GuidanceItem {
   type: 'info' | 'warning' | 'tip' | 'requirement' | 'calculation';
   title: string;
   content: string;
-  icon?: React.ComponentType<any>;
+  icon?: LucideIcon;
   links?: Array<{
     text: string;
     url: string;
@@ -17,20 +17,18 @@ interface TaxGuidanceContext {
   isMarried?: boolean;
   amount?: number;
   numChildren?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface TaxGuidanceProps {
   field: string;
   context?: TaxGuidanceContext;
-  t: (key: string) => string;
   className?: string;
 }
 
 export const TaxGuidance: React.FC<TaxGuidanceProps> = ({
   field,
   context,
-  t,
   className = ''
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);

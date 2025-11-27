@@ -1,11 +1,20 @@
 import React from 'react';
+import type { PersonalInfo } from '../../types/CommonTypes';
 
 interface PaymentsFormProps {
-  paymentsData: any;
-  personalInfo: any;
+  paymentsData: Record<string, string | number>;
+  personalInfo: PersonalInfo;
   onChange: (field: string, value: string) => void;
   t: (key: string) => string;
-  ValidatedInput: React.ComponentType<any>;
+  ValidatedInput: React.ComponentType<{
+    field: string;
+    value: string | number;
+    onChange: (field: string, value: string) => void;
+    section?: string;
+    type?: string;
+    placeholder?: string;
+    [key: string]: unknown;
+  }>;
 }
 
 const PaymentsForm: React.FC<PaymentsFormProps> = ({
@@ -25,7 +34,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
           </label>
           <ValidatedInput
             field="federalWithholding"
-            value={paymentsData.federalWithholding}
+            value={String(paymentsData.federalWithholding || '')}
             onChange={onChange}
             section="payments"
             type="number"
@@ -43,7 +52,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
             </label>
             <ValidatedInput
               field="stateWithholding"
-              value={paymentsData.stateWithholding}
+              value={String(paymentsData.stateWithholding || '')}
               onChange={onChange}
               section="payments"
               type="number"
@@ -61,7 +70,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
           </label>
           <ValidatedInput
             field="estimatedTaxPayments"
-            value={paymentsData.estimatedTaxPayments}
+            value={String(paymentsData.estimatedTaxPayments || '')}
             onChange={onChange}
             section="payments"
             type="number"
@@ -78,7 +87,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
           </label>
           <ValidatedInput
             field="priorYearOverpayment"
-            value={paymentsData.priorYearOverpayment}
+            value={String(paymentsData.priorYearOverpayment || '')}
             onChange={onChange}
             section="payments"
             type="number"
@@ -95,7 +104,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
           </label>
           <ValidatedInput
             field="otherPayments"
-            value={paymentsData.otherPayments}
+            value={String(paymentsData.otherPayments || '')}
             onChange={onChange}
             section="payments"
             type="number"
@@ -110,4 +119,5 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
   );
 };
 
-export default PaymentsForm;
+// Memoize component to prevent unnecessary re-renders
+export default React.memo(PaymentsForm);

@@ -1,11 +1,49 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Download, FileText, Camera, Scan, CheckCircle, AlertCircle, Loader2, FileSpreadsheet, FileJson, FileImage, Calendar } from 'lucide-react';
+import { Upload, Download, FileText, Camera, CheckCircle, AlertCircle, Loader2, FileSpreadsheet, FileJson, Calendar, LucideIcon } from 'lucide-react';
+
+// Type for imported/exported tax data
+interface TaxData {
+  personalInfo?: {
+    firstName?: string;
+    lastName?: string;
+    ssn?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      zipCode?: string;
+    };
+  };
+  incomeData?: Record<string, unknown>;
+  deductions?: Record<string, unknown>;
+  calculations?: Record<string, unknown>;
+  carryoverData?: {
+    capitalLossCarryover?: number;
+    charitableCarryover?: number;
+  };
+  [key: string]: unknown;
+}
+
+// Type for document scan results
+interface DocumentScanResult {
+  type: string;
+  confidence: number;
+  fieldsCount: number;
+  data: Record<string, unknown>;
+}
+
+// Type for parsed data
+interface ParsedData {
+  documentType?: string;
+  extractedData?: Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 interface ImportSource {
   id: string;
   name: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   supportedFormats: string[];
   isAvailable: boolean;
 }
@@ -14,7 +52,7 @@ interface ExportFormat {
   id: string;
   name: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   fileExtension: string;
 }
 
@@ -26,9 +64,9 @@ interface ImportProgress {
 }
 
 interface DataImportExportProps {
-  onImport: (data: any) => void;
+  onImport: (data: TaxData) => void;
   onExport: (format: string) => Promise<void>;
-  currentData: any;
+  currentData: TaxData;
   t: (key: string) => string;
 }
 
@@ -36,14 +74,14 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
   onImport,
   onExport,
   currentData,
-  t
+  t: _t
 }) => {
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [selectedImportSource, setSelectedImportSource] = useState<string>('');
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [priorYearData, setPriorYearData] = useState<any>(null);
-  const [documentScanResult, setDocumentScanResult] = useState<any>(null);
+  const [_uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [_priorYearData, setPriorYearData] = useState<TaxData | null>(null);
+  const [documentScanResult, setDocumentScanResult] = useState<DocumentScanResult | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -159,7 +197,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       });
 
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
-      let parsedData: any = null;
+      let parsedData: ParsedData | null = null;
 
       if (fileExtension === 'json') {
         const text = await file.text();
@@ -386,7 +424,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'import' | 'export')}
               className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
@@ -567,16 +605,18 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
 };
 
 // Helper functions
-const parseCSV = (csvText: string): any => {
+const parseCSV = (csvText: string): ParsedData => {
   const lines = csvText.split('\n');
-  const headers = lines[0].split(',');
-  const data: any = {};
+  const headers = lines[0]?.split(',') || [];
+  const data: Record<string, string> = {};
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',');
+    const values = lines[i]?.split(',') || [];
     for (let j = 0; j < headers.length; j++) {
-      if (headers[j] && values[j]) {
-        data[headers[j].trim()] = values[j].trim();
+      const header = headers[j];
+      const value = values[j];
+      if (header && value) {
+        data[header.trim()] = value.trim();
       }
     }
   }
@@ -584,7 +624,7 @@ const parseCSV = (csvText: string): any => {
   return data;
 };
 
-const parsePDF = async (file: File): Promise<any> => {
+const parsePDF = async (_file: File): Promise<ParsedData> => {
   // In a real implementation, you'd use a PDF parsing library like pdf-parse
   // For demo purposes, return mock data
   return {
@@ -597,7 +637,7 @@ const parsePDF = async (file: File): Promise<any> => {
   };
 };
 
-const simulateOCR = async (file: File): Promise<any> => {
+const simulateOCR = async (_file: File): Promise<DocumentScanResult> => {
   // Simulate OCR processing
   await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -615,17 +655,19 @@ const simulateOCR = async (file: File): Promise<any> => {
   };
 };
 
-const validateImportedData = (data: any): string[] => {
+const validateImportedData = (data: ParsedData | TaxData): string[] => {
   const errors: string[] = [];
 
-  if (data.personalInfo) {
-    if (!data.personalInfo.firstName) {
+  // Type guard to check if data has TaxData structure
+  if ('personalInfo' in data && data.personalInfo) {
+    const personalInfo = data.personalInfo as TaxData['personalInfo'];
+    if (personalInfo && !personalInfo.firstName) {
       errors.push('First name is required');
     }
-    if (!data.personalInfo.lastName) {
+    if (personalInfo && !personalInfo.lastName) {
       errors.push('Last name is required');
     }
-    if (data.personalInfo.ssn && !/^\d{3}-\d{2}-\d{4}$/.test(data.personalInfo.ssn)) {
+    if (personalInfo?.ssn && !/^\d{3}-\d{2}-\d{4}$/.test(personalInfo.ssn)) {
       errors.push('Invalid SSN format');
     }
   }

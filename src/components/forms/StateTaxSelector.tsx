@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
-import { MapPin, Calculator } from 'lucide-react';
-import { STATE_TAX_RULES, getStateTaxRules, calculateStateTax } from '../../constants/stateTaxRules';
+import React, { useState, useMemo } from 'react';
+import { MapPin, Calculator, Info } from 'lucide-react';
+import type { TranslationFunction } from '../../types/CommonTypes';
+import { STATE_CONFIGS, getStateCalculator } from '../../engine/states/registry';
 
 interface StateTaxSelectorProps {
   selectedState: string;
   onStateChange: (stateCode: string) => void;
   taxableIncome: number;
   filingStatus: string;
-  t: (key: string) => string;
+  t: TranslationFunction;
+}
+
+interface StateOption {
+  code: string;
+  name: string;
+  hasTax: boolean;
+  taxType: 'flat' | 'graduated' | 'none';
+  implemented: boolean;
 }
 
 export const StateTaxSelector: React.FC<StateTaxSelectorProps> = ({
@@ -19,173 +28,228 @@ export const StateTaxSelector: React.FC<StateTaxSelectorProps> = ({
 }) => {
   const [showStateDetails, setShowStateDetails] = useState(false);
 
-  // Convert all states to array for dropdown
-  const stateOptions = Object.entries(STATE_TAX_RULES).map(([code, rule]) => ({
-    code,
-    name: rule.state,
-    hasIncomeTax: rule.hasIncomeTax,
-    taxType: rule.taxType
-  }));
+  // Convert STATE_CONFIGS to array for dropdown
+  const stateOptions: StateOption[] = useMemo(() => {
+    return Object.entries(STATE_CONFIGS)
+      .filter(([_, config]) => config.implemented)
+      .map(([code, config]) => ({
+        code,
+        name: config.name,
+        hasTax: config.hasTax,
+        taxType: config.taxType,
+        implemented: config.implemented
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
 
-  // Sort states alphabetically
-  stateOptions.sort((a, b) => a.name.localeCompare(b.name));
+  const selectedStateConfig = selectedState ? STATE_CONFIGS[selectedState.toUpperCase()] : null;
+  const stateCalculator = selectedState ? getStateCalculator(selectedState.toUpperCase()) : null;
 
-  const selectedStateRule = getStateTaxRules(selectedState);
-  const stateTaxAmount = selectedStateRule && taxableIncome > 0
-    ? calculateStateTax(selectedState, taxableIncome, filingStatus)
-    : 0;
-
-  const getStateIcon = (hasIncomeTax: boolean) => {
-    return hasIncomeTax ? '🏛️' : '🆓';
+  const getStateIcon = (hasTax: boolean) => {
+    // Removed emoji icons to prevent encoding issues
+    return hasTax ? '[TAX]' : '[NO TAX]';
   };
 
   const getTaxTypeDisplay = (taxType: string) => {
     switch (taxType) {
-      case 'flat': return 'Flat Rate';
-      case 'progressive': return 'Progressive';
-      case 'none': return 'No Income Tax';
-      default: return taxType;
+      case 'flat':
+        return 'Flat Rate';
+      case 'graduated':
+        return 'Progressive (Graduated)';
+      case 'none':
+        return 'No Income Tax';
+      default:
+        return taxType;
     }
   };
+
+  // Group states by tax type
+  const statesByType = useMemo(() => {
+    const noTaxStates = stateOptions.filter(s => !s.hasTax);
+    const flatTaxStates = stateOptions.filter(s => s.hasTax && s.taxType === 'flat');
+    const graduatedTaxStates = stateOptions.filter(s => s.hasTax && s.taxType === 'graduated');
+
+    return { noTaxStates, flatTaxStates, graduatedTaxStates };
+  }, [stateOptions]);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center gap-2 mb-4">
         <MapPin className="h-5 w-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">State Tax Calculator</h3>
-        <span className="text-sm text-gray-500">({stateOptions.length} states supported)</span>
+        <h3 className="text-lg font-semibold text-gray-900">
+          {t('stateTaxSelector.title') || 'State Tax Information'}
+        </h3>
+        <span className="text-sm text-gray-500">
+          ({stateOptions.length} states supported)
+        </span>
       </div>
 
       {/* State Selector */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Select Your State of Residence
+          {t('stateTaxSelector.selectState') || 'Select State'}
         </label>
         <select
           value={selectedState}
           onChange={(e) => onStateChange(e.target.value)}
           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          <option value="">Choose a state...</option>
-          {stateOptions.map((state) => (
-            <option key={state.code} value={state.code}>
-              {getStateIcon(state.hasIncomeTax)} {state.name} ({state.code}) - {getTaxTypeDisplay(state.taxType)}
-            </option>
-          ))}
+          <option value="">{t('stateTaxSelector.chooseState') || 'Choose a state...'}</option>
+
+          {/* No Income Tax States */}
+          {statesByType.noTaxStates.length > 0 && (
+            <optgroup label="--- No Income Tax States ---">
+              {statesByType.noTaxStates.map((state) => (
+                <option key={state.code} value={state.code}>
+                  {state.name} ({state.code})
+                </option>
+              ))}
+            </optgroup>
+          )}
+
+          {/* Flat Tax States */}
+          {statesByType.flatTaxStates.length > 0 && (
+            <optgroup label="--- Flat Tax States ---">
+              {statesByType.flatTaxStates.map((state) => (
+                <option key={state.code} value={state.code}>
+                  {state.name} ({state.code}) - Flat Rate
+                </option>
+              ))}
+            </optgroup>
+          )}
+
+          {/* Graduated Tax States */}
+          {statesByType.graduatedTaxStates.length > 0 && (
+            <optgroup label="--- Progressive Tax States ---">
+              {statesByType.graduatedTaxStates.map((state) => (
+                <option key={state.code} value={state.code}>
+                  {state.name} ({state.code}) - Progressive
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
       </div>
 
       {/* Selected State Details */}
-      {selectedStateRule && (
+      {selectedStateConfig && (
         <div className="border rounded-lg p-4 bg-gray-50">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-medium text-gray-900 flex items-center gap-2">
-              {getStateIcon(selectedStateRule.hasIncomeTax)}
-              {selectedStateRule.state} Tax Information
+              {getStateIcon(selectedStateConfig.hasTax)}
+              {selectedStateConfig.name} Tax Information
             </h4>
             <button
               onClick={() => setShowStateDetails(!showStateDetails)}
-              className="text-blue-600 text-sm hover:text-blue-800"
+              className="text-blue-600 text-sm hover:text-blue-800 flex items-center gap-1"
             >
+              <Info className="h-4 w-4" />
               {showStateDetails ? 'Hide Details' : 'Show Details'}
             </button>
           </div>
 
-          {/* Tax Calculation Result */}
-          {taxableIncome > 0 && (
-            <div className="bg-white rounded-md p-3 mb-3 border border-blue-200">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
-                  Estimated {selectedStateRule.state} Tax:
-                </span>
-                <span className="text-lg font-bold text-green-600">
-                  ${stateTaxAmount.toLocaleString()}
-                </span>
-              </div>
-              {selectedStateRule.taxType === 'none' && (
-                <p className="text-xs text-gray-600 mt-1">
-                  🎉 Great news! {selectedStateRule.state} has no state income tax.
-                </p>
-              )}
+          {/* Tax Type and Basic Info */}
+          <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+            <div className="bg-white p-3 rounded border">
+              <span className="text-gray-600 block text-xs mb-1">Tax System</span>
+              <span className="font-medium">{getTaxTypeDisplay(selectedStateConfig.taxType)}</span>
             </div>
-          )}
-
-          {/* Basic Info */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-600">Tax Type:</span>
-              <span className="ml-2 font-medium">{getTaxTypeDisplay(selectedStateRule.taxType)}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">Has Income Tax:</span>
-              <span className="ml-2 font-medium">
-                {selectedStateRule.hasIncomeTax ? '✅ Yes' : '❌ No'}
+            <div className="bg-white p-3 rounded border">
+              <span className="text-gray-600 block text-xs mb-1">Income Tax</span>
+              <span className="font-medium">
+                {selectedStateConfig.hasTax ? 'Yes' : 'No'}
               </span>
             </div>
           </div>
 
+          {/* No Income Tax Message */}
+          {!selectedStateConfig.hasTax && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-3">
+              <p className="text-sm text-green-800 font-medium">
+                {selectedStateConfig.name} has no state income tax!
+              </p>
+              <p className="text-xs text-green-700 mt-1">
+                You only need to pay federal income tax for this state.
+              </p>
+            </div>
+          )}
+
+          {/* State Tax Features */}
+          {selectedStateConfig.hasTax && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
+              <p className="text-xs font-medium text-gray-700 mb-2">Tax Features:</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {selectedStateConfig.hasStandardDeduction && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-600 font-bold">+</span>
+                    <span>Standard Deduction</span>
+                  </div>
+                )}
+                {selectedStateConfig.hasPersonalExemption && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-600 font-bold">+</span>
+                    <span>Personal Exemption</span>
+                  </div>
+                )}
+                {selectedStateConfig.hasStateEITC && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-600 font-bold">+</span>
+                    <span>State EITC ({(selectedStateConfig.stateEITCPercent || 0) * 100}% of federal)</span>
+                  </div>
+                )}
+                {selectedStateConfig.hasLocalTax && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-600 font-bold">*</span>
+                    <span>Local Income Tax</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Detailed Information */}
-          {showStateDetails && selectedStateRule.hasIncomeTax && (
+          {showStateDetails && (
             <div className="mt-4 space-y-3 border-t pt-3">
-              {/* Tax Brackets */}
-              {selectedStateRule.brackets && (
-                <div>
-                  <h5 className="font-medium text-gray-900 mb-2">Tax Brackets</h5>
-                  <div className="space-y-1">
-                    {selectedStateRule.brackets.map((bracket, index) => (
-                      <div key={index} className="flex justify-between text-xs bg-white p-2 rounded border">
-                        <span>
-                          ${bracket.min.toLocaleString()} - {bracket.max === Infinity ? '∞' : `$${bracket.max.toLocaleString()}`}
-                        </span>
-                        <span className="font-medium">{(bracket.rate * 100).toFixed(2)}%</span>
-                      </div>
-                    ))}
+              {/* Implementation Status */}
+              <div className="bg-white p-3 rounded border">
+                <h5 className="font-medium text-gray-900 mb-2 text-sm">Implementation Status</h5>
+                <div className="text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Calculator:</span>
+                    <span className={`font-medium ${stateCalculator ? 'text-green-600' : 'text-yellow-600'}`}>
+                      {stateCalculator ? 'Implemented' : 'Pending'}
+                    </span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Last Updated:</span>
+                    <span className="font-medium">{selectedStateConfig.lastUpdated}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tax Year:</span>
+                    <span className="font-medium">{selectedStateConfig.taxYear}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Notes */}
+              {selectedStateConfig.notes && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                  <h5 className="font-medium text-gray-900 mb-1 text-xs">Important Notes</h5>
+                  <p className="text-xs text-gray-700">{selectedStateConfig.notes}</p>
                 </div>
               )}
 
-              {/* Standard Deductions */}
-              {selectedStateRule.standardDeduction && (
-                <div>
-                  <h5 className="font-medium text-gray-900 mb-2">Standard Deductions</h5>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-white p-2 rounded border">
-                      <div className="font-medium">Single</div>
-                      <div>${selectedStateRule.standardDeduction.single.toLocaleString()}</div>
-                    </div>
-                    <div className="bg-white p-2 rounded border">
-                      <div className="font-medium">Married Joint</div>
-                      <div>${selectedStateRule.standardDeduction.marriedJointly.toLocaleString()}</div>
-                    </div>
-                    <div className="bg-white p-2 rounded border">
-                      <div className="font-medium">Married Separate</div>
-                      <div>${selectedStateRule.standardDeduction.marriedSeparately.toLocaleString()}</div>
-                    </div>
-                    <div className="bg-white p-2 rounded border">
-                      <div className="font-medium">Head of Household</div>
-                      <div>${selectedStateRule.standardDeduction.headOfHousehold.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Personal Exemption */}
-              {selectedStateRule.personalExemption && (
-                <div>
-                  <h5 className="font-medium text-gray-900 mb-1">Personal Exemption</h5>
-                  <div className="text-sm bg-white p-2 rounded border">
-                    ${selectedStateRule.personalExemption.toLocaleString()}
-                  </div>
-                </div>
-              )}
-
-              {/* Additional Info */}
-              {selectedStateRule.additionalInfo && (
-                <div>
-                  <h5 className="font-medium text-gray-900 mb-1">Additional Information</h5>
-                  <div className="text-sm bg-blue-50 p-2 rounded border border-blue-200">
-                    {selectedStateRule.additionalInfo}
-                  </div>
+              {/* Official Source Link */}
+              {selectedStateConfig.authoritativeSource && (
+                <div className="text-xs">
+                  <a
+                    href={selectedStateConfig.authoritativeSource}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Official State Tax Authority Website
+                  </a>
                 </div>
               )}
             </div>
@@ -193,15 +257,17 @@ export const StateTaxSelector: React.FC<StateTaxSelectorProps> = ({
         </div>
       )}
 
-      {/* No Income Tax States Quick Reference */}
-      <div className="mt-4">
-        <button
-          onClick={() => setShowStateDetails(!showStateDetails)}
-          className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1"
-        >
-          <Calculator className="h-3 w-3" />
-          States with no income tax: Alaska, Florida, Nevada, New Hampshire, South Dakota, Tennessee, Texas, Washington, Wyoming
-        </button>
+      {/* Summary Footer */}
+      <div className="mt-4 pt-4 border-t">
+        <div className="flex items-start gap-2 text-xs text-gray-600">
+          <Calculator className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium mb-1">States with no income tax ({statesByType.noTaxStates.length}):</p>
+            <p className="text-gray-500">
+              {statesByType.noTaxStates.map(s => s.name).join(', ')}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

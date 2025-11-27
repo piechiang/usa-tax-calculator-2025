@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Bell, AlertTriangle, CheckCircle, Plus, Edit2, Trash2, Settings, Zap } from 'lucide-react';
+import { Calendar, Clock, Bell, AlertTriangle, CheckCircle, Plus, Trash2, Settings } from 'lucide-react';
 
 interface TaxDeadline {
   id: string;
@@ -20,20 +20,26 @@ interface TaxDeadline {
   dependencies?: string[];
 }
 
+interface Reminder {
+  id: string;
+  deadlineId: string;
+  title: string;
+  message: string;
+  daysUntil: number;
+  priority: TaxDeadline['priority'];
+  actions: string[];
+}
+
 interface DeadlineReminderProps {
-  filingStatus?: string;
   selectedState?: string;
-  t: (key: string) => string;
 }
 
 export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
-  filingStatus = '',
-  selectedState = '',
-  t
+  selectedState = ''
 }) => {
   const [deadlines, setDeadlines] = useState<TaxDeadline[]>([]);
   const [customDeadlines, setCustomDeadlines] = useState<TaxDeadline[]>([]);
-  const [reminders, setReminders] = useState<any[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedView, setSelectedView] = useState<'upcoming' | 'all' | 'completed' | 'settings'>('upcoming');
   const [notificationSettings, setNotificationSettings] = useState({
@@ -192,7 +198,7 @@ export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
     // Load custom deadlines from localStorage
     const savedCustom = localStorage.getItem('custom_tax_deadlines');
     if (savedCustom) {
-      const parsed = JSON.parse(savedCustom).map((d: any) => ({
+      const parsed = JSON.parse(savedCustom).map((d: { date: string; [key: string]: unknown }) => ({
         ...d,
         date: new Date(d.date)
       }));
@@ -202,7 +208,7 @@ export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
     // Load notification settings
     const savedSettings = localStorage.getItem('deadline_notification_settings');
     if (savedSettings) {
-      setNotificationSettings(JSON.parse(savedSettings));
+      setNotificationSettings(JSON.parse(savedSettings) as typeof notificationSettings);
     }
   }, [selectedState]);
 
@@ -210,7 +216,7 @@ export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
     // Generate active reminders
     const allDeadlines = [...deadlines, ...customDeadlines];
     const now = new Date();
-    const activeReminders: any[] = [];
+    const activeReminders: Reminder[] = [];
 
     allDeadlines.forEach(deadline => {
       if (!deadline.completed) {
@@ -426,7 +432,7 @@ export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
           ].map((view) => (
             <button
               key={view.id}
-              onClick={() => setSelectedView(view.id as any)}
+              onClick={() => setSelectedView(view.id as 'upcoming' | 'all' | 'completed')}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
                 selectedView === view.id
                   ? 'border-blue-500 text-blue-600'
@@ -691,7 +697,7 @@ export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
                   <select
                     value={newDeadline.priority || 'medium'}
-                    onChange={(e) => setNewDeadline(prev => ({ ...prev, priority: e.target.value as any }))}
+                    onChange={(e) => setNewDeadline(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="low">Low</option>
@@ -704,7 +710,7 @@ export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
                   <select
                     value={newDeadline.type || 'personal'}
-                    onChange={(e) => setNewDeadline(prev => ({ ...prev, type: e.target.value as any }))}
+                    onChange={(e) => setNewDeadline(prev => ({ ...prev, type: e.target.value as 'federal' | 'state' | 'quarterly' | 'personal' | 'business' }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="personal">Personal</option>
@@ -719,7 +725,7 @@ export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                   <select
                     value={newDeadline.category || 'filing'}
-                    onChange={(e) => setNewDeadline(prev => ({ ...prev, category: e.target.value as any }))}
+                    onChange={(e) => setNewDeadline(prev => ({ ...prev, category: e.target.value as 'filing' | 'payment' | 'document' | 'planning' }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="filing">Filing</option>
@@ -788,3 +794,4 @@ export const DeadlineReminder: React.FC<DeadlineReminderProps> = ({
     </div>
   );
 };
+

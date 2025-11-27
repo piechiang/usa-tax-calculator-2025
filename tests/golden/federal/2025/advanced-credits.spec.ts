@@ -3,7 +3,8 @@ import {
   computeFederal2025,
   dollarsToCents 
 } from '../../../../src/engine';
-import type { TaxPayerInput, QualifyingChild, EducationExpenses } from '../../../../src/engine/types';
+import { buildFederalInput } from '../../../helpers/buildFederalInput';
+import type { QualifyingChild, EducationExpenses } from '../../../../src/engine/types';
 
 const $ = dollarsToCents;
 
@@ -31,20 +32,20 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'marriedJointly',
         primary: {},
         spouse: { firstName: 'Jane', lastName: 'Doe' },
         qualifyingChildren,
         income: { wages: 85000 },
         payments: { federalWithheld: 10000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
       expect(result.credits.ctc).toBe($(4000)); // $2,000 × 2 children
       expect(result.agi).toBe($(85000));
-      expect(result.taxableIncome).toBe($(53500)); // AGI - standard deduction
+      expect(result.taxableIncome).toBe($(55000)); // AGI - standard deduction ($85,000 - $30,000 MFJ for 2025)
     });
 
     it('should exclude children over 17 from CTC', () => {
@@ -69,13 +70,13 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'single',
         primary: {},
         qualifyingChildren,
         income: { wages: 75000 },
         payments: { federalWithheld: 9000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -95,13 +96,13 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'single',
         primary: {},
         qualifyingChildren,
         income: { wages: 215000 }, // Above phase-out threshold ($200k for single)
         payments: { federalWithheld: 35000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -134,14 +135,14 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'marriedJointly',
         primary: {},
         spouse: { firstName: 'Spouse', lastName: 'Name' },
         qualifyingChildren,
         income: { wages: 35000 }, // Low income, should get substantial EITC
         payments: { federalWithheld: 2000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -151,12 +152,12 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
     });
 
     it('should exclude EITC for taxpayers outside age range (no children)', () => {
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'single',
         primary: { birthDate: '2001-01-01' }, // Age 24 in 2025 (too young)
         income: { wages: 15000 },
         payments: { federalWithheld: 800 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -164,12 +165,12 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
     });
 
     it('should include EITC for eligible age range (no children)', () => {
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'single',
         primary: { birthDate: '1995-01-01' }, // Age 30 in 2025 (eligible)
         income: { wages: 12000 },
         payments: { federalWithheld: 600 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -193,14 +194,14 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'marriedJointly',
         primary: {},
         spouse: { firstName: 'Jane', lastName: 'Doe' },
         educationExpenses,
         income: { wages: 120000 }, // Below phase-out threshold
         payments: { federalWithheld: 15000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -222,13 +223,13 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'single',
         primary: {},
         educationExpenses,
         income: { wages: 60000 },
         payments: { federalWithheld: 7000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -248,13 +249,13 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'single',
         primary: {},
         educationExpenses,
         income: { wages: 90000 }, // Above phase-out start ($80k for single)
         payments: { federalWithheld: 12000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -275,14 +276,14 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'marriedJointly',
         primary: {},
         spouse: { firstName: 'Jane', lastName: 'Doe' },
         educationExpenses,
         income: { wages: 100000 },
         payments: { federalWithheld: 12000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -299,13 +300,13 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'single',
         primary: {},
         educationExpenses,
         income: { wages: 50000 },
         payments: { federalWithheld: 6000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -339,7 +340,7 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'marriedJointly',
         primary: {},
         spouse: { firstName: 'Jane', lastName: 'Doe' },
@@ -347,7 +348,7 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         educationExpenses,
         income: { wages: 75000 }, // Moderate income
         payments: { federalWithheld: 8000 },
-      };
+      });
 
       const result = computeFederal2025(input);
 
@@ -370,13 +371,13 @@ describe('Federal 2025 - Advanced Tax Credits', () => {
         },
       ];
 
-      const input: TaxPayerInput = {
+      const input = buildFederalInput({
         filingStatus: 'single',
         primary: {},
         qualifyingChildren,
         income: { wages: 25000 }, // Low income
         payments: { federalWithheld: 1500 },
-      };
+      });
 
       const result = computeFederal2025(input);
 

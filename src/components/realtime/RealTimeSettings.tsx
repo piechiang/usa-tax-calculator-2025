@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { Settings, Zap, Clock, BarChart3, RefreshCw, Pause, Play, Info } from 'lucide-react';
 
+interface TaxResult {
+  [key: string]: unknown;
+}
+
 interface RealTimeSettingsProps {
   realTimeState: {
     isCalculating: boolean;
     lastCalculated: Date | null;
-    previousTaxResult: any;
+    previousTaxResult: TaxResult | null;
     calculationCount: number;
     averageCalculationTime: number;
     realTimeEnabled: boolean;
@@ -24,7 +28,7 @@ export const RealTimeSettings: React.FC<RealTimeSettingsProps> = ({
   onSetDebounceDelay,
   onForceCalculation,
   onResetMetrics,
-  t
+  t: _t
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tempDebounceDelay, setTempDebounceDelay] = useState(realTimeState.debounceDelay);

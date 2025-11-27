@@ -1,0 +1,273 @@
+# Pennsylvania State Tax Configuration for 2025
+# This is an example of the metadata-driven state tax rule format
+
+metadata:
+  stateCode: PA
+  stateName: Pennsylvania
+  taxYear: 2025
+  version: "1.0.0"
+  lastUpdated: "2025-01-15"
+  sources:
+    - "Pennsylvania Department of Revenue"
+    - "https://www.revenue.pa.gov/"
+    - "PA-40 Personal Income Tax Return"
+  notes:
+    - "Pennsylvania has the simplest state tax structure in the US"
+    - "Flat 3.07% rate on all income"
+    - "All retirement income is fully exempt"
+
+# Tax Structure: Flat Rate
+structure: flat
+flatRate: 0.0307  # 3.07%
+
+# No Standard Deduction in Pennsylvania
+standardDeduction:
+  available: false
+  amounts:
+    single: 0
+    marriedJointly: 0
+    marriedSeparately: 0
+    headOfHousehold: 0
+
+# No Personal Exemptions in Pennsylvania
+personalExemption:
+  available: false
+  amount: 0
+  taxpayer: false
+  spouse: false
+  dependents: false
+
+# Itemized Deductions: Not Available
+itemizedDeductions:
+  allowed: false
+  requiresFederalItemization: false
+  deductions: {}
+
+# AGI Modifications: Key Feature of PA Tax
+agiModifications:
+  # Subtractions from Federal AGI
+  subtractions:
+    # Social Security Benefits - FULLY EXEMPT
+    - id: social_security
+      name: Social Security Benefits
+      description: "All Social Security benefits are exempt from PA tax"
+      category: retirement
+      requiresInput: true
+      inputField: socialSecurityBenefits
+      fullExemption: true
+      stateForm: PA-40
+
+    # Pension and Retirement Income - FULLY EXEMPT
+    - id: retirement_income
+      name: Pension and Retirement Income
+      description: "All qualified retirement income exempt (401k, IRA, pensions)"
+      category: retirement
+      requiresInput: true
+      inputField: retirementIncome
+      fullExemption: true
+      stateForm: PA-40
+      conditions:
+        - type: age
+          operator: gte
+          value: 59.5  # Early withdrawals may have different treatment
+
+    # Military Retirement Pay - FULLY EXEMPT
+    - id: military_pay
+      name: Military Retirement Pay
+      description: "All military retirement pay is exempt from PA tax"
+      category: retirement
+      requiresInput: true
+      inputField: militaryPay
+      fullExemption: true
+      stateForm: PA-40
+
+    # PA 529 Contributions
+    - id: pa_529_contributions
+      name: PA 529 College Savings Plan Contributions
+      description: "Contributions to PA 529 plans (up to $18,000 per beneficiary per year, $36,000 for MFJ)"
+      category: deduction
+      requiresInput: true
+      inputField: pa529Contributions
+      limit: 18000  # Limit per beneficiary
+      stateForm: PA Schedule O
+
+    # Health Savings Account (HSA)
+    - id: hsa_deduction
+      name: Health Savings Account Deduction
+      description: "HSA contributions are deductible for PA tax"
+      category: deduction
+      requiresInput: true
+      inputField: hsaDeduction
+      fullExemption: true
+      stateForm: PA-40
+      irsForm: Form 8889
+
+  # Additions to Federal AGI
+  additions:
+    # State Income Tax Refund (if deducted federally)
+    - id: state_tax_refund
+      name: State Income Tax Refund
+      description: "State tax refunds that were deducted on federal return"
+      category: deduction
+      requiresInput: true
+      inputField: federalTaxRefund
+      fullExemption: true
+      stateForm: PA-40
+
+    # Tax-Exempt Interest from Other States
+    - id: municipal_bond_interest
+      name: Tax-Exempt Municipal Bond Interest
+      description: "Interest from non-PA municipal bonds (exempt federally, taxable in PA)"
+      category: investment
+      requiresInput: true
+      inputField: municipalBondInterest
+      fullExemption: true
+      stateForm: PA-40
+
+# Credits: Very Minimal in Pennsylvania
+credits:
+  # Tax Forgiveness Credit (for very low income)
+  - id: tax_forgiveness
+    name: PA Tax Forgiveness Credit
+    description: "Credit for low-income taxpayers to reduce or eliminate tax liability"
+    type: nonRefundable
+    category: lowIncome
+    calculation:
+      method: table
+      lookupKey: agi
+      table:
+        entries:
+          # Single filers
+          - min: 0
+            max: 9500
+            credit: 100
+            multiplier: 1.0  # Full forgiveness
+          - min: 9501
+            max: 12000
+            credit: 80
+            multiplier: 0.8
+          - min: 12001
+            max: 15000
+            credit: 60
+            multiplier: 0.6
+    eligibility:
+      - type: income
+        operator: lt
+        value: 15000
+        description: "AGI must be under $15,000 for single filers"
+      - type: filingStatus
+        operator: in
+        value: ["single", "marriedSeparately"]
+    forms:
+      - "PA Schedule SP"
+
+  # Educational Improvement Tax Credit (EITC) - Business Credit
+  # Not included here as it's primarily for businesses
+
+  # Credit for Taxes Paid to Other States
+  - id: other_state_tax_credit
+    name: Credit for Taxes Paid to Other States
+    description: "Credit for income taxes paid to other states on income also taxed by PA"
+    type: nonRefundable
+    category: other
+    calculation:
+      method: formula
+      formula: "min(otherStateTaxPaid, paStateTaxOnOtherStateIncome)"
+    eligibility:
+      - type: custom
+        operator: gt
+        value: 0
+        description: "Taxpayer must have paid income tax to another state"
+    maxCredit: null  # No maximum, limited to PA tax on that income
+    forms:
+      - "PA-40 Schedule G-L"
+
+# Local Tax: Pennsylvania has extensive local taxation
+localTax:
+  hasLocalTax: true
+  localities:
+    # Philadelphia
+    - name: Philadelphia
+      type: city
+      structure: flat
+      rate: 0.03819  # 3.819% for residents, 3.448% for non-residents
+      allowsCredits: false
+
+    # Pittsburgh
+    - name: Pittsburgh
+      type: city
+      structure: flat
+      rate: 0.03  # 3.0%
+      allowsCredits: false
+
+    # Note: PA has 500+ local tax jurisdictions
+    # This is just an example - full implementation would need comprehensive locality database
+
+# Special Taxes: None
+specialTaxes: []
+
+# Documentation
+documentation:
+  primaryForm: PA-40
+  additionalForms:
+    - "PA Schedule A" # Interest Income
+    - "PA Schedule B" # Dividend Income
+    - "PA Schedule C" # Profit or Loss from Business
+    - "PA Schedule D" # Capital Gains and Losses
+    - "PA Schedule E" # Rents, Royalties, Partnerships, Estates, Trusts
+    - "PA Schedule F" # Profit or Loss from Farming
+    - "PA Schedule SP" # Special Tax Forgiveness
+    - "PA Schedule G-L" # Credit for Taxes Paid to Other States
+    - "PA Schedule O" # Miscellaneous Income
+    - "PA Schedule UE" # Unreimbursed Business Expenses
+
+  authorityUrl: "https://www.revenue.pa.gov/"
+
+  formUrls:
+    PA-40: "https://www.revenue.pa.gov/FormsandPublications/FormsforIndividuals/PIT/Pages/default.aspx"
+
+  calculationNotes:
+    - "Pennsylvania uses a flat 3.07% tax rate on all taxable income"
+    - "No standard deduction or personal exemptions"
+    - "All retirement income is fully exempt (Social Security, pensions, 401k, IRA)"
+    - "PA taxable income = Federal AGI + Additions - Subtractions"
+    - "Local earned income tax (EIT) is separate and not included in state calculation"
+    - "PA has eight classes of income, all taxed at the same 3.07% rate"
+
+  scenarios:
+    - name: "Simple W-2 Earner"
+      description: "Single filer with only wage income"
+      exampleInputs:
+        federalAGI: 50000
+        wages: 50000
+        filingStatus: single
+      expectedOutputs:
+        paAGI: 50000
+        paTaxableIncome: 50000
+        paStateTax: 1535  # $50,000 × 3.07% = $1,535
+
+    - name: "Retiree with Social Security and Pension"
+      description: "Married couple with retirement income"
+      exampleInputs:
+        federalAGI: 60000
+        wages: 0
+        socialSecurityBenefits: 30000
+        pensionIncome: 30000
+        filingStatus: marriedJointly
+      expectedOutputs:
+        paAGI: 0  # All retirement income exempt
+        paTaxableIncome: 0
+        paStateTax: 0
+
+    - name: "Worker with Wage and Investment Income"
+      description: "Single filer with wages, interest, and dividends"
+      exampleInputs:
+        federalAGI: 75000
+        wages: 60000
+        interestIncome: 5000
+        dividendIncome: 10000
+        filingStatus: single
+      expectedOutputs:
+        paAGI: 75000
+        paTaxableIncome: 75000
+        paStateTax: 2302.50  # $75,000 × 3.07% = $2,302.50

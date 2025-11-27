@@ -8,14 +8,17 @@ export const personalInfoSchema = z.object({
   ssn: z.string().regex(ssnRegex, 'Invalid SSN'),
   filingStatus: z.enum(['single', 'marriedJointly', 'marriedSeparately', 'headOfHousehold']),
   address: z.string().optional().default(''),
+  age: z.number().int().min(0).max(150).optional(),
   dependents: z.number().int().min(0).max(20),
-  isMaryland: z.boolean(),
-  county: z.string().optional().default('')
+  state: z.string().optional().default('MD'),
+  county: z.string().optional().default(''),
+  city: z.string().optional().default(''),
+  isMaryland: z.boolean().optional() // Deprecated, kept for backward compatibility
 });
 
 export const moneyString = z
   .string()
-  .regex(/^[-+]?\d*(?:\.|\,)??\d*$/, 'Amount must be a number')
+  .regex(/^[-+]?\d*(?:\.|,)??\d*$/, 'Amount must be a number')
   .optional()
   .default('');
 
@@ -77,5 +80,35 @@ export const snapshotSchema = z.object({
   taxResult: z.any().optional()
 });
 
+// Import data schema with version and timestamp
+export const importDataSchema = z.object({
+  version: z.string().optional(), // Optional version field
+  timestamp: z.string().optional(), // Optional timestamp field
+  personalInfo: z.record(z.unknown()).optional(),
+  spouseInfo: z.record(z.unknown()).optional(),
+  incomeData: z.record(z.unknown()).optional(),
+  k1Data: z.record(z.unknown()).optional(),
+  businessDetails: z.record(z.unknown()).optional(),
+  paymentsData: z.record(z.unknown()).optional(),
+  deductions: z.record(z.unknown()).optional(),
+  taxResult: z.record(z.unknown()).optional(),
+});
+
+// Backup data schema
+export const backupDataSchema = z.object({
+  formData: z.object({
+    personalInfo: z.record(z.unknown()).optional(),
+    spouseInfo: z.record(z.unknown()).optional(),
+    incomeData: z.record(z.unknown()).optional(),
+    k1Data: z.record(z.unknown()).optional(),
+    businessDetails: z.record(z.unknown()).optional(),
+    paymentsData: z.record(z.unknown()).optional(),
+    deductions: z.record(z.unknown()).optional(),
+  }).optional(),
+  taxResult: z.record(z.unknown()).optional(),
+});
+
 export type Snapshot = z.infer<typeof snapshotSchema>;
+export type ImportData = z.infer<typeof importDataSchema>;
+export type BackupData = z.infer<typeof backupDataSchema>;
 

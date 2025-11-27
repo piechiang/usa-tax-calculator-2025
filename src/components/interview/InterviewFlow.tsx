@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle } from 'lucide-react';
 
+// Type for interview answer data
+interface InterviewAnswers {
+  [key: string]: unknown;
+}
+
 interface InterviewQuestion {
   id: string;
   title: string;
@@ -19,12 +24,12 @@ interface InterviewQuestion {
     placeholder?: string;
     required?: boolean;
   }>;
-  condition?: (data: any) => boolean;
+  condition?: (data: InterviewAnswers) => boolean;
 }
 
 interface InterviewFlowProps {
   questions: InterviewQuestion[];
-  onComplete: (data: any) => void;
+  onComplete: (data: InterviewAnswers) => void;
   onCancel: () => void;
   t: (key: string) => string;
 }
@@ -36,7 +41,7 @@ export const InterviewFlow: React.FC<InterviewFlowProps> = ({
   t
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<InterviewAnswers>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const currentQuestion = questions[currentStep];
@@ -44,6 +49,8 @@ export const InterviewFlow: React.FC<InterviewFlowProps> = ({
 
   const validateCurrentStep = (): boolean => {
     const newErrors: Record<string, string> = {};
+
+    if (!currentQuestion) return true;
 
     if (currentQuestion.required) {
       if (currentQuestion.type === 'input' || currentQuestion.type === 'group') {
@@ -77,7 +84,7 @@ export const InterviewFlow: React.FC<InterviewFlowProps> = ({
     }
   };
 
-  const handleAnswerChange = (field: string, value: any) => {
+  const handleAnswerChange = (field: string, value: unknown) => {
     setAnswers(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -85,6 +92,8 @@ export const InterviewFlow: React.FC<InterviewFlowProps> = ({
   };
 
   const renderQuestion = () => {
+    if (!currentQuestion) return null;
+
     switch (currentQuestion.type) {
       case 'single':
         return (
@@ -131,37 +140,40 @@ export const InterviewFlow: React.FC<InterviewFlowProps> = ({
       case 'multiple':
         return (
           <div className="space-y-3">
-            {currentQuestion.options?.map(option => (
-              <label
-                key={option.value}
-                className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
-                  answers[currentQuestion.id]?.includes(option.value)
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  value={option.value}
-                  checked={answers[currentQuestion.id]?.includes(option.value) || false}
-                  onChange={(e) => {
-                    const currentValues = answers[currentQuestion.id] || [];
-                    const newValues = e.target.checked
-                      ? [...currentValues, option.value]
-                      : currentValues.filter((v: string) => v !== option.value);
-                    handleAnswerChange(currentQuestion.id, newValues);
-                  }}
-                  className="sr-only"
-                />
-                <div className="flex items-start gap-3">
-                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 ${
-                    answers[currentQuestion.id]?.includes(option.value)
-                      ? 'border-blue-500 bg-blue-500'
-                      : 'border-gray-300'
-                  }`}>
-                    {answers[currentQuestion.id]?.includes(option.value) && (
-                      <CheckCircle className="w-3 h-3 text-white" />
-                    )}
+            {currentQuestion.options?.map(option => {
+              const currentValues = Array.isArray(answers[currentQuestion.id]) ? answers[currentQuestion.id] as string[] : [];
+              const isChecked = currentValues.includes(option.value);
+
+              return (
+                <label
+                  key={option.value}
+                  className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
+                    isChecked
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    value={option.value}
+                    checked={isChecked}
+                    onChange={(e) => {
+                      const newValues = e.target.checked
+                        ? [...currentValues, option.value]
+                        : currentValues.filter((v: string) => v !== option.value);
+                      handleAnswerChange(currentQuestion.id, newValues);
+                    }}
+                    className="sr-only"
+                  />
+                  <div className="flex items-start gap-3">
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 ${
+                      isChecked
+                        ? 'border-blue-500 bg-blue-500'
+                        : 'border-gray-300'
+                    }`}>
+                      {isChecked && (
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      )}
                   </div>
                   <div>
                     <div className="font-medium text-gray-900">{option.label}</div>
@@ -171,7 +183,8 @@ export const InterviewFlow: React.FC<InterviewFlowProps> = ({
                   </div>
                 </div>
               </label>
-            ))}
+              );
+            })}
           </div>
         );
 
@@ -187,7 +200,7 @@ export const InterviewFlow: React.FC<InterviewFlowProps> = ({
                 </label>
                 <input
                   type={input.type}
-                  value={answers[input.field] || ''}
+                  value={String(answers[input.field] || '')}
                   onChange={(e) => handleAnswerChange(input.field, e.target.value)}
                   placeholder={input.placeholder}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -209,6 +222,10 @@ export const InterviewFlow: React.FC<InterviewFlowProps> = ({
         return null;
     }
   };
+
+  if (!currentQuestion) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

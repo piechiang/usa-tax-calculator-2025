@@ -26,7 +26,7 @@ interface TaxLawNotificationsProps {
 export const TaxLawNotifications: React.FC<TaxLawNotificationsProps> = ({
   selectedState = '',
   filingStatus = '',
-  t
+  t: _t
 }) => {
   const [notifications, setNotifications] = useState<TaxNotification[]>([]);
   const [filter, setFilter] = useState<string>('all');
@@ -36,6 +36,7 @@ export const TaxLawNotifications: React.FC<TaxLawNotificationsProps> = ({
     // Generate relevant notifications based on current date and user's situation
     const currentNotifications = generateNotifications(selectedState, filingStatus);
     setNotifications(currentNotifications);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedState, filingStatus]);
 
   const generateNotifications = (state: string, filing: string): TaxNotification[] => {

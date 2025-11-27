@@ -15,13 +15,16 @@ interface Client {
   notes: string;
 }
 
-interface TaxPreparerModeProps {
-  t: (key: string) => string;
-}
+const tabs = [
+  { id: 'dashboard', label: 'Dashboard', icon: User },
+  { id: 'clients', label: 'Clients', icon: Users },
+  { id: 'calendar', label: 'Calendar', icon: Calendar },
+  { id: 'tools', label: 'Tools', icon: Settings }
+] as const;
 
-export const TaxPreparerMode: React.FC<TaxPreparerModeProps> = ({ t }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'calendar' | 'tools'>('dashboard');
-  const [clients, setClients] = useState<Client[]>([
+export const TaxPreparerMode: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('dashboard');
+  const [clients] = useState<Client[]>([
     {
       id: '1',
       firstName: 'John',
@@ -63,7 +66,7 @@ export const TaxPreparerMode: React.FC<TaxPreparerModeProps> = ({ t }) => {
     }
   ]);
 
-  const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [_selectedClient, setSelectedClient] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -459,15 +462,10 @@ export const TaxPreparerMode: React.FC<TaxPreparerModeProps> = ({ t }) => {
         {/* Navigation Tabs */}
         <div className="bg-white rounded-lg shadow mb-6">
           <nav className="flex space-x-8 px-6">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: User },
-              { id: 'clients', label: 'Clients', icon: Users },
-              { id: 'calendar', label: 'Calendar', icon: Calendar },
-              { id: 'tools', label: 'Tools', icon: Settings }
-            ].map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'

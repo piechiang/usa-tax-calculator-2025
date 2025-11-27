@@ -97,5 +97,114 @@ describe('Long-Term Capital Gains 2025 Calculations', () => {
       expect(result.at0Percent).toBe($(10000)); // All at 0% since under threshold
       expect(result.preferentialTax).toBe(0);
     });
+
+    it('should handle exactly at 0% threshold boundary for single filers', () => {
+      // Exactly at $48,350 threshold - no ordinary income
+      const result = computePreferentialRatesTax2025({
+        filingStatus: 'single',
+        taxableIncome: $(48350),
+        qualifiedDividendsAndLTCG: $(48350)
+      });
+
+      // All $48,350 should be at 0%, nothing at 15%
+      expect(result.at0Percent).toBe($(48350));
+      expect(result.at15Percent).toBe(0);
+      expect(result.at20Percent).toBe(0);
+      expect(result.preferentialTax).toBe(0);
+    });
+
+    it('should handle $1 over 0% threshold boundary', () => {
+      // One dollar over threshold - tests precise boundary handling
+      const result = computePreferentialRatesTax2025({
+        filingStatus: 'single',
+        taxableIncome: $(48351),
+        qualifiedDividendsAndLTCG: $(48351)
+      });
+
+      // $48,350 at 0%, $1 at 15%
+      expect(result.at0Percent).toBe($(48350));
+      expect(result.at15Percent).toBe($(1));
+      expect(result.at20Percent).toBe(0);
+      expect(result.preferentialTax).toBe(15); // $1 × 15% = $0.15 = 15 cents
+    });
+
+    it('should handle exactly at 15% threshold boundary for single filers', () => {
+      // Exactly at $533,400 threshold
+      const result = computePreferentialRatesTax2025({
+        filingStatus: 'single',
+        taxableIncome: $(533400),
+        qualifiedDividendsAndLTCG: $(533400)
+      });
+
+      // All at 0% and 15%, nothing at 20%
+      expect(result.at0Percent).toBe($(48350));
+      expect(result.at15Percent).toBe($(485050)); // $533,400 - $48,350
+      expect(result.at20Percent).toBe(0);
+      expect(result.preferentialTax).toBe(Math.round($(485050) * 0.15));
+    });
+
+    it('should handle $1 over 15% threshold boundary', () => {
+      // One dollar over 15% threshold - enters 20% bracket
+      const result = computePreferentialRatesTax2025({
+        filingStatus: 'single',
+        taxableIncome: $(533401),
+        qualifiedDividendsAndLTCG: $(533401)
+      });
+
+      // $48,350 at 0%, $485,050 at 15%, $1 at 20%
+      expect(result.at0Percent).toBe($(48350));
+      expect(result.at15Percent).toBe($(485050));
+      expect(result.at20Percent).toBe($(1));
+      expect(result.preferentialTax).toBe(Math.round($(485050) * 0.15 + 20)); // 20 cents for $1 at 20%
+    });
+
+    it('should handle ordinary income exactly at 0% threshold', () => {
+      // Ordinary income fills entire 0% bracket
+      const result = computePreferentialRatesTax2025({
+        filingStatus: 'single',
+        taxableIncome: $(68350),        // $48,350 ordinary + $20,000 QD/LTCG
+        qualifiedDividendsAndLTCG: $(20000)
+      });
+
+      // No 0% capacity left, all QD/LTCG at 15%
+      expect(result.at0Percent).toBe(0);
+      expect(result.at15Percent).toBe($(20000));
+      expect(result.at20Percent).toBe(0);
+      expect(result.preferentialTax).toBe($(20000) * 0.15);
+    });
+
+    it('should handle ordinary income exactly at 15% threshold', () => {
+      // Ordinary income fills entire 15% bracket for MFJ
+      const result = computePreferentialRatesTax2025({
+        filingStatus: 'marriedJointly',
+        taxableIncome: $(700050),       // $600,050 ordinary + $100,000 QD/LTCG
+        qualifiedDividendsAndLTCG: $(100000)
+      });
+
+      // No 0% or 15% capacity left, all QD/LTCG at 20%
+      expect(result.at0Percent).toBe(0);
+      expect(result.at15Percent).toBe(0);
+      expect(result.at20Percent).toBe($(100000));
+      expect(result.preferentialTax).toBe($(100000) * 0.20);
+    });
+
+    it('should handle large QD/LTCG amounts with minimal ordinary income', () => {
+      // Very high QD/LTCG with low ordinary income - tests full range
+      const result = computePreferentialRatesTax2025({
+        filingStatus: 'single',
+        taxableIncome: $(1000000),      // $10k ordinary + $990k QD/LTCG
+        qualifiedDividendsAndLTCG: $(990000)
+      });
+
+      // $38,350 at 0% (remaining after $10k ordinary)
+      // $485,050 at 15% (full 15% bracket)
+      // $466,600 at 20% (remainder)
+      expect(result.at0Percent).toBe($(38350)); // $48,350 - $10,000
+      expect(result.at15Percent).toBe($(485050)); // $533,400 - $48,350
+      expect(result.at20Percent).toBe($(466600)); // $990,000 - $38,350 - $485,050
+
+      const expectedTax = $(38350) * 0 + $(485050) * 0.15 + $(466600) * 0.20;
+      expect(result.preferentialTax).toBe(Math.round(expectedTax));
+    });
   });
 });

@@ -1,0 +1,149 @@
+name: Tax Engine Tests
+
+on:
+  push:
+    branches: [ master, develop ]
+    paths:
+      - 'src/engine/**'
+      - 'src/utils/reports/**'
+      - 'tests/**'
+      - 'tsconfig.engine.json'
+      - 'package.json'
+      - '.github/workflows/engine-tests.yml'
+  pull_request:
+    branches: [ master, develop ]
+    paths:
+      - 'src/engine/**'
+      - 'src/utils/reports/**'
+      - 'tests/**'
+      - 'tsconfig.engine.json'
+      - 'package.json'
+      - '.github/workflows/engine-tests.yml'
+
+jobs:
+  test-engine:
+    name: Build and Test Tax Engine
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build tax engine
+        run: npm run build:engine
+
+      - name: Verify engine build output
+        run: |
+          if [ ! -d "build/engine" ]; then
+            echo "::error::engine build directory (build/engine) not found"
+            ls -R build || true
+            exit 1
+          fi
+          du -sh build/engine || true
+
+      - name: Run engine tests with coverage
+        run: npm run test:engine -- --coverage --reporter=default --reporter=json-summary
+
+      - name: Enforce coverage thresholds
+        run: node scripts/check-coverage.mjs
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Check engine bundle size
+        run: |
+          ENGINE_SIZE=$(du -sb build/engine | cut -f1)
+          echo "Engine bundle size: $ENGINE_SIZE bytes"
+          if [ "$ENGINE_SIZE" -gt 2097152 ]; then
+            echo "::error::engine bundle too large ($ENGINE_SIZE bytes, limit 2097152)"
+            exit 1
+          fi
+          echo "Engine bundle size within limit"
+
+  test-states:
+    name: Test State Calculators
+    runs-on: ubuntu-latest
+    needs: test-engine
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build tax engine
+        run: npm run build:engine
+
+      - name: Test Maryland calculator
+        run: npm run test:engine -- tests/golden/states/md
+
+      - name: Test California calculator
+        run: npm run test:engine -- tests/golden/states/ca
+
+      - name: Verify no-tax states scenarios
+        run: npm run test:engine -- --grep "no.*tax.*states"
+
+  type-check:
+    name: TypeScript Type Checking
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check engine
+        run: npx tsc -p tsconfig.engine.json --noEmit
+
+      - name: Type check UI
+        run: npx tsc --noEmit
+
+  quality-gates:
+    name: Quality Gate Summary
+    runs-on: ubuntu-latest
+    needs: [test-engine, test-states, type-check]
+    if: always()
+
+    steps:
+      - name: Summarize results
+        run: |
+          echo "=== Quality Gate Summary ==="
+          echo "• Engine tests: ${{ needs.test-engine.result }}"
+          echo "• State tests: ${{ needs.test-states.result }}"
+          echo "• Type checking: ${{ needs.type-check.result }}"
+
+          if [ "${{ needs.test-engine.result }}" != "success" ] || \
+             [ "${{ needs.test-states.result }}" != "success" ] || \
+             [ "${{ needs.type-check.result }}" != "success" ]; then
+            echo "::error::Quality gates failed"
+            exit 1
+          fi
+
+          echo "All quality gates passed"
