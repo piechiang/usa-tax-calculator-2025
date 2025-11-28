@@ -354,6 +354,7 @@ export interface AMTCalculationDetails {
 export interface FederalResult2025 {
   agi: number; // cents
   taxableIncome: number; // cents
+  deductionType: 'standard' | 'itemized'; // which deduction was actually used
   standardDeduction: number; // cents
   itemizedDeduction?: number; // cents
   qbiDeduction?: number; // cents

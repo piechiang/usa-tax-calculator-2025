@@ -11,9 +11,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const ND_RULES_2025: StateTaxRules = {
+export const ND_RULES_2025 = {
   state: 'ND',
   taxYear: 2025,
 

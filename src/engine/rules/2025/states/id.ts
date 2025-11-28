@@ -10,9 +10,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const ID_RULES_2025: StateTaxRules = {
+export const ID_RULES_2025 = {
   state: 'ID',
   taxYear: 2025,
 

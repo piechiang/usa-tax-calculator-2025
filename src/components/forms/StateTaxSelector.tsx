@@ -28,10 +28,9 @@ export const StateTaxSelector: React.FC<StateTaxSelectorProps> = ({
 }) => {
   const [showStateDetails, setShowStateDetails] = useState(false);
 
-  // Convert STATE_CONFIGS to array for dropdown
-  const stateOptions: StateOption[] = useMemo(() => {
+  // Get all states (both implemented and pending)
+  const allStates = useMemo(() => {
     return Object.entries(STATE_CONFIGS)
-      .filter(([_, config]) => config.implemented)
       .map(([code, config]) => ({
         code,
         name: config.name,
@@ -41,6 +40,20 @@ export const StateTaxSelector: React.FC<StateTaxSelectorProps> = ({
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, []);
+
+  // Convert STATE_CONFIGS to array for dropdown (implemented only)
+  const stateOptions: StateOption[] = useMemo(() => {
+    return allStates.filter(s => s.implemented);
+  }, [allStates]);
+
+  // Calculate coverage statistics
+  const coverageStats = useMemo(() => {
+    const total = allStates.length;
+    const implemented = stateOptions.length;
+    const pending = total - implemented;
+    const percentage = Math.round((implemented / total) * 100);
+    return { total, implemented, pending, percentage };
+  }, [allStates, stateOptions]);
 
   const selectedStateConfig = selectedState ? STATE_CONFIGS[selectedState.toUpperCase()] : null;
   const stateCalculator = selectedState ? getStateCalculator(selectedState.toUpperCase()) : null;
@@ -74,15 +87,42 @@ export const StateTaxSelector: React.FC<StateTaxSelectorProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <MapPin className="h-5 w-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-900">
-          {t('stateTaxSelector.title') || 'State Tax Information'}
-        </h3>
-        <span className="text-sm text-gray-500">
-          ({stateOptions.length} states supported)
-        </span>
+      {/* Header with Coverage Indicator */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900">
+            {t('stateTaxSelector.title') || 'State Tax Information'}
+          </h3>
+        </div>
+
+        {/* Coverage Badge */}
+        <div className="flex items-center gap-2">
+          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+            coverageStats.percentage === 100
+              ? 'bg-green-100 text-green-800'
+              : 'bg-blue-100 text-blue-800'
+          }`}>
+            {coverageStats.implemented}/{coverageStats.total} States ({coverageStats.percentage}%)
+          </div>
+        </div>
       </div>
+
+      {/* Coverage Progress Bar */}
+      {coverageStats.percentage < 100 && (
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-gray-600 mb-1">
+            <span>State Coverage Progress</span>
+            <span>{coverageStats.pending} states pending</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${coverageStats.percentage}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* State Selector */}
       <div className="mb-4">

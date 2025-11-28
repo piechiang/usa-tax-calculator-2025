@@ -41,6 +41,21 @@ import { computeSD2025 } from './SD/2025/computeSD2025';
 import { computeWY2025 } from './WY/2025/computeWY2025';
 import { computeWA2025 } from './WA/2025/computeWA2025';
 import { computeNH2025 } from './NH/2025/computeNH2025';
+import { computeAR2025 } from './AR/2025/computeAR2025';
+import { computeDE2025 } from './DE/2025/computeDE2025';
+import { computeHI2025 } from './HI/2025/computeHI2025';
+import { computeID2025 } from './ID/2025/computeID2025';
+import { computeKS2025 } from './KS/2025/computeKS2025';
+import { computeME2025 } from './ME/2025/computeME2025';
+import { computeMS2025 } from './MS/2025/computeMS2025';
+import { computeMT2025 } from './MT/2025/computeMT2025';
+import { computeND2025 } from './ND/2025/computeND2025';
+import { computeOK2025 } from './OK/2025/computeOK2025';
+import { computeRI2025 } from './RI/2025/computeRI2025';
+import { computeUT2025 } from './UT/2025/computeUT2025';
+import { computeVT2025 } from './VT/2025/computeVT2025';
+import { computeWV2025 } from './WV/2025/computeWV2025';
+import { computeDC2025 } from './DC/2025/computeDC2025';
 
 /**
  * State configurations
@@ -584,8 +599,241 @@ export const STATE_CONFIGS: Record<string, StateConfig> = {
     notes: '3 brackets (0%, 3%, 6.2%), simple structure, personal and dependent exemptions ($2,800 each)'
   },
 
-  // Placeholder for remaining states
-  // TODO: Add remaining 27 states
+  // Newly added states
+  AR: {
+    code: 'AR',
+    name: 'Arkansas',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://www.dfa.arkansas.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '5 brackets (2%-4.7%), standard deduction, $29 per exemption'
+  },
+  DE: {
+    code: 'DE',
+    name: 'Delaware',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://revenue.delaware.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.045,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '7 brackets (0%-6.6%), DE EITC 4.5% of federal (non-refundable), $110 per exemption'
+  },
+  HI: {
+    code: 'HI',
+    name: 'Hawaii',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://tax.hawaii.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.20,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '12 brackets (1.4%-11%), highest top rate, HI EITC 20% of federal (refundable)'
+  },
+  ID: {
+    code: 'ID',
+    name: 'Idaho',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://tax.idaho.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true,
+    hasPersonalExemption: false,
+    implemented: true,
+    notes: '4 brackets (1%-5.8%), follows federal standard deduction'
+  },
+  KS: {
+    code: 'KS',
+    name: 'Kansas',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://www.ksrevenue.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.17,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '3 brackets (3.1%-5.7%), KS EITC 17% of federal (refundable), $2,250 per exemption'
+  },
+  ME: {
+    code: 'ME',
+    name: 'Maine',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://www.maine.gov/revenue',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.15,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '3 brackets (5.8%-7.15%), ME EITC 15% of federal (refundable), $5,200 per exemption'
+  },
+  MS: {
+    code: 'MS',
+    name: 'Mississippi',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://www.dor.ms.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '4 brackets (0%-5%), $6,000 per exemption, working toward elimination'
+  },
+  MT: {
+    code: 'MT',
+    name: 'Montana',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://mtrevenue.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.03,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '3 brackets (4.7%-5.9%), MT EITC 3% of federal (refundable), $2,830 per exemption'
+  },
+  ND: {
+    code: 'ND',
+    name: 'North Dakota',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://www.tax.nd.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: true,
+    hasPersonalExemption: false,
+    implemented: true,
+    notes: '3 brackets (1.95%-2.5%), lowest state rates, follows federal standard deduction'
+  },
+  OK: {
+    code: 'OK',
+    name: 'Oklahoma',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://oklahoma.gov/tax',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.05,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '6 brackets (0.25%-4.75%), OK EITC 5% of federal (non-refundable), $1,000 per exemption'
+  },
+  RI: {
+    code: 'RI',
+    name: 'Rhode Island',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://tax.ri.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.15,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '3 brackets (3.75%-5.99%), RI EITC 15% of federal (refundable), $4,750 per exemption'
+  },
+  UT: {
+    code: 'UT',
+    name: 'Utah',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'flat',
+    authoritativeSource: 'https://tax.utah.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: false,
+    hasPersonalExemption: false,
+    implemented: true,
+    notes: 'Flat 4.65% rate, uses tax credits ($785 per exemption) instead of deductions'
+  },
+  VT: {
+    code: 'VT',
+    name: 'Vermont',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://tax.vermont.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.36,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '4 brackets (3.35%-8.75%), VT EITC 36% of federal (refundable), $5,300 per exemption'
+  },
+  WV: {
+    code: 'WV',
+    name: 'West Virginia',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://tax.wv.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: false,
+    hasStandardDeduction: false,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '5 brackets (2.36%-5.12%), no standard deduction, $2,000 per exemption'
+  },
+  DC: {
+    code: 'DC',
+    name: 'District of Columbia',
+    hasTax: true,
+    hasLocalTax: false,
+    taxType: 'graduated',
+    authoritativeSource: 'https://otr.cfo.dc.gov',
+    lastUpdated: '2025-01-22',
+    taxYear: 2025,
+    hasStateEITC: true,
+    stateEITCPercent: 0.70,
+    hasStandardDeduction: true,
+    hasPersonalExemption: true,
+    implemented: true,
+    notes: '7 brackets (4%-10.75%), highest EITC (70% of federal, refundable), $1,775 per exemption'
+  },
 };
 
 /**
@@ -731,6 +979,66 @@ export const STATE_REGISTRY: StateRegistry = {
   FL: {
     config: STATE_CONFIGS.FL!,
     calculator: computeFL2025
+  },
+  AR: {
+    config: STATE_CONFIGS.AR!,
+    calculator: computeAR2025
+  },
+  DE: {
+    config: STATE_CONFIGS.DE!,
+    calculator: computeDE2025
+  },
+  HI: {
+    config: STATE_CONFIGS.HI!,
+    calculator: computeHI2025
+  },
+  ID: {
+    config: STATE_CONFIGS.ID!,
+    calculator: computeID2025
+  },
+  KS: {
+    config: STATE_CONFIGS.KS!,
+    calculator: computeKS2025
+  },
+  ME: {
+    config: STATE_CONFIGS.ME!,
+    calculator: computeME2025
+  },
+  MS: {
+    config: STATE_CONFIGS.MS!,
+    calculator: computeMS2025
+  },
+  MT: {
+    config: STATE_CONFIGS.MT!,
+    calculator: computeMT2025
+  },
+  ND: {
+    config: STATE_CONFIGS.ND!,
+    calculator: computeND2025
+  },
+  OK: {
+    config: STATE_CONFIGS.OK!,
+    calculator: computeOK2025
+  },
+  RI: {
+    config: STATE_CONFIGS.RI!,
+    calculator: computeRI2025
+  },
+  UT: {
+    config: STATE_CONFIGS.UT!,
+    calculator: computeUT2025
+  },
+  VT: {
+    config: STATE_CONFIGS.VT!,
+    calculator: computeVT2025
+  },
+  WV: {
+    config: STATE_CONFIGS.WV!,
+    calculator: computeWV2025
+  },
+  DC: {
+    config: STATE_CONFIGS.DC!,
+    calculator: computeDC2025
   },
   // No-tax states use the same null calculator
   ...Object.fromEntries(

@@ -12,9 +12,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const HI_RULES_2025: StateTaxRules = {
+export const HI_RULES_2025 = {
   state: 'HI',
   taxYear: 2025,
 

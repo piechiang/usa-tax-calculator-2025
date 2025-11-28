@@ -10,11 +10,12 @@
     "sourceMap": true,
     "outDir": "./build/engine",
     "rootDir": "./src/engine",
+    // Incrementally enabling strict mode - Phase 2 Type Safety
     "strict": false,
-    "noImplicitAny": false,
-    "strictNullChecks": false,
+    "noImplicitAny": true,  // ✅ Enabled - requires explicit types
+    "strictNullChecks": true,  // ✅ Enabled - catches null/undefined errors
     "strictFunctionTypes": false,
-    "noImplicitReturns": false,
+    "noImplicitReturns": true,  // ✅ Enabled - ensures all code paths return
     "noImplicitThis": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,

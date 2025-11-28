@@ -15,7 +15,7 @@ describe('DC 2025 Tax Calculations', () => {
   it('Single filer - Basic scenario with low income', () => {
     const federalInput = buildFederalInput({
       filingStatus: 'single',
-      wages: 3500000, // $35,000
+      income: { wages: 35000 },
       dependents: 0
     });
 
@@ -23,8 +23,9 @@ describe('DC 2025 Tax Calculations', () => {
 
     const stateInput: StateTaxInput = {
       federalResult,
+      state: 'DC',
       filingStatus: 'single',
-      dependents: 0,
+      stateDependents: 0,
       stateWithheld: 120000, // $1,200
       stateEstPayments: 0
     };
@@ -56,7 +57,7 @@ describe('DC 2025 Tax Calculations', () => {
   it('Married filing jointly - Middle income with EITC', () => {
     const federalInput = buildFederalInput({
       filingStatus: 'marriedJointly',
-      wages: 5000000, // $50,000
+      income: { wages: 50000 },
       dependents: 2
     });
 
@@ -64,8 +65,9 @@ describe('DC 2025 Tax Calculations', () => {
 
     const stateInput: StateTaxInput = {
       federalResult,
+      state: 'DC',
       filingStatus: 'marriedJointly',
-      dependents: 2,
+      stateDependents: 2,
       stateWithheld: 0,
       stateEstPayments: 0
     };
@@ -89,7 +91,7 @@ describe('DC 2025 Tax Calculations', () => {
   it('Single filer - High income (top bracket)', () => {
     const federalInput = buildFederalInput({
       filingStatus: 'single',
-      wages: 200000000, // $2,000,000
+      income: { wages: 2000000 },
       dependents: 0
     });
 
@@ -97,8 +99,9 @@ describe('DC 2025 Tax Calculations', () => {
 
     const stateInput: StateTaxInput = {
       federalResult,
+      state: 'DC',
       filingStatus: 'single',
-      dependents: 0,
+      stateDependents: 0,
       stateWithheld: 18000000, // $180,000
       stateEstPayments: 0
     };
@@ -123,7 +126,7 @@ describe('DC 2025 Tax Calculations', () => {
   it('Head of household - With dependents', () => {
     const federalInput = buildFederalInput({
       filingStatus: 'headOfHousehold',
-      wages: 7500000, // $75,000
+      income: { wages: 75000 },
       dependents: 3
     });
 
@@ -131,8 +134,9 @@ describe('DC 2025 Tax Calculations', () => {
 
     const stateInput: StateTaxInput = {
       federalResult,
+      state: 'DC',
       filingStatus: 'headOfHousehold',
-      dependents: 3,
+      stateDependents: 3,
       stateWithheld: 300000, // $3,000
       stateEstPayments: 0
     };
@@ -154,7 +158,7 @@ describe('DC 2025 Tax Calculations', () => {
   it('Married filing separately - Low income', () => {
     const federalInput = buildFederalInput({
       filingStatus: 'marriedSeparately',
-      wages: 2500000, // $25,000
+      income: { wages: 25000 },
       dependents: 0
     });
 
@@ -162,8 +166,9 @@ describe('DC 2025 Tax Calculations', () => {
 
     const stateInput: StateTaxInput = {
       federalResult,
+      state: 'DC',
       filingStatus: 'marriedSeparately',
-      dependents: 0,
+      stateDependents: 0,
       stateWithheld: 50000, // $500
       stateEstPayments: 0
     };
@@ -188,7 +193,7 @@ describe('DC 2025 Tax Calculations', () => {
   it('No DC tax - Income below standard deduction + exemption', () => {
     const federalInput = buildFederalInput({
       filingStatus: 'single',
-      wages: 1000000, // $10,000
+      income: { wages: 10000 },
       dependents: 0
     });
 
@@ -196,8 +201,9 @@ describe('DC 2025 Tax Calculations', () => {
 
     const stateInput: StateTaxInput = {
       federalResult,
+      state: 'DC',
       filingStatus: 'single',
-      dependents: 0,
+      stateDependents: 0,
       stateWithheld: 0,
       stateEstPayments: 0
     };
@@ -214,7 +220,7 @@ describe('DC 2025 Tax Calculations', () => {
   it('DC EITC calculation - 70% of federal', () => {
     const federalInput = buildFederalInput({
       filingStatus: 'marriedJointly',
-      wages: 3000000, // $30,000
+      income: { wages: 30000 },
       dependents: 2
     });
 
@@ -222,8 +228,9 @@ describe('DC 2025 Tax Calculations', () => {
 
     const stateInput: StateTaxInput = {
       federalResult,
+      state: 'DC',
       filingStatus: 'marriedJointly',
-      dependents: 2,
+      stateDependents: 2,
       stateWithheld: 0,
       stateEstPayments: 0
     };
@@ -248,7 +255,7 @@ describe('DC 2025 Tax Calculations', () => {
   it('Verify progressive bracket calculation', () => {
     const federalInput = buildFederalInput({
       filingStatus: 'single',
-      wages: 10000000, // $100,000
+      income: { wages: 100000 },
       dependents: 0
     });
 
@@ -256,8 +263,9 @@ describe('DC 2025 Tax Calculations', () => {
 
     const stateInput: StateTaxInput = {
       federalResult,
+      state: 'DC',
       filingStatus: 'single',
-      dependents: 0,
+      stateDependents: 0,
       stateWithheld: 600000, // $6,000
       stateEstPayments: 0
     };

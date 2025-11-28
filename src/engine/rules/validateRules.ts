@@ -12,7 +12,7 @@ import type { FilingStatus } from '../types';
 interface ValidationResult {
   valid: boolean;
   errors: string[];
-  // warnings: string[];
+  warnings: string[];
 }
 
 /**

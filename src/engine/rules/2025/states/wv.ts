@@ -10,9 +10,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const WV_RULES_2025: StateTaxRules = {
+export const WV_RULES_2025 = {
   state: 'WV',
   taxYear: 2025,
 

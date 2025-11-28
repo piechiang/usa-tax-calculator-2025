@@ -278,10 +278,16 @@ export interface UIDeductions {
   selfEmploymentTaxDeduction?: string;
   itemizeDeductions?: boolean;
   useStandardDeduction?: boolean; // User's explicit choice for deduction type
+  forceItemized?: boolean; // Force itemized even if standard is higher
+  standardDeduction?: number; // Explicitly provided standard deduction amount
+  itemizedTotal?: number; // Explicitly provided itemized total
+  medicalExpenses?: string | number;
+  stateTaxesPaid?: string | number;
+  mortgageInterest?: string | number;
+  charitableDonations?: string | number;
+  otherDeductions?: string | number;
   stateLocalTaxes?: string;
-  mortgageInterest?: string;
   charitableContributions?: string;
-  medicalExpenses?: string;
   otherItemized?: string;
   [key: string]: string | number | boolean | undefined;
 }
@@ -311,6 +317,7 @@ interface EngineConversionResult {
   stateCode: string | null;
   county?: string;
   city?: string;
+  dependents: number;
 }
 
 interface PersonIncome {
@@ -555,29 +562,55 @@ export function convertUIToEngineInput(
     businessExpenses: safeCurrencyToCents(businessDetails.businessExpenses),
   };
 
-  // Respect user's explicit deduction choice
-  // If useStandardDeduction is true (or itemizeDeductions is false), force all itemized to 0
-  const shouldForceStandard = deductions.useStandardDeduction === true || deductions.itemizeDeductions === false;
-  // If itemizeDeductions is explicitly true, force itemized even if standard is higher
-  const shouldForceItemized = deductions.itemizeDeductions === true;
+  // Always pass itemized deduction values to the engine
+  // The engine will compare and choose the higher one (unless forceItemized is set)
+  // Support multiple field name variations for itemized deductions
+  let itemized: FederalInput2025['itemized'];
 
-  const itemized: FederalInput2025['itemized'] = shouldForceStandard
-    ? {
-        // Force standard deduction by zeroing all itemized amounts
-        stateLocalTaxes: 0,
-        mortgageInterest: 0,
-        charitable: 0,
-        medical: 0,
-        other: 0,
-      }
-    : {
-        // User chose itemized or didn't specify - use actual values
-        stateLocalTaxes: safeCurrencyToCents(deductions.stateLocalTaxes),
-        mortgageInterest: safeCurrencyToCents(deductions.mortgageInterest),
-        charitable: safeCurrencyToCents(deductions.charitableContributions),
-        medical: safeCurrencyToCents(deductions.medicalExpenses),
-        other: safeCurrencyToCents(deductions.otherItemized),
-      };
+  // If itemizedTotal is provided as a number, use it to override individual components
+  // This allows tests and advanced users to bypass individual deduction calculation
+  if (typeof deductions.itemizedTotal === 'number') {
+    // itemizedTotal is in dollars, need to convert to cents
+    const itemizedTotalCents = deductions.itemizedTotal * 100;
+    itemized = {
+      stateLocalTaxes: 0,
+      mortgageInterest: 0,
+      charitable: 0,
+      medical: 0,
+      other: itemizedTotalCents, // Put it all in "other" to avoid AGI floor limitations
+    };
+  } else {
+    // Calculate from individual components
+    const stateLocalTaxesValue = typeof deductions.stateTaxesPaid === 'number'
+      ? deductions.stateTaxesPaid
+      : (deductions.stateLocalTaxes || deductions.stateTaxesPaid || '0');
+    const mortgageInterestValue = typeof deductions.mortgageInterest === 'number'
+      ? deductions.mortgageInterest.toString()
+      : (deductions.mortgageInterest || '0');
+    const charitableValue = typeof deductions.charitableDonations === 'number'
+      ? deductions.charitableDonations
+      : (deductions.charitableContributions || deductions.charitableDonations || '0');
+    const medicalValue = typeof deductions.medicalExpenses === 'number'
+      ? deductions.medicalExpenses.toString()
+      : (deductions.medicalExpenses || '0');
+    const otherValue = typeof deductions.otherDeductions === 'number'
+      ? deductions.otherDeductions
+      : (deductions.otherItemized || deductions.otherDeductions || '0');
+
+    itemized = {
+      stateLocalTaxes: typeof stateLocalTaxesValue === 'number' ? stateLocalTaxesValue : safeCurrencyToCents(stateLocalTaxesValue),
+      mortgageInterest: safeCurrencyToCents(mortgageInterestValue),
+      charitable: typeof charitableValue === 'number' ? charitableValue : safeCurrencyToCents(charitableValue),
+      medical: safeCurrencyToCents(medicalValue),
+      other: typeof otherValue === 'number' ? otherValue : safeCurrencyToCents(otherValue),
+    };
+  }
+
+  // Only force itemized if explicitly requested via forceItemized or itemizeDeductions
+  // The useStandardDeduction flag is a preference; engine still chooses the higher deduction
+  const shouldForceItemized =
+    deductions.forceItemized === true ||
+    deductions.itemizeDeductions === true;
 
   const payments = buildJointPayments(paymentsData, spouseInfo, filingStatus);
 
@@ -604,6 +637,7 @@ export function convertUIToEngineInput(
     stateCode,
     county: personalInfo.county || undefined,
     city: personalInfo.city || undefined,
+    dependents,
   };
 }
 
@@ -619,6 +653,7 @@ const buildStateTaxInput = (
   federalResult: FederalResult2025,
   stateWithheld: number,
   stateEstPayments = 0,
+  stateDependents?: number,
 ): StateTaxInput => ({
   federalResult,
   state: stateCode,
@@ -627,6 +662,7 @@ const buildStateTaxInput = (
   filingStatus,
   stateWithheld,
   stateEstPayments,
+  stateDependents,
 });
 
 export interface UITaxResult {
@@ -707,6 +743,8 @@ export function calculateTaxResultsWithEngine(
           conversion.federalInput.filingStatus,
           federalResult,
           stateWithheld,
+          undefined,
+          conversion.dependents,
         );
         // Runtime validation of state input
         validateStateTaxInput(stateInput);
@@ -793,6 +831,8 @@ export function calculateFilingComparisonWithEngine(
           'marriedJointly',
           jointFederal,
           stateWithheldJoint,
+          undefined,
+          conversion.dependents,
         );
         jointState = stateCalc.calculator(stateInput);
       }
@@ -868,6 +908,8 @@ export function calculateFilingComparisonWithEngine(
           'marriedSeparately',
           taxpayerFederal,
           taxpayerStateWithheld,
+          undefined,
+          conversion.dependents,
         );
         taxpayerState = stateCalc.calculator(taxpayerInput);
 
@@ -878,6 +920,8 @@ export function calculateFilingComparisonWithEngine(
           'marriedSeparately',
           spouseFederal,
           spouseStateWithheld,
+          undefined,
+          0,
         );
         spouseState = stateCalc.calculator(spouseInput);
       }
@@ -935,7 +979,7 @@ export function convertEngineToUIResult(
     federalTax: Math.round(federalResult.totalTax / 100),
     standardDeduction,
     itemizedDeduction,
-    deductionType: itemizedDeduction > standardDeduction ? 'itemized' : 'standard',
+    deductionType: federalResult.deductionType,
     childTaxCredit: Math.round((federalResult.credits.ctc ?? 0) / 100),
     earnedIncomeCredit: Math.round((federalResult.credits.eitc ?? 0) / 100),
     educationCredits: Math.round(

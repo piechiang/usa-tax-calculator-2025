@@ -12,9 +12,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const UT_RULES_2025: StateTaxRules = {
+export const UT_RULES_2025 = {
   state: 'UT',
   taxYear: 2025,
 

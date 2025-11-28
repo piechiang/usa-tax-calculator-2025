@@ -27,7 +27,7 @@ export function computeDC2025(input: StateTaxInput): StateResult {
   const dcAGI = calculateDCAGI(input);
 
   // Step 2: Calculate DC deductions and exemptions
-  const deductionsAndExemptions = calculateDCDeductionsAndExemptions(input, dcAGI);
+  const deductionsAndExemptions = calculateDCDeductionsAndExemptions(input);
 
   // Step 3: Calculate DC taxable income
   const dcTaxableIncome = max0(dcAGI - deductionsAndExemptions);
@@ -89,12 +89,19 @@ function calculateDCAGI(input: StateTaxInput): number {
 
   // DC additions to income
   if (input.stateAdditions) {
-    dcAGI = addCents(dcAGI, input.stateAdditions);
+    const additions = (input.stateAdditions.federalTaxRefund || 0) +
+                     (input.stateAdditions.municipalBondInterest || 0) +
+                     (input.stateAdditions.otherAdditions || 0);
+    dcAGI = addCents(dcAGI, additions);
   }
 
   // DC subtractions from income
   if (input.stateSubtractions) {
-    dcAGI = max0(dcAGI - input.stateSubtractions);
+    const subtractions = (input.stateSubtractions.socialSecurityBenefits || 0) +
+                        (input.stateSubtractions.retirementIncome || 0) +
+                        (input.stateSubtractions.militaryPay || 0) +
+                        (input.stateSubtractions.otherSubtractions || 0);
+    dcAGI = max0(dcAGI - subtractions);
   }
 
   return dcAGI;
@@ -104,16 +111,23 @@ function calculateDCAGI(input: StateTaxInput): number {
  * Calculate DC deductions and exemptions
  * DC allows either standard deduction or itemized deductions, plus personal exemptions
  */
-function calculateDCDeductionsAndExemptions(input: StateTaxInput, dcAGI: number): number {
-  const { filingStatus, dependents } = input;
+function calculateDCDeductionsAndExemptions(input: StateTaxInput): number {
+  const { filingStatus } = input;
 
   // Standard deduction
   const standardDeduction = DC_RULES_2025.standardDeduction[filingStatus];
 
   // Itemized deductions (DC allows itemized if taxpayer itemizes federally)
   let deduction = standardDeduction;
-  if (input.itemizedDeductions && input.itemizedDeductions > standardDeduction) {
-    deduction = input.itemizedDeductions;
+  if (input.stateItemized) {
+    const itemizedTotal = (input.stateItemized.medicalExpenses || 0) +
+                         (input.stateItemized.propertyTaxes || 0) +
+                         (input.stateItemized.mortgageInterest || 0) +
+                         (input.stateItemized.charitableContributions || 0) +
+                         (input.stateItemized.other || 0);
+    if (itemizedTotal > standardDeduction) {
+      deduction = itemizedTotal;
+    }
   }
 
   // Personal exemptions
@@ -128,7 +142,7 @@ function calculateDCDeductionsAndExemptions(input: StateTaxInput, dcAGI: number)
  * Includes taxpayer(s) and dependents
  */
 function getDCExemptionCount(input: StateTaxInput): number {
-  const { filingStatus, dependents } = input;
+  const { filingStatus } = input;
 
   let exemptions = 0;
 
@@ -140,7 +154,9 @@ function getDCExemptionCount(input: StateTaxInput): number {
   }
 
   // Add dependent exemptions
-  exemptions += dependents || 0;
+  // Note: stateDependents should be provided in the state input
+  const dependents = input.stateDependents ?? 0;
+  exemptions += dependents;
 
   return exemptions;
 }

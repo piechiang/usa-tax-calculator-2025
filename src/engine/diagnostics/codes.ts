@@ -197,10 +197,17 @@ export function formatDiagnosticMessage(
 ): string {
   let message = DIAGNOSTIC_MESSAGES[code];
 
+  // Safety check: if message is undefined, return a fallback
+  if (!message) {
+    return `Unknown diagnostic code: ${code}`;
+  }
+
   if (context) {
     // Replace {field}, {value}, etc. with actual values
     Object.entries(context).forEach(([key, value]) => {
-      message = message.replace(`{${key}}`, String(value));
+      // Safety check: ensure value is not null/undefined before converting to string
+      const replacement = value != null ? String(value) : '';
+      message = message.replace(`{${key}}`, replacement);
     });
   }
 

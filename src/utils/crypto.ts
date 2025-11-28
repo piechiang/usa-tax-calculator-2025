@@ -238,6 +238,13 @@ export async function setEncryptionKey(key: string): Promise<boolean> {
 }
 
 /**
+ * Check if encryption key is set in session
+ */
+export function hasEncryptionKey(): boolean {
+  return sessionStorage.getItem(ENCRYPTION_KEY_STORAGE) !== null;
+}
+
+/**
  * Clear the encryption key from session
  */
 export function clearEncryptionKey(): void {

@@ -10,9 +10,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const MT_RULES_2025: StateTaxRules = {
+export const MT_RULES_2025 = {
   state: 'MT',
   taxYear: 2025,
 

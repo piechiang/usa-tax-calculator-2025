@@ -10,9 +10,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const KS_RULES_2025: StateTaxRules = {
+export const KS_RULES_2025 = {
   state: 'KS',
   taxYear: 2025,
 

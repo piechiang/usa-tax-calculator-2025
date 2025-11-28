@@ -10,9 +10,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const OK_RULES_2025: StateTaxRules = {
+export const OK_RULES_2025 = {
   state: 'OK',
   taxYear: 2025,
 

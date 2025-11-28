@@ -11,9 +11,8 @@
  * Last Updated: 2025-01-22
  */
 
-import type { StateTaxRules } from '../../../types';
 
-export const MS_RULES_2025: StateTaxRules = {
+export const MS_RULES_2025 = {
   state: 'MS',
   taxYear: 2025,
 

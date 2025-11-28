@@ -197,8 +197,10 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
   return {
     agi,
     taxableIncome,
-    standardDeduction: deductionResult.isStandard ? deductionResult.deduction : STANDARD_DEDUCTION_2025[input.filingStatus],
-    ...(!deductionResult.isStandard && { itemizedDeduction: deductionResult.deduction }),
+    deductionType: deductionResult.isStandard ? 'standard' : 'itemized',
+    standardDeduction: deductionResult.standardDeduction,
+    // Always include itemizedDeduction if user provided any itemized amounts (for reference)
+    ...(deductionResult.itemizedTotal > 0 && { itemizedDeduction: deductionResult.itemizedTotal }),
     ...((input.qbiBusinesses?.length || input.qbiREITPTP) && { qbiDeduction: qbiResult.qbiDeduction }),
     // Include qbiDetails if there are QBI businesses or REIT/PTP income, even if deduction is 0
     ...((input.qbiBusinesses?.length || input.qbiREITPTP) && { qbiDetails: qbiResult }),
@@ -600,6 +602,8 @@ function calculateDeductions(
 ): {
   deduction: number;
   isStandard: boolean;
+  standardDeduction: number;
+  itemizedTotal: number;
 } {
   // Calculate standard deduction with age/blindness adjustments
   let standardDeduction = STANDARD_DEDUCTION_2025[input.filingStatus];
@@ -687,7 +691,9 @@ function calculateDeductions(
 
   return {
     deduction: useStandard ? standardDeduction : itemizedTotal,
-    isStandard: useStandard
+    isStandard: useStandard,
+    standardDeduction,
+    itemizedTotal
   };
 }
 
