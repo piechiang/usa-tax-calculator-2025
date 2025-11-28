@@ -22,6 +22,7 @@ export function computeMS2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const msTaxableIncome = max0(subtractCents(msAGI, totalDeductions));
 
+  const fullBrackets = convertToFullBrackets(MS_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(msTaxableIncome, fullBrackets);
   const finalTax = taxBeforeCredits;
 

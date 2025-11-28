@@ -22,6 +22,7 @@ export function computeRI2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const riTaxableIncome = max0(subtractCents(riAGI, totalDeductions));
 
+  const fullBrackets = convertToFullBrackets(RI_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(riTaxableIncome, fullBrackets);
 
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;

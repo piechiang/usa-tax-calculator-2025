@@ -24,6 +24,7 @@ export function computeWV2025(input: StateTaxInput): StateResult {
 
   const wvTaxableIncome = max0(subtractCents(wvAGI, personalExemptions));
 
+  const fullBrackets = convertToFullBrackets(WV_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(wvTaxableIncome, fullBrackets);
   const finalTax = taxBeforeCredits;
 

@@ -35,6 +35,7 @@ export function computeDE2025(input: StateTaxInput): StateResult {
   const deTaxableIncome = max0(subtractCents(deAGI, totalDeductions));
 
   // Step 5: Calculate tax using progressive brackets
+  const fullBrackets = convertToFullBrackets(DE_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(deTaxableIncome, fullBrackets);
 
   // Step 6: Apply Delaware EITC (4.5% of federal EITC, non-refundable)

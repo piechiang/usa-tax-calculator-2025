@@ -17,6 +17,7 @@ export function computeND2025(input: StateTaxInput): StateResult {
   const standardDeduction = ND_RULES_2025.standardDeduction[filingStatus];
   const ndTaxableIncome = max0(subtractCents(ndAGI, standardDeduction));
 
+  const fullBrackets = convertToFullBrackets(ND_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(ndTaxableIncome, fullBrackets);
   const finalTax = taxBeforeCredits;
 

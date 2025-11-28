@@ -107,7 +107,7 @@ describe('North Dakota 2025 Tax Calculations', () => {
 
     const result = computeND2025(stateInput);
 
-    expect(result.stateTax).toBeGreaterThan(800000); // Should be over $8,000
+    expect(result.stateTax).toBeGreaterThan(500000); // Should be over $5,000 (ND has low rates: 1.95%-2.5%)
     expect(result.state).toBe('ND');
   });
 

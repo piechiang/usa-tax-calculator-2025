@@ -22,6 +22,7 @@ export function computeOK2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const okTaxableIncome = max0(subtractCents(okAGI, totalDeductions));
 
+  const fullBrackets = convertToFullBrackets(OK_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(okTaxableIncome, fullBrackets);
 
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;

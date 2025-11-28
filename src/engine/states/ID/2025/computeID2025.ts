@@ -29,6 +29,7 @@ export function computeID2025(input: StateTaxInput): StateResult {
   const idTaxableIncome = max0(subtractCents(idAGI, standardDeduction));
 
   // Step 4: Calculate tax using progressive brackets
+  const fullBrackets = convertToFullBrackets(ID_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(idTaxableIncome, fullBrackets);
 
   // Step 5: Final tax liability (no state EITC or other credits in ID)

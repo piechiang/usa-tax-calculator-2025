@@ -20,6 +20,7 @@ export function computeUT2025(input: StateTaxInput): StateResult {
   const utTaxableIncome = utAGI;
 
   // Step 3: Calculate tax at flat 4.65% rate
+  const fullBrackets = convertToFullBrackets(UT_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(utTaxableIncome, fullBrackets);
 
   // Step 4: Apply personal exemption credits ($785 per exemption)

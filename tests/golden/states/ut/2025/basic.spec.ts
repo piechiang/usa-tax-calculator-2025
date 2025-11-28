@@ -32,8 +32,8 @@ describe('Utah 2025 Tax Calculations', () => {
     const result = computeUT2025(stateInput);
 
     expect(result.stateAGI).toBe(federalResult.agi);
-    expect(result.stateDeduction).toBeGreaterThan(0);
-    expect(result.stateTaxableIncome).toBeLessThan(result.stateAGI);
+    expect(result.stateDeduction).toBe(0); // Utah uses credits instead of deductions
+    expect(result.stateTaxableIncome).toBe(result.stateAGI); // No deduction, taxable income = AGI
     expect(result.stateTax).toBeGreaterThan(0);
     expect(result.state).toBe('UT');
     expect(result.taxYear).toBe(2025);

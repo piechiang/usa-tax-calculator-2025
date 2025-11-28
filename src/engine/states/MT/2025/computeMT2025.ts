@@ -22,6 +22,7 @@ export function computeMT2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const mtTaxableIncome = max0(subtractCents(mtAGI, totalDeductions));
 
+  const fullBrackets = convertToFullBrackets(MT_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(mtTaxableIncome, fullBrackets);
 
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;

@@ -22,6 +22,7 @@ export function computeVT2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const vtTaxableIncome = max0(subtractCents(vtAGI, totalDeductions));
 
+  const fullBrackets = convertToFullBrackets(VT_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(vtTaxableIncome, fullBrackets);
 
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;

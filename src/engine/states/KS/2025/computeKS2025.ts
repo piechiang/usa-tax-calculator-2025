@@ -35,6 +35,7 @@ export function computeKS2025(input: StateTaxInput): StateResult {
   const ksTaxableIncome = max0(subtractCents(ksAGI, totalDeductions));
 
   // Step 5: Calculate tax using progressive brackets
+  const fullBrackets = convertToFullBrackets(KS_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(ksTaxableIncome, fullBrackets);
 
   // Step 6: Apply Kansas EITC (17% of federal EITC, refundable)
