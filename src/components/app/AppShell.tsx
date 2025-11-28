@@ -5,10 +5,12 @@ import { ActionButtons } from '../layout/ActionButtons';
 import { ClassicModeView } from '../layout/ClassicModeView';
 import { ModalManager } from '../modals/ModalManager';
 import { ModernModeView } from '../layout/ModernModeView';
+import { ErrorBoundary } from '../error/ErrorBoundary';
 
 import { useLanguageContext } from '../../contexts/LanguageContext';
 import { useTaxContext } from '../../contexts/TaxContext';
 import { useUIContext } from '../../contexts/UIContext';
+import { errorLogger } from '../../utils/errorLogger';
 
 export function AppShell() {
   const {
@@ -39,18 +41,24 @@ export function AppShell() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <AppHeader
-          t={t}
-          language={language}
-          showLanguageMenu={showLanguageMenu}
-          currentLanguageInfo={currentLanguageInfo}
-          toggleLanguageMenu={toggleLanguageMenu}
-          changeLanguage={changeLanguage}
-        />
+        <ErrorBoundary onError={(error, errorInfo) => errorLogger.log(error, errorInfo, { section: 'header' })}>
+          <AppHeader
+            t={t}
+            language={language}
+            showLanguageMenu={showLanguageMenu}
+            currentLanguageInfo={currentLanguageInfo}
+            toggleLanguageMenu={toggleLanguageMenu}
+            changeLanguage={changeLanguage}
+          />
+        </ErrorBoundary>
 
-        <ActionButtons />
+        <ErrorBoundary onError={(error, errorInfo) => errorLogger.log(error, errorInfo, { section: 'actions' })}>
+          <ActionButtons />
+        </ErrorBoundary>
 
-        {useClassicMode ? <ClassicModeView /> : <ModernModeView />}
+        <ErrorBoundary onError={(error, errorInfo) => errorLogger.log(error, errorInfo, { section: 'main-view' })}>
+          {useClassicMode ? <ClassicModeView /> : <ModernModeView />}
+        </ErrorBoundary>
       </div>
 
       <button
@@ -61,7 +69,9 @@ export function AppShell() {
         Clients
       </button>
 
-      <ModalManager />
+      <ErrorBoundary onError={(error, errorInfo) => errorLogger.log(error, errorInfo, { section: 'modals' })}>
+        <ModalManager />
+      </ErrorBoundary>
     </div>
   );
 }
