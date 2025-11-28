@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { KS_RULES_2025 } from '../../../rules/2025/states/ks';
 import { addCents, subtractCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 /**
  * Compute Kansas state tax for 2025
@@ -35,7 +35,7 @@ export function computeKS2025(input: StateTaxInput): StateResult {
   const ksTaxableIncome = max0(subtractCents(ksAGI, totalDeductions));
 
   // Step 5: Calculate tax using progressive brackets
-  const taxBeforeCredits = calculateTaxFromBrackets(ksTaxableIncome, KS_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(ksTaxableIncome, fullBrackets);
 
   // Step 6: Apply Kansas EITC (17% of federal EITC, refundable)
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;

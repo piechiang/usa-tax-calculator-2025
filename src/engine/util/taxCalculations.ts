@@ -21,6 +21,47 @@ export interface TaxBracket {
 }
 
 /**
+ * Convert simplified bracket format (with only max and rate) to full TaxBracket format
+ *
+ * Many state tax rules define brackets in a simplified format with just the upper bound
+ * and rate for each bracket. This function converts that to the full format needed by
+ * calculateTaxFromBrackets().
+ *
+ * @param simplifiedBrackets - Brackets with only max and rate
+ * @returns Full TaxBracket array with min and max
+ *
+ * @example
+ * const simplified = [
+ *   { max: 1000000, rate: 0.02 },  // 0 - $10k at 2%
+ *   { max: 5000000, rate: 0.04 },  // $10k - $50k at 4%
+ *   { max: Infinity, rate: 0.06 }  // Over $50k at 6%
+ * ];
+ * const full = convertToFullBrackets(simplified);
+ * // Returns: [
+ * //   { min: 0, max: 1000000, rate: 0.02 },
+ * //   { min: 1000000, max: 5000000, rate: 0.04 },
+ * //   { min: 5000000, max: Infinity, rate: 0.06 }
+ * // ]
+ */
+export function convertToFullBrackets(
+  simplifiedBrackets: Array<{ max: number; rate: number }>
+): TaxBracket[] {
+  const fullBrackets: TaxBracket[] = [];
+  let previousMax = 0;
+
+  for (const bracket of simplifiedBrackets) {
+    fullBrackets.push({
+      min: previousMax,
+      max: bracket.max,
+      rate: bracket.rate
+    });
+    previousMax = bracket.max;
+  }
+
+  return fullBrackets;
+}
+
+/**
  * Calculate tax from graduated brackets
  *
  * This is the most common pattern across state tax systems.

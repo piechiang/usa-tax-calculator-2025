@@ -15,6 +15,7 @@ interface ValidatedInputProps {
   max?: string;
   help?: string;
   className?: string;
+  'aria-label'?: string;
 }
 
 export const ValidatedInput: React.FC<ValidatedInputProps> = ({
@@ -28,7 +29,8 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
   min,
   max,
   help,
-  className = ''
+  className = '',
+  'aria-label': ariaLabel
 }) => {
   const [localValue, setLocalValue] = useState<string>(value?.toString() || '');
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +71,9 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
         step={step}
         min={min}
         max={max}
+        aria-label={ariaLabel}
+        aria-invalid={hasError ? 'true' : 'false'}
+        aria-describedby={help && !hasError ? `${field}-help` : hasError ? `${field}-error` : undefined}
         className={`w-full px-3 py-2 border ${
           hasError ? 'border-red-300' : 'border-gray-300'
         } rounded-md focus:outline-none focus:ring-2 ${
@@ -77,14 +82,14 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
       />
 
       {hasError && (
-        <div className="flex items-center gap-1 text-red-600 text-xs">
-          <AlertCircle className="h-3 w-3" />
+        <div id={`${field}-error`} className="flex items-center gap-1 text-red-600 text-xs" role="alert">
+          <AlertCircle className="h-3 w-3" aria-hidden="true" />
           <span>{error}</span>
         </div>
       )}
 
       {help && !hasError && (
-        <div className="text-gray-500 text-xs">
+        <div id={`${field}-help`} className="text-gray-500 text-xs">
           {'\uD83D\uDCA1'} {help}
         </div>
       )}
@@ -103,6 +108,7 @@ interface UncontrolledInputProps {
   max?: string;
   help?: string;
   className?: string;
+  'aria-label'?: string;
 }
 
 export const UncontrolledInput: React.FC<UncontrolledInputProps> = ({
@@ -115,7 +121,8 @@ export const UncontrolledInput: React.FC<UncontrolledInputProps> = ({
   min,
   max,
   help,
-  className = ''
+  className = '',
+  'aria-label': ariaLabel
 }) => {
   const [value, setValue] = useState<string>(defaultValue?.toString() || '');
 
@@ -145,11 +152,13 @@ export const UncontrolledInput: React.FC<UncontrolledInputProps> = ({
         step={step}
         min={min}
         max={max}
+        aria-label={ariaLabel}
+        aria-describedby={help ? `${field}-help` : undefined}
         className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base ${className}`}
       />
 
       {help && (
-        <div className="text-gray-500 text-xs">
+        <div id={`${field}-help`} className="text-gray-500 text-xs">
           {'\uD83D\uDCA1'} {help}
         </div>
       )}

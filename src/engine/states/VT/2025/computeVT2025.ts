@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { VT_RULES_2025 } from '../../../rules/2025/states/vt';
 import { addCents, subtractCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 export function computeVT2025(input: StateTaxInput): StateResult {
   const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
@@ -22,7 +22,7 @@ export function computeVT2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const vtTaxableIncome = max0(subtractCents(vtAGI, totalDeductions));
 
-  const taxBeforeCredits = calculateTaxFromBrackets(vtTaxableIncome, VT_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(vtTaxableIncome, fullBrackets);
 
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
   const vtEITC = Math.round(federalEITC * VT_RULES_2025.eitcPercentage);

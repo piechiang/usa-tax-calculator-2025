@@ -54,8 +54,9 @@ export function AppShell() {
       </div>
 
       <button
-        className="fixed bottom-4 right-4 px-4 py-2 bg-indigo-600 text-white rounded shadow"
+        className="fixed bottom-4 right-4 px-4 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 transition-colors"
         onClick={() => setShowClientManager(true)}
+        aria-label="Open client manager to save and load tax returns"
       >
         Clients
       </button>

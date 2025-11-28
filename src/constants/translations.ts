@@ -3,7 +3,7 @@ export type Translations = Record<string, Record<string, unknown>>;
 export const translations: Translations = {
   en: {
     title: "USA Tax Calculator 2025",
-    subtitle: "Estimate your 2025 federal and Maryland state income taxes with updated rates and deductions.",
+    subtitle: "Estimate your 2025 federal and state income taxes with updated rates and deductions.",
     disclaimer: "For planning only. Not tax or legal advice. Consult a professional for filing.",
     privacyNotice: "Privacy Notice: All calculations run locally in your browser. No data is sent to a server.",
     validation: {
@@ -246,7 +246,7 @@ export const translations: Translations = {
   },
   zh: {
     title: "美国税务计算器 2025",
-    subtitle: "使用最新税率和扣除额估算您的2025年联邦和马里兰州所得税。",
+    subtitle: "使用最新税率和扣除额估算您的2025年联邦和州所得税。",
     disclaimer: "仅供规划使用。非税务或法律建议。请咨询专业人士进行申报。",
     privacyNotice: "隐私声明：所有计算均在您的浏览器本地运行。数据不会发送到服务器。",
     validation: {
@@ -489,7 +489,7 @@ export const translations: Translations = {
   },
   es: {
     title: "Calculadora de Impuestos de EE.UU. 2025",
-    subtitle: "Estime sus impuestos federales y estatales de Maryland para 2025 con tasas y deducciones actualizadas.",
+    subtitle: "Estime sus impuestos federales y estatales para 2025 con tasas y deducciones actualizadas.",
     disclaimer: "Solo para planificación. No es asesoramiento fiscal o legal. Consulte a un profesional para la presentación.",
     privacyNotice: "Aviso de Privacidad: Todos los cálculos se ejecutan localmente en su navegador. No se envían datos a un servidor.",
     validation: {

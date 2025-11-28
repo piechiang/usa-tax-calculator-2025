@@ -5,7 +5,7 @@ import {
   max0,
   multiplyCents
 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 /**
  * Compute Hawaii state tax for 2025
@@ -33,8 +33,8 @@ export function computeHI2025(input: StateTaxInput): StateResult {
   const hiTaxableIncome = max0(hiAGI - deductionsAndExemptions);
 
   // Step 4: Calculate HI state tax using progressive brackets
-  const brackets = HI_RULES_2025.brackets[filingStatus];
-  const hiStateTax = calculateTaxFromBrackets(hiTaxableIncome, brackets);
+  const fullBrackets = convertToFullBrackets(HI_RULES_2025.brackets[filingStatus]);
+  const hiStateTax = calculateTaxFromBrackets(hiTaxableIncome, fullBrackets);
 
   // Step 5: No state EITC in Hawaii
   const credits: StateCredits = {

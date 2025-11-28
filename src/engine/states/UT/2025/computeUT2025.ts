@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { UT_RULES_2025 } from '../../../rules/2025/states/ut';
 import { addCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 export function computeUT2025(input: StateTaxInput): StateResult {
   const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
@@ -20,7 +20,7 @@ export function computeUT2025(input: StateTaxInput): StateResult {
   const utTaxableIncome = utAGI;
 
   // Step 3: Calculate tax at flat 4.65% rate
-  const taxBeforeCredits = calculateTaxFromBrackets(utTaxableIncome, UT_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(utTaxableIncome, fullBrackets);
 
   // Step 4: Apply personal exemption credits ($785 per exemption)
   const numberOfExemptions = filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;

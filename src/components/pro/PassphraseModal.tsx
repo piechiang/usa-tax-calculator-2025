@@ -41,12 +41,14 @@ export default function PassphraseModal({ isOpen, onUnlock, onCancel, mode }: Pr
             <button
               onClick={onCancel}
               className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+              aria-label="Cancel and close encryption dialog"
             >
               Cancel
             </button>
             <button
               onClick={onUnlock}
               className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+              aria-label="Continue without encryption (not recommended)"
             >
               Continue Unencrypted
             </button>
@@ -132,6 +134,7 @@ export default function PassphraseModal({ isOpen, onUnlock, onCancel, mode }: Pr
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
                   tabIndex={-1}
+                  aria-label={showPassword ? 'Hide passphrase' : 'Show passphrase'}
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -174,12 +177,14 @@ export default function PassphraseModal({ isOpen, onUnlock, onCancel, mode }: Pr
                 type="button"
                 onClick={onCancel}
                 className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                aria-label="Cancel passphrase entry"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                aria-label={mode === 'setup' ? 'Confirm and set up encryption with this passphrase' : 'Unlock encrypted client data'}
               >
                 {mode === 'setup' ? 'Set Up Encryption' : 'Unlock'}
               </button>

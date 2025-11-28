@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { AR_RULES_2025 } from '../../../rules/2025/states/ar';
 import { addCents, subtractCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 /**
  * Compute Arkansas state tax for 2025
@@ -35,7 +35,8 @@ export function computeAR2025(input: StateTaxInput): StateResult {
   const arTaxableIncome = max0(subtractCents(arAGI, totalDeductions));
 
   // Step 5: Calculate tax using progressive brackets
-  const taxBeforeCredits = calculateTaxFromBrackets(arTaxableIncome, AR_RULES_2025.brackets[filingStatus]);
+  const fullBrackets = convertToFullBrackets(AR_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(arTaxableIncome, fullBrackets);
 
   // Step 6: Final tax liability (no state EITC or other credits in AR)
   const finalTax = taxBeforeCredits;

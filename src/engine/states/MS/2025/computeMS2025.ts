@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { MS_RULES_2025 } from '../../../rules/2025/states/ms';
 import { addCents, subtractCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 export function computeMS2025(input: StateTaxInput): StateResult {
   const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
@@ -22,7 +22,7 @@ export function computeMS2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const msTaxableIncome = max0(subtractCents(msAGI, totalDeductions));
 
-  const taxBeforeCredits = calculateTaxFromBrackets(msTaxableIncome, MS_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(msTaxableIncome, fullBrackets);
   const finalTax = taxBeforeCredits;
 
   const totalPayments = addCents(stateWithheld, stateEstPayments);

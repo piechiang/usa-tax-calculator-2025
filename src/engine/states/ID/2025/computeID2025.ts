@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { ID_RULES_2025 } from '../../../rules/2025/states/id';
 import { subtractCents, addCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 /**
  * Compute Idaho state tax for 2025
@@ -29,7 +29,7 @@ export function computeID2025(input: StateTaxInput): StateResult {
   const idTaxableIncome = max0(subtractCents(idAGI, standardDeduction));
 
   // Step 4: Calculate tax using progressive brackets
-  const taxBeforeCredits = calculateTaxFromBrackets(idTaxableIncome, ID_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(idTaxableIncome, fullBrackets);
 
   // Step 5: Final tax liability (no state EITC or other credits in ID)
   const finalTax = taxBeforeCredits;

@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { RI_RULES_2025 } from '../../../rules/2025/states/ri';
 import { addCents, subtractCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 export function computeRI2025(input: StateTaxInput): StateResult {
   const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
@@ -22,7 +22,7 @@ export function computeRI2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const riTaxableIncome = max0(subtractCents(riAGI, totalDeductions));
 
-  const taxBeforeCredits = calculateTaxFromBrackets(riTaxableIncome, RI_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(riTaxableIncome, fullBrackets);
 
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
   const riEITC = Math.round(federalEITC * RI_RULES_2025.eitcPercentage);

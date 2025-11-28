@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { WV_RULES_2025 } from '../../../rules/2025/states/wv';
 import { addCents, subtractCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 export function computeWV2025(input: StateTaxInput): StateResult {
   const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
@@ -24,7 +24,7 @@ export function computeWV2025(input: StateTaxInput): StateResult {
 
   const wvTaxableIncome = max0(subtractCents(wvAGI, personalExemptions));
 
-  const taxBeforeCredits = calculateTaxFromBrackets(wvTaxableIncome, WV_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(wvTaxableIncome, fullBrackets);
   const finalTax = taxBeforeCredits;
 
   const totalPayments = addCents(stateWithheld, stateEstPayments);

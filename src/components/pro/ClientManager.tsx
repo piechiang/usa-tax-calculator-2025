@@ -214,6 +214,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                       <button
                         onClick={handleLock}
                         className="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50"
+                        aria-label="Lock and clear encryption key from session"
                       >
                         Lock
                       </button>
@@ -226,7 +227,11 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                 </div>
               )}
             </div>
-            <button className="text-gray-500 hover:text-gray-700" onClick={onClose}>
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={onClose}
+              aria-label="Close client manager"
+            >
               ✕ Close
             </button>
           </div>
@@ -255,12 +260,14 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                     onClick={handleMigrateAll}
                     disabled={isLoading}
                     className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
+                    aria-label="Migrate all unencrypted clients to encrypted storage"
                   >
                     Migrate All
                   </button>
                   <button
                     onClick={() => setShowMigrationBanner(false)}
                     className="text-blue-600 hover:text-blue-800 text-xs"
+                    aria-label="Dismiss migration notification"
                   >
                     Dismiss
                   </button>
@@ -287,6 +294,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                     key={c.id}
                     onClick={() => { setSelected(c.id); setName(c.name); }}
                     className={`w-full text-left p-3 hover:bg-gray-50 ${selected === c.id ? 'bg-blue-50 border-l-2 border-blue-600' : ''}`}
+                    aria-label={`Select client ${c.name}, last updated ${new Date(c.updatedAt).toLocaleDateString()}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="font-medium">{c.name}</div>
@@ -307,6 +315,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                   onClick={handleLoad}
                   disabled={!selected || isLoading}
                   className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50 hover:bg-blue-700"
+                  aria-label="Load selected client data into calculator"
                 >
                   {isLoading ? 'Loading...' : 'Load'}
                 </button>
@@ -314,6 +323,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                   onClick={handleDelete}
                   disabled={!selected || isLoading}
                   className="px-3 py-2 bg-red-600 text-white rounded disabled:opacity-50 hover:bg-red-700"
+                  aria-label="Delete selected client permanently"
                 >
                   Delete
                 </button>
@@ -322,6 +332,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                     onClick={handleMigrateSelected}
                     disabled={isLoading}
                     className="px-3 py-2 bg-green-600 text-white rounded disabled:opacity-50 hover:bg-green-700 text-sm"
+                    aria-label="Encrypt this client's data for better security"
                   >
                     🔒 Encrypt
                   </button>
@@ -336,12 +347,14 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                 placeholder="Client name (e.g., John & Jane 2025)"
                 value={name}
                 onChange={e => setName(e.target.value)}
+                aria-label="Client name for saving tax return"
               />
               <div className="mt-2">
                 <button
                   onClick={handleSave}
                   disabled={isLoading}
                   className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                  aria-label={selected ? 'Update existing client with current data' : 'Save current tax return as new client'}
                 >
                   {isLoading ? 'Saving...' : selected ? 'Update' : 'Save New'}
                 </button>

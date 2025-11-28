@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { MT_RULES_2025 } from '../../../rules/2025/states/mt';
 import { addCents, subtractCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 export function computeMT2025(input: StateTaxInput): StateResult {
   const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
@@ -22,7 +22,7 @@ export function computeMT2025(input: StateTaxInput): StateResult {
   const totalDeductions = addCents(standardDeduction, personalExemptions);
   const mtTaxableIncome = max0(subtractCents(mtAGI, totalDeductions));
 
-  const taxBeforeCredits = calculateTaxFromBrackets(mtTaxableIncome, MT_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(mtTaxableIncome, fullBrackets);
 
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
   const mtEITC = Math.round(federalEITC * MT_RULES_2025.eitcPercentage);

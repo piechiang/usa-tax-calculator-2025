@@ -8,7 +8,7 @@
 import type { StateTaxInput, StateResult } from '../../../types';
 import { DE_RULES_2025 } from '../../../rules/2025/states/de';
 import { addCents, subtractCents, max0 } from '../../../util/money';
-import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
+import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 /**
  * Compute Delaware state tax for 2025
@@ -35,7 +35,7 @@ export function computeDE2025(input: StateTaxInput): StateResult {
   const deTaxableIncome = max0(subtractCents(deAGI, totalDeductions));
 
   // Step 5: Calculate tax using progressive brackets
-  const taxBeforeCredits = calculateTaxFromBrackets(deTaxableIncome, DE_RULES_2025.brackets[filingStatus]);
+  const taxBeforeCredits = calculateTaxFromBrackets(deTaxableIncome, fullBrackets);
 
   // Step 6: Apply Delaware EITC (4.5% of federal EITC, non-refundable)
   const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
