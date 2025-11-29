@@ -119,6 +119,28 @@ export const translations: Translations = {
       medicalExpenses: "Medical Expenses (above 7.5% AGI)",
       otherItemized: "Other Itemized Deductions"
     },
+    credits: {
+      title: "Tax Credits",
+      childCare: {
+        title: "Child and Dependent Care Credit",
+        hasExpenses: "I paid for childcare or dependent care",
+        numberOfQualifying: "Number of qualifying persons (under 13 or disabled)",
+        expenses: "Total care expenses paid",
+        maxExpenses: "Maximum: $3,000 for 1 person, $6,000 for 2 or more",
+        help: "Expenses for daycare, babysitters, before/after school programs, or day camps while you worked"
+      },
+      education: {
+        title: "Education Credits",
+        hasExpenses: "I or my dependents had qualified education expenses",
+        studentName: "Student name",
+        tuitionAndFees: "Tuition and fees paid",
+        yearsOfPostSecondary: "Years of post-secondary education",
+        helpTuition: "From Form 1098-T provided by your school",
+        helpYears: "American Opportunity Credit is limited to first 4 years",
+        aotc: "American Opportunity Credit",
+        llc: "Lifetime Learning Credit"
+      }
+    },
     results: {
       title: "Tax Calculation (2025)",
       adjustedGrossIncome: "Adjusted Gross Income:",
@@ -396,6 +418,28 @@ export const translations: Translations = {
       medicalExpenses: "医疗费用 (超过AGI的7.5%)",
       otherItemized: "其他逐项扣除"
     },
+    credits: {
+      title: "税收抵免",
+      childCare: {
+        title: "儿童和受抚养人照顾抵免",
+        hasExpenses: "我支付了儿童照顾或受抚养人照顾费用",
+        numberOfQualifying: "符合条件的人数（13岁以下或残疾）",
+        expenses: "支付的照顾费用总额",
+        maxExpenses: "最高：1人$3,000，2人或以上$6,000",
+        help: "工作期间的托儿所、保姆、课前课后项目或日间夏令营费用"
+      },
+      education: {
+        title: "教育抵免",
+        hasExpenses: "我或我的受抚养人有合格的教育费用",
+        studentName: "学生姓名",
+        tuitionAndFees: "支付的学费和费用",
+        yearsOfPostSecondary: "完成的高等教育年数",
+        helpTuition: "来自学校提供的1098-T表格",
+        helpYears: "美国机会抵免仅限于前4年",
+        aotc: "美国机会抵免",
+        llc: "终身学习抵免"
+      }
+    },
     results: {
       title: "税务计算 (2025)",
       adjustedGrossIncome: "调整后总收入：",
@@ -672,6 +716,28 @@ export const translations: Translations = {
       charitableContributions: "Contribuciones Caritativas",
       medicalExpenses: "Gastos Médicos (por encima del 7.5% AGI)",
       otherItemized: "Otras Deducciones Detalladas"
+    },
+    credits: {
+      title: "Créditos Fiscales",
+      childCare: {
+        title: "Crédito por Cuidado de Niños y Dependientes",
+        hasExpenses: "Pagué por cuidado de niños o dependientes",
+        numberOfQualifying: "Número de personas calificadas (menores de 13 o discapacitados)",
+        expenses: "Total de gastos de cuidado pagados",
+        maxExpenses: "Máximo: $3,000 para 1 persona, $6,000 para 2 o más",
+        help: "Gastos de guardería, niñeras, programas antes/después de la escuela o campamentos diurnos mientras trabajaba"
+      },
+      education: {
+        title: "Créditos de Educación",
+        hasExpenses: "Yo o mis dependientes tuvimos gastos de educación calificados",
+        studentName: "Nombre del estudiante",
+        tuitionAndFees: "Matrícula y cuotas pagadas",
+        yearsOfPostSecondary: "Años de educación postsecundaria",
+        helpTuition: "Del formulario 1098-T proporcionado por su escuela",
+        helpYears: "El Crédito de Oportunidad Americana está limitado a los primeros 4 años",
+        aotc: "Crédito de Oportunidad Americana",
+        llc: "Crédito de Aprendizaje de Por Vida"
+      }
     },
     results: {
       title: "Cálculo de Impuestos (2025)",

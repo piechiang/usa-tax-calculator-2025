@@ -26,6 +26,93 @@ export const interviewQuestions = [
     ]
   },
   {
+    id: 'dependents',
+    title: 'Do you have any dependents?',
+    description: 'Dependents can include children and other qualifying relatives.',
+    type: 'single' as const,
+    required: true,
+    options: [
+      { value: 'yes', label: 'Yes', description: 'I have dependents' },
+      { value: 'no', label: 'No', description: 'I do not have dependents' }
+    ]
+  },
+  {
+    id: 'child-care-expenses',
+    title: 'Did you pay for childcare or dependent care?',
+    description: 'This includes daycare, babysitters, before/after school programs, or day camps (not overnight camps) while you worked or looked for work.',
+    type: 'group' as const,
+    required: false,
+    conditional: { dependsOn: 'dependents', value: 'yes' },
+    inputs: [
+      {
+        field: 'hasChildCareExpenses',
+        label: 'I paid for childcare or dependent care',
+        type: 'checkbox',
+        required: false
+      },
+      {
+        field: 'numberOfQualifyingPersons',
+        label: 'Number of qualifying children (under 13) or disabled dependents',
+        type: 'number',
+        min: 0,
+        max: 10,
+        required: false,
+        conditional: { dependsOn: 'hasChildCareExpenses', value: true }
+      },
+      {
+        field: 'careExpenses',
+        label: 'Total childcare/dependent care expenses paid',
+        type: 'currency',
+        placeholder: '0.00',
+        help: 'Maximum $3,000 for 1 person, $6,000 for 2 or more',
+        required: false,
+        conditional: { dependsOn: 'hasChildCareExpenses', value: true }
+      }
+    ]
+  },
+  {
+    id: 'education-expenses',
+    title: 'Did you or your dependents have education expenses?',
+    description: 'This includes tuition and fees for college or vocational school. You may qualify for the American Opportunity Credit or Lifetime Learning Credit.',
+    type: 'group' as const,
+    required: false,
+    conditional: { dependsOn: 'dependents', value: 'yes' },
+    inputs: [
+      {
+        field: 'hasEducationExpenses',
+        label: 'I or my dependents had qualified education expenses',
+        type: 'checkbox',
+        required: false
+      },
+      {
+        field: 'studentName',
+        label: 'Student name',
+        type: 'text',
+        required: false,
+        conditional: { dependsOn: 'hasEducationExpenses', value: true }
+      },
+      {
+        field: 'tuitionAndFees',
+        label: 'Tuition and fees paid',
+        type: 'currency',
+        placeholder: '0.00',
+        help: 'Form 1098-T from your school',
+        required: false,
+        conditional: { dependsOn: 'hasEducationExpenses', value: true }
+      },
+      {
+        field: 'yearsOfPostSecondary',
+        label: 'Years of post-secondary education completed (for AOTC)',
+        type: 'number',
+        min: 0,
+        max: 10,
+        help: 'American Opportunity Credit is limited to first 4 years',
+        required: false,
+        conditional: { dependsOn: 'hasEducationExpenses', value: true }
+      }
+    ]
+  },
+  {
     id: 'income-sources',
     title: 'What types of income did you have?',
     description: 'Select all income sources that apply to you.',
