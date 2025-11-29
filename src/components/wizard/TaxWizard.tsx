@@ -1149,9 +1149,9 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Progress bar */}
-        <div className="bg-gray-100 h-2 relative">
+        <div className="bg-gray-100 h-2 relative flex-shrink-0">
           <div
             className="bg-blue-600 h-2 transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -1161,7 +1161,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
         </div>
 
         {/* Header */}
-        <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50 flex-shrink-0">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-3">
               {currentStep?.icon && (
@@ -1214,7 +1214,7 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {currentSubsection && (
             <div className="mb-6">
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -1287,14 +1287,14 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
         </div>
 
         {/* Navigation */}
-        <div className="p-6 border-t bg-gray-50">
+        <div className="p-6 border-t bg-gray-50 flex-shrink-0">
           <div className="flex justify-between items-center">
             <button
               onClick={handlePrevious}
               disabled={isFirstQuestion}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-3 text-gray-600 border-2 border-gray-300 rounded-md hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
               Previous
             </button>
 
@@ -1317,10 +1317,10 @@ export const TaxWizard: React.FC<TaxWizardProps> = ({
 
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium shadow-md hover:shadow-lg transition-all"
             >
               {isLastStep ? 'Complete' : 'Next'}
-              {!isLastStep && <ChevronRight className="w-4 h-4" />}
+              {!isLastStep && <ChevronRight className="w-5 h-5" />}
             </button>
           </div>
 
