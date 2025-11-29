@@ -81,7 +81,7 @@ export const SpouseDialog: React.FC<SpouseDialogProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('spouseInfo.ssn')} <span className="text-red-500">*</span>
+                {t('spouseInfo.ssn')}
               </label>
               <UncontrolledInput
                 field="ssn"

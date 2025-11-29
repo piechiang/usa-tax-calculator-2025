@@ -21,7 +21,7 @@ export const interviewQuestions = [
     inputs: [
       { field: 'firstName', label: 'First Name', type: 'text', required: true },
       { field: 'lastName', label: 'Last Name', type: 'text', required: true },
-      { field: 'ssn', label: 'Social Security Number', type: 'text', placeholder: 'XXX-XX-XXXX', required: true },
+      { field: 'ssn', label: 'Social Security Number', type: 'text', placeholder: 'XXX-XX-XXXX', required: false },
       { field: 'address', label: 'Address', type: 'text', required: true }
     ]
   },

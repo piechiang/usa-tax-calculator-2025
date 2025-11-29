@@ -101,7 +101,7 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('personalInfo.ssn')} <span className="text-red-500">*</span>
+            {t('personalInfo.ssn')}
           </label>
           <UncontrolledInput
             field="ssn"
