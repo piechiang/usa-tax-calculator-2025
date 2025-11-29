@@ -897,6 +897,281 @@ export const translations: Translations = {
         tip5: "Responda a las comunicaciones del IRS de manera oportuna y completa"
       }
     }
+  },
+  'zh-TW': {
+    title: "美國稅務計算器 2025",
+    subtitle: "使用最新稅率和扣除額估算您的2025年聯邦和州所得稅。",
+    disclaimer: "僅供規劃使用。非稅務或法律建議。請諮詢專業人士進行申報。",
+    privacyNotice: "隱私聲明：所有計算均在您的瀏覽器本地運行。數據不會發送到伺服器。",
+    validation: {
+      required: "此欄位為必填項",
+      invalidSSN: "請輸入有效的社會安全號碼 (XXX-XX-XXXX)",
+      negativeAmount: "金額不能為負數",
+      tooLarge: "金額似乎過大",
+      invalidDependents: "受撫養人數必須在0到20之間"
+    },
+    tabs: {
+      personal: "個人資訊",
+      income: "收入",
+      payments: "付款",
+      deductions: "扣除額"
+    },
+    personalInfo: {
+      title: "個人資訊",
+      firstName: "名字",
+      lastName: "姓氏",
+      ssn: "社會安全號碼",
+      filingStatus: "申報狀態",
+      address: "地址",
+      dependents: "受撫養人數",
+      marylandResident: "馬里蘭州居民",
+      county: "馬里蘭縣/市",
+      filingStatuses: {
+        single: "單身",
+        marriedJointly: "已婚聯合申報",
+        marriedSeparately: "已婚分開申報",
+        headOfHousehold: "戶主"
+      },
+      placeholders: {
+        firstName: "輸入名字",
+        lastName: "輸入姓氏",
+        ssn: "XXX-XX-XXXX",
+        address: "輸入地址"
+      },
+      help: {
+        ssn: "如社會安全卡上所示",
+        dependents: "您支持的子女和其他符合條件的親屬",
+        filingStatus: "截至2025年12月31日的狀態"
+      }
+    },
+    spouseInfo: {
+      title: "配偶資訊",
+      subtitle: "如果已婚聯合申報，請填寫配偶資訊",
+      firstName: "配偶名字",
+      lastName: "配偶姓氏",
+      ssn: "配偶社會安全號碼",
+      wages: "配偶工資",
+      withholding: "配偶預扣稅",
+      recommendedFiling: "建議申報狀態："
+    },
+    income: {
+      title: "收入",
+      wages: "工資和薪金 (W-2)",
+      interestIncome: "利息收入 (1099-INT)",
+      dividends: "股息收入 (1099-DIV)",
+      capitalGains: "資本利得",
+      businessIncome: "營業收入 (附表C)",
+      otherIncome: "其他收入",
+      k1Income: "K-1 合夥企業/S公司收入",
+      k1Section: {
+        title: "K-1表格 (合夥企業/S公司)",
+        ordinaryIncome: "普通營業收入 (第1欄)",
+        netRentalRealEstate: "淨租賃不動產收入 (第2欄)",
+        otherRentalIncome: "其他租賃收入 (第3欄)",
+        guaranteedPayments: "保證付款 (第4欄)",
+        interestIncome: "利息收入 (第5欄)",
+        dividends: "普通股息 (第6A欄)",
+        royalties: "版稅 (第7欄)",
+        netShortTermCapitalGain: "淨短期資本利得 (第8A欄)",
+        netLongTermCapitalGain: "淨長期資本利得 (第9A欄)",
+        otherPortfolioIncome: "其他投資組合收入 (第11欄)"
+      },
+      businessDetails: {
+        title: "詳細營業收入 (附表C)",
+        grossReceipts: "總收入或銷售額",
+        costOfGoodsSold: "銷售成本",
+        grossProfit: "毛利",
+        businessExpenses: "營業費用總額",
+        netBusinessIncome: "淨營業收入"
+      }
+    },
+    payments: {
+      title: "稅款支付和預扣",
+      federalWithholding: "聯邦所得稅預扣 (W-2 第2欄)",
+      stateWithholding: "馬里蘭州稅預扣 (W-2 第17欄)",
+      estimatedTaxPayments: "2025年預估稅款支付",
+      priorYearOverpayment: "上一年度超額付款已申請",
+      otherPayments: "其他付款和抵免",
+      paymentSummary: "付款摘要",
+      totalPayments: "總付款額：",
+      federalTaxOwed: "聯邦稅欠款：",
+      stateTaxOwed: "州稅欠款：",
+      localTaxOwed: "地方稅欠款：",
+      totalTaxOwed: "總稅款欠額："
+    },
+    deductions: {
+      title: "扣除額",
+      standardDeduction: "標準扣除額：",
+      itemizeDeductions: "逐項扣除",
+      mortgageInterest: "抵押貸款利息",
+      stateLocalTaxes: "州和地方稅 (SALT) - 最高$10,000",
+      charitableContributions: "慈善捐款",
+      medicalExpenses: "醫療費用 (超過AGI的7.5%)",
+      otherItemized: "其他逐項扣除"
+    },
+    credits: {
+      title: "稅收抵免",
+      childCare: {
+        title: "兒童和受撫養人照顧抵免",
+        hasExpenses: "我支付了兒童照顧或受撫養人照顧費用",
+        numberOfQualifying: "符合條件的人數（13歲以下或殘疾）",
+        expenses: "支付的照顧費用總額",
+        maxExpenses: "最高：1人$3,000，2人或以上$6,000",
+        help: "工作期間的托兒所、保姆、課前課後項目或日間夏令營費用"
+      },
+      education: {
+        title: "教育抵免",
+        hasExpenses: "我或我的受撫養人有合格的教育費用",
+        studentName: "學生姓名",
+        tuitionAndFees: "支付的學費和費用",
+        yearsOfPostSecondary: "完成的高等教育年數",
+        helpTuition: "來自學校提供的1098-T表格",
+        helpYears: "美國機會抵免僅限於前4年",
+        aotc: "美國機會抵免",
+        llc: "終身學習抵免"
+      }
+    },
+    results: {
+      title: "稅務計算 (2025)",
+      adjustedGrossIncome: "調整後總收入：",
+      federalTaxableIncome: "聯邦應稅收入：",
+      federalTax: "聯邦稅：",
+      marylandTax: "馬里蘭州稅：",
+      localTax: "地方稅：",
+      totalTax: "總稅款：",
+      totalPayments: "總付款額：",
+      refundAmount: "退款金額：",
+      amountOwed: "您應繳金額：",
+      effectiveRate: "有效稅率：",
+      marginalRate: "邊際稅率：",
+      afterTaxIncome: "稅後收入："
+    },
+    actions: {
+      title: "操作",
+      exportPDF: "匯出1040表格PDF",
+      exportJSON: "匯出稅務資料 (JSON)",
+      recalculate: "重新計算",
+      startWizard: "啟動智能稅務嚮導",
+      exitClassicMode: "退出經典模式",
+      useClassicMode: "使用經典模式",
+      importExport: "匯入/匯出",
+      reviewCheck: "審核檢查",
+      quickInterview: "快速問答",
+      advanced: "進階功能",
+      aiHelp: "AI 幫助",
+      proMode: "專業模式"
+    },
+    modernMode: {
+      welcome: "歡迎使用智能稅務申報",
+      welcomeDescription: "我們的智能嚮導將逐步引導您完成稅務申報，確保您不會錯過任何扣除額和抵免額，同時讓一切保持簡單。",
+      smartGuidance: "智能指導",
+      smartGuidanceDesc: "隨時提供上下文幫助和提示",
+      accuracyCheck: "準確性檢查",
+      accuracyCheckDesc: "內建驗證和優化功能",
+      easyImport: "便捷匯入",
+      easyImportDesc: "從去年或文檔匯入",
+      startTaxReturn: "開始稅務申報",
+      importData: "匯入資料",
+      importDataDesc: "從去年或文檔匯入",
+      reviewCheckTitle: "審核檢查",
+      reviewCheckDesc: "準確性和優化",
+      advancedTools: "進階工具",
+      advancedToolsDesc: "複雜申報的強大功能",
+      classicMode: "經典模式",
+      classicModeDesc: "跳轉到詳細的標籤式輸入",
+      currentSnapshot: "當前稅務概況",
+      refundBalanceDue: "退款/應繳金額",
+      refund: "退款：",
+      owe: "應繳：",
+      totalTax: "總稅款",
+      effectiveRate: "有效稅率"
+    },
+    taxBrackets: {
+      title: "2025年聯邦稅率級距",
+      taxableIncome: "應稅收入",
+      rate: "稅率"
+    },
+    marylandInfo: {
+      title: "馬里蘭稅務資訊",
+      stateRateRange: "州稅率範圍：",
+      localTaxRate: "地方稅率",
+      standardDeduction: "MD標準扣除額："
+    },
+    stateTaxSelector: {
+      title: "州稅計算器",
+      statesSupported: "個州已支援",
+      selectState: "選擇您的居住州",
+      noState: "無州稅",
+      calculateState: "計算州稅"
+    },
+    languageSelector: {
+      selectLanguage: "選擇語言",
+      currentLanguage: "當前語言："
+    },
+    advanced: {
+      title: "進階功能",
+      features: {
+        taxPlanning: {
+          title: "稅務規劃工具",
+          description: "分析不同情境並優化您的稅務策略"
+        },
+        multiYear: {
+          title: "多年度比較",
+          description: "比較多年的稅務趨勢和變化"
+        },
+        auditSupport: {
+          title: "稽核支援",
+          description: "生成文件和報告以支援稽核"
+        },
+        portfolio: {
+          title: "投資組合優化器",
+          description: "優化投資以實現稅收效率"
+        }
+      }
+    },
+    dataManagement: {
+      title: "資料管理",
+      backup: {
+        title: "備份和還原",
+        createBackup: "建立備份",
+        restoreBackup: "還原備份",
+        importBackup: "匯入備份",
+        exportBackup: "匯出備份",
+        backupName: "備份名稱",
+        backupDate: "備份日期",
+        actions: "操作",
+        restore: "還原",
+        download: "下載",
+        delete: "刪除",
+        confirmDelete: "確定要刪除此備份嗎？",
+        messages: {
+          nameRequired: "請輸入備份名稱",
+          success: "備份建立成功！",
+          checksumMismatch: "備份資料可能已損壞。校驗和不符。",
+          restoreSuccess: "資料還原成功！",
+          restoreError: "還原備份時出錯：",
+          importSuccess: "備份匯入成功！",
+          importError: "匯入備份時出錯："
+        }
+      }
+    },
+    audit: {
+      title: "稽核支援和文件",
+      documentation: "文件",
+      report: "報告",
+      checklist: "檢查清單",
+      requiredDocuments: "所需文件",
+      auditReport: "稽核報告",
+      preparationChecklist: "準備檢查清單",
+      auditTips: "稽核準備建議",
+      tips: {
+        tip1: "保持所有支援文件井然有序且易於存取",
+        tip2: "至少保留記錄3年（某些情況下為7年）",
+        tip3: "準備好解釋任何不尋常的扣除額或收入來源",
+        tip4: "如果稽核複雜，請考慮專業代表",
+        tip5: "及時且完整地回應IRS通訊"
+      }
+    }
   }
 };
 
