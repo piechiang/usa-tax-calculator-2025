@@ -138,7 +138,16 @@ export const translations: Translations = {
       title: "Actions",
       exportPDF: "Export Form 1040 PDF",
       exportJSON: "Export Tax Data (JSON)",
-      recalculate: "Recalculate"
+      recalculate: "Recalculate",
+      startWizard: "Start Smart Tax Wizard",
+      exitClassicMode: "Exit Classic Mode",
+      useClassicMode: "Use Classic Mode",
+      importExport: "Import/Export",
+      reviewCheck: "Review & Check",
+      quickInterview: "Quick Interview",
+      advanced: "Advanced",
+      aiHelp: "AI Help",
+      proMode: "Pro Mode"
     },
     taxBrackets: {
       title: "2025 Federal Tax Brackets",
@@ -381,7 +390,16 @@ export const translations: Translations = {
       title: "操作",
       exportPDF: "导出1040表格PDF",
       exportJSON: "导出税务数据 (JSON)",
-      recalculate: "重新计算"
+      recalculate: "重新计算",
+      startWizard: "启动智能税务向导",
+      exitClassicMode: "退出经典模式",
+      useClassicMode: "使用经典模式",
+      importExport: "导入/导出",
+      reviewCheck: "审核检查",
+      quickInterview: "快速问答",
+      advanced: "高级功能",
+      aiHelp: "AI 帮助",
+      proMode: "专业模式"
     },
     taxBrackets: {
       title: "2025年联邦税率级距",
@@ -624,7 +642,16 @@ export const translations: Translations = {
       title: "Acciones",
       exportPDF: "Exportar Formulario 1040 PDF",
       exportJSON: "Exportar Datos de Impuestos (JSON)",
-      recalculate: "Recalcular"
+      recalculate: "Recalcular",
+      startWizard: "Iniciar Asistente Inteligente",
+      exitClassicMode: "Salir del Modo Clásico",
+      useClassicMode: "Usar Modo Clásico",
+      importExport: "Importar/Exportar",
+      reviewCheck: "Revisar y Verificar",
+      quickInterview: "Entrevista Rápida",
+      advanced: "Avanzado",
+      aiHelp: "Ayuda IA",
+      proMode: "Modo Profesional"
     },
     taxBrackets: {
       title: "Tramos de Impuestos Federales 2025",
