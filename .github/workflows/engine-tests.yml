@@ -54,7 +54,7 @@ jobs:
           du -sh build/engine || true
 
       - name: Run engine tests with coverage
-        run: npm run test:engine -- --coverage --reporter=default --reporter=json-summary
+        run: npm run test:engine -- --coverage
 
       - name: Enforce coverage thresholds
         run: node scripts/check-coverage.mjs

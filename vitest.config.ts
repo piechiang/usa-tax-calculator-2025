@@ -8,14 +8,10 @@ export default defineConfig({
     exclude: ['node_modules', 'build'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'tests/',
-        'build/',
-        '**/*.d.ts',
-        '**/*.config.{js,ts}',
-      ],
+      reporter: ['text', 'json', 'json-summary', 'html'],
+      reportOnFailure: true,
+      include: ['src/engine/**', 'src/utils/reports/**'],
+      exclude: ['node_modules/', 'tests/', 'build/', '**/*.d.ts', '**/*.config.{js,ts}'],
     },
     testTimeout: 10000,
     hookTimeout: 10000,
