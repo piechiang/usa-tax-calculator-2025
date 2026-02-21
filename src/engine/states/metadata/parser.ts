@@ -12,8 +12,8 @@ import type {
   ConfigValidationResult,
   ConfigValidationError,
   ConfigValidationWarning,
-  FilingStatus,
 } from './schema';
+import type { FilingStatus } from '../../types';
 import { dollarsToCents } from '../../util/money';
 
 /**
@@ -118,8 +118,8 @@ export function parseStateTaxConfig(
 function validateMetadata(
   metadata: any,
   expectedStateCode: string | undefined,
-  errors: ConfigValidationError[]
-  // warnings: ConfigValidationWarning[]
+  errors: ConfigValidationError[],
+  warnings: ConfigValidationWarning[]
 ): void {
   // Required fields
   const requiredFields = ['stateCode', 'stateName', 'taxYear', 'version', 'lastUpdated', 'sources'];
@@ -188,8 +188,8 @@ function validateMetadata(
  */
 function validateStructure(
   config: any,
-  errors: ConfigValidationError[]
-  // warnings: ConfigValidationWarning[]
+  errors: ConfigValidationError[],
+  warnings: ConfigValidationWarning[]
 ): void {
   const validStructures = ['flat', 'progressive', 'hybrid'];
 
@@ -243,8 +243,8 @@ function validateStructure(
  */
 function validateBrackets(
   brackets: any,
-  errors: ConfigValidationError[]
-  // warnings: ConfigValidationWarning[]
+  errors: ConfigValidationError[],
+  warnings: ConfigValidationWarning[]
 ): void {
   if (!brackets) return;
 
@@ -373,8 +373,8 @@ function validateBrackets(
  */
 function validateDeductions(
   deduction: any,
-  errors: ConfigValidationError[]
-  // warnings: ConfigValidationWarning[]
+  errors: ConfigValidationError[],
+  warnings: ConfigValidationWarning[]
 ): void {
   if (!deduction.amounts) {
     errors.push({
@@ -416,8 +416,8 @@ function validateDeductions(
  */
 function validateAGIModifications(
   modifications: any,
-  errors: ConfigValidationError[]
-  // warnings: ConfigValidationWarning[]
+  errors: ConfigValidationError[],
+  warnings: ConfigValidationWarning[]
 ): void {
   // Validate additions
   if (modifications.additions && Array.isArray(modifications.additions)) {
@@ -436,8 +436,8 @@ function validateAGIModifications(
 function validateModificationRules(
   rules: any[],
   type: string,
-  errors: ConfigValidationError[]
-  // warnings: ConfigValidationWarning[]
+  errors: ConfigValidationError[],
+  warnings: ConfigValidationWarning[]
 ): void {
   for (let i = 0; i < rules.length; i++) {
     const rule = rules[i];
@@ -485,8 +485,8 @@ function validateModificationRules(
  */
 function validateCredits(
   credits: any[],
-  errors: ConfigValidationError[]
-  // warnings: ConfigValidationWarning[]
+  errors: ConfigValidationError[],
+  warnings: ConfigValidationWarning[]
 ): void {
   if (!Array.isArray(credits)) {
     errors.push({
@@ -549,8 +549,8 @@ function validateCredits(
  */
 function validateDocumentation(
   documentation: any,
-  errors: ConfigValidationError[]
-  // warnings: ConfigValidationWarning[]
+  errors: ConfigValidationError[],
+  warnings: ConfigValidationWarning[]
 ): void {
   if (!documentation.primaryForm) {
     errors.push({
@@ -692,8 +692,7 @@ export function generateValidationReport(validation: ConfigValidationResult): st
   if (validation.errors.length > 0) {
     lines.push('ERRORS:');
     lines.push('-'.repeat(80));
-    for (let i = 0; i < validation.errors.length; i++) {
-      const error = validation.errors[i];
+    validation.errors.forEach((error, i) => {
       lines.push(`${i + 1}. [${error.code}] ${error.message}`);
       lines.push(`   Path: ${error.path}`);
       if (error.expected) {
@@ -703,22 +702,21 @@ export function generateValidationReport(validation: ConfigValidationResult): st
         lines.push(`   Actual: ${JSON.stringify(error.actual)}`);
       }
       lines.push('');
-    }
+    });
   }
 
   // Warnings
   if (validation.warnings.length > 0) {
     lines.push('WARNINGS:');
     lines.push('-'.repeat(80));
-    for (let i = 0; i < validation.warnings.length; i++) {
-      const warning = validation.warnings[i];
+    validation.warnings.forEach((warning, i) => {
       lines.push(`${i + 1}. [${warning.code}] ${warning.message}`);
       lines.push(`   Path: ${warning.path}`);
       if (warning.suggestion) {
         lines.push(`   Suggestion: ${warning.suggestion}`);
       }
       lines.push('');
-    }
+    });
   }
 
   lines.push('='.repeat(80));

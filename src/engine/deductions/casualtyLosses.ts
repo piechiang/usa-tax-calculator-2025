@@ -153,7 +153,8 @@ export function calculateCasualtyLoss(input: CasualtyLossInput): CasualtyLossRes
       // Post-TCJA: Only federally-declared disasters are deductible
       if (!event.isFederallyDeclaredDisaster) {
         isEligible = false;
-        ineligibilityReason = 'Personal casualty losses are only deductible for federally-declared disasters (post-TCJA)';
+        ineligibilityReason =
+          'Personal casualty losses are only deductible for federally-declared disasters (post-TCJA)';
       }
     }
 
@@ -180,7 +181,7 @@ export function calculateCasualtyLoss(input: CasualtyLossInput): CasualtyLossRes
   }
 
   // Apply 10% AGI limitation
-  const agiLimit = Math.floor(agi * 0.10);
+  const agiLimit = Math.floor(agi * 0.1);
   const casualtyLossDeduction = Math.max(0, totalLossesAfter100Floor - agiLimit);
 
   return {
@@ -218,6 +219,7 @@ export function formatCasualtyLossResult(result: CasualtyLossResult): string {
   // Detail each event
   for (let i = 0; i < result.eventResults.length; i++) {
     const eventResult = result.eventResults[i];
+    if (!eventResult) continue;
     const event = eventResult.event;
 
     lines.push(`Event ${i + 1}: ${event.type} - ${event.description}`);
@@ -230,17 +232,31 @@ export function formatCasualtyLossResult(result: CasualtyLossResult): string {
       continue;
     }
 
-    lines.push(`  FMV Before: $${(event.fairMarketValueBefore / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-    lines.push(`  FMV After: $${(event.fairMarketValueAfter / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-    lines.push(`  Decrease in FMV: $${(eventResult.decreaseInFMV / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-    lines.push(`  Cost/Basis: $${(event.costOrBasis / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-    lines.push(`  Lesser Amount: $${(eventResult.lesserAmount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+    lines.push(
+      `  FMV Before: $${(event.fairMarketValueBefore / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    );
+    lines.push(
+      `  FMV After: $${(event.fairMarketValueAfter / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    );
+    lines.push(
+      `  Decrease in FMV: $${(eventResult.decreaseInFMV / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    );
+    lines.push(
+      `  Cost/Basis: $${(event.costOrBasis / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    );
+    lines.push(
+      `  Lesser Amount: $${(eventResult.lesserAmount / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    );
 
     if (eventResult.totalReimbursements > 0) {
-      lines.push(`  Reimbursements: $${(eventResult.totalReimbursements / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+      lines.push(
+        `  Reimbursements: $${(eventResult.totalReimbursements / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+      );
     }
 
-    lines.push(`  Loss After $100 Floor: $${(eventResult.lossAfter100Floor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+    lines.push(
+      `  Loss After $100 Floor: $${(eventResult.lossAfter100Floor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    );
 
     if (event.isFederallyDeclaredDisaster && event.disasterDesignation) {
       lines.push(`  ✓ Federally-Declared Disaster: ${event.disasterDesignation}`);
@@ -251,9 +267,15 @@ export function formatCasualtyLossResult(result: CasualtyLossResult): string {
 
   // Summary
   lines.push('--- Summary ---');
-  lines.push(`Total Losses (after $100 floor): $${(result.totalLossesAfter100Floor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-  lines.push(`Less: 10% AGI Limitation: $${(result.agiLimit / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-  lines.push(`Casualty Loss Deduction: $${(result.casualtyLossDeduction / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+  lines.push(
+    `Total Losses (after $100 floor): $${(result.totalLossesAfter100Floor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  );
+  lines.push(
+    `Less: 10% AGI Limitation: $${(result.agiLimit / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  );
+  lines.push(
+    `Casualty Loss Deduction: $${(result.casualtyLossDeduction / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  );
 
   return lines.join('\n');
 }
@@ -316,10 +338,7 @@ export function validateCasualtyEvent(event: CasualtyEvent): { valid: boolean; e
  * - Check disaster declaration dates
  * - Verify county/location eligibility
  */
-export function isFederalDisasterDate(
-  dateOfLoss: string,
-  disasterDesignation?: string
-): boolean {
+export function isFederalDisasterDate(dateOfLoss: string, disasterDesignation?: string): boolean {
   // Simplified: If disaster designation is provided, assume it's valid
   // In production, validate against FEMA API/database
   return !!disasterDesignation && disasterDesignation.startsWith('DR-');

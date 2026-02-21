@@ -22,51 +22,51 @@ export function createFederalTrace(
     step: 'wages',
     description: 'Wages, salaries, tips',
     formReference: 'Form 1040, Line 1',
-    inputs: { w2Wages: input.wages },
-    result: input.wages,
-    resultFormatted: formatCents(input.wages),
+    inputs: { w2Wages: input.income.wages },
+    result: input.income.wages,
+    resultFormatted: formatCents(input.income.wages),
   });
 
-  if (input.taxableInterest > 0) {
+  if (input.income.interest > 0) {
     builder.addEntry({
       step: 'interest',
       description: 'Taxable interest',
       formReference: 'Form 1040, Line 2b',
-      inputs: { interest: input.taxableInterest },
-      result: input.taxableInterest,
-      resultFormatted: formatCents(input.taxableInterest),
+      inputs: { interest: input.income.interest },
+      result: input.income.interest,
+      resultFormatted: formatCents(input.income.interest),
     });
   }
 
-  if (input.qualifiedDividends > 0 || input.ordinaryDividends > 0) {
+  if (input.income.dividends.qualified > 0 || input.income.dividends.ordinary > 0) {
     builder.addEntry({
       step: 'dividends',
       description: 'Dividends',
       formReference: 'Form 1040, Line 3',
       inputs: {
-        ordinary: input.ordinaryDividends,
-        qualified: input.qualifiedDividends,
+        ordinary: input.income.dividends.ordinary,
+        qualified: input.income.dividends.qualified,
       },
-      result: input.ordinaryDividends,
-      resultFormatted: formatCents(input.ordinaryDividends),
+      result: input.income.dividends.ordinary,
+      resultFormatted: formatCents(input.income.dividends.ordinary),
     });
   }
 
-  if (input.capitalGains?.totalCapitalGain) {
+  if (input.income.capGainsNet !== 0) {
     builder.addEntry({
       step: 'capital_gains',
       description: 'Capital gains',
       formReference: 'Form 1040, Line 7',
       inputs: {
-        shortTerm: input.capitalGains.shortTermGain || 0,
-        longTerm: input.capitalGains.longTermGain || 0,
+        shortTerm: input.income.capitalGainsDetail.shortTerm,
+        longTerm: input.income.capitalGainsDetail.longTerm,
       },
-      result: input.capitalGains.totalCapitalGain,
-      resultFormatted: formatCents(input.capitalGains.totalCapitalGain),
+      result: input.income.capGainsNet,
+      resultFormatted: formatCents(input.income.capGainsNet),
     });
   }
 
-  if (input.income?.scheduleCNet) {
+  if (input.income.scheduleCNet) {
     builder.addEntry({
       step: 'schedule_c_net',
       description: 'Business income (Schedule C)',
@@ -77,16 +77,32 @@ export function createFederalTrace(
     });
   }
 
+  // Compute totalIncome from inputs since FederalResult2025 doesn't expose it
+  const totalIncome =
+    input.income.wages +
+    input.income.interest +
+    input.income.dividends.ordinary +
+    input.income.capGainsNet +
+    input.income.scheduleCNet +
+    input.income.k1.ordinaryBusinessIncome +
+    input.income.k1.passiveIncome +
+    input.income.k1.portfolioIncome +
+    input.income.other.otherIncome +
+    input.income.other.royalties +
+    input.income.other.guaranteedPayments;
+
   builder.addEntry({
     step: 'total_income',
     description: 'Total Income',
     formReference: 'Form 1040, Line 9',
-    result: result.totalIncome,
-    resultFormatted: formatCents(result.totalIncome),
+    result: totalIncome,
+    resultFormatted: formatCents(totalIncome),
   });
 
   // Section 2: Adjustments to Income (Schedule 1)
-  if (result.adjustments && result.adjustments > 0) {
+  // Compute adjustments as AGI minus totalIncome (derived)
+  const adjustmentsTotal = result.agi - totalIncome;
+  if (adjustmentsTotal !== 0) {
     builder.startSection('adjustments', 'Adjustments to Income', 'Schedule 1, Part II').addEntry({
       step: 'total_adjustments',
       description: 'Total adjustments to income',
@@ -99,8 +115,8 @@ export function createFederalTrace(
         selfEmployedRetirement: input.adjustments?.selfEmployedRetirement || 0,
         selfEmployedHealthInsurance: input.adjustments?.selfEmployedHealthInsurance || 0,
       },
-      result: result.adjustments,
-      resultFormatted: formatCents(result.adjustments),
+      result: adjustmentsTotal,
+      resultFormatted: formatCents(adjustmentsTotal),
     });
   }
 
@@ -111,25 +127,30 @@ export function createFederalTrace(
     formReference: 'Form 1040, Line 11',
     formula: 'Total Income - Adjustments',
     inputs: {
-      totalIncome: result.totalIncome,
-      adjustments: result.adjustments || 0,
+      totalIncome,
+      adjustments: adjustmentsTotal,
     },
     result: result.agi,
     resultFormatted: formatCents(result.agi),
   });
 
   // Section 4: Deductions
+  const usedDeduction =
+    result.deductionType === 'itemized'
+      ? (result.itemizedDeduction ?? result.standardDeduction)
+      : result.standardDeduction;
+
   builder.startSection('deductions', 'Deductions', 'Form 1040, Line 12').addEntry({
     step: 'deduction',
-    description: result.itemizedDeductions > 0 ? 'Itemized deductions' : 'Standard deduction',
+    description: result.deductionType === 'itemized' ? 'Itemized deductions' : 'Standard deduction',
     formReference: 'Form 1040, Line 12',
     inputs: {
       standardDeduction: result.standardDeduction,
-      itemizedDeductions: result.itemizedDeductions,
+      itemizedDeductions: result.itemizedDeduction ?? 0,
     },
     formula: 'max(Standard, Itemized)',
-    result: result.totalDeduction,
-    resultFormatted: formatCents(result.totalDeduction),
+    result: usedDeduction,
+    resultFormatted: formatCents(usedDeduction),
   });
 
   // Section 5: Taxable Income
@@ -140,7 +161,7 @@ export function createFederalTrace(
     formula: 'AGI - Deductions',
     inputs: {
       agi: result.agi,
-      deduction: result.totalDeduction,
+      deduction: usedDeduction,
     },
     result: result.taxableIncome,
     resultFormatted: formatCents(result.taxableIncome),
@@ -149,47 +170,24 @@ export function createFederalTrace(
   // Section 6: Tax Calculation
   builder.startSection('tax', 'Tax Calculation', 'Form 1040, Line 16');
 
-  if (result.ordinaryIncomeTax > 0) {
-    builder.addEntry({
-      step: 'ordinary_tax',
-      description: 'Tax on ordinary income',
-      formReference: 'Tax Table/Computation Worksheet',
-      inputs: {
-        ordinaryIncome:
-          result.taxableIncome -
-          (input.qualifiedDividends || 0) -
-          (input.capitalGains?.longTermGain || 0),
-        filingStatus: input.filingStatus,
-      },
-      result: result.ordinaryIncomeTax,
-      resultFormatted: formatCents(result.ordinaryIncomeTax),
-    });
-  }
-
-  if (result.capitalGainsTax && result.capitalGainsTax > 0) {
-    builder.addEntry({
-      step: 'ltcg_tax',
-      description: 'Tax on long-term capital gains',
-      formReference: 'Qualified Dividends and Capital Gain Tax Worksheet',
-      inputs: {
-        ltcg: input.capitalGains?.longTermGain || 0,
-        qualifiedDividends: input.qualifiedDividends || 0,
-      },
-      result: result.capitalGainsTax,
-      resultFormatted: formatCents(result.capitalGainsTax),
-    });
-  }
-
+  // taxBeforeCredits represents the computed income + cap gains tax
   builder.addEntry({
     step: 'income_tax',
-    description: 'Total income tax',
+    description: 'Total income tax (before credits)',
     formReference: 'Form 1040, Line 16',
-    result: result.incomeTax,
-    resultFormatted: formatCents(result.incomeTax),
+    inputs: {
+      taxableIncome: result.taxableIncome,
+      filingStatus: input.filingStatus,
+      qualifiedDividends: input.income.dividends.qualified,
+      longTermCapGains: input.income.capitalGainsDetail.longTerm,
+    },
+    result: result.taxBeforeCredits,
+    resultFormatted: formatCents(result.taxBeforeCredits),
   });
 
   // Section 7: Other Taxes
-  if (result.selfEmploymentTax && result.selfEmploymentTax > 0) {
+  const seTax = result.additionalTaxes?.seTax ?? 0;
+  if (seTax > 0) {
     builder.startSection('other_taxes', 'Other Taxes', 'Schedule 2').addEntry({
       step: 'se_tax',
       description: 'Self-employment tax',
@@ -197,13 +195,16 @@ export function createFederalTrace(
       inputs: {
         scheduleCNet: input.income?.scheduleCNet || 0,
       },
-      result: result.selfEmploymentTax,
-      resultFormatted: formatCents(result.selfEmploymentTax),
+      result: seTax,
+      resultFormatted: formatCents(seTax),
     });
   }
 
   // Section 8: Credits
-  if (result.childTaxCredit && result.childTaxCredit > 0) {
+  const ctc = result.credits.ctc ?? 0;
+  const eitc = result.credits.eitc ?? 0;
+
+  if (ctc > 0) {
     builder.startSection('credits', 'Tax Credits', 'Form 1040, Line 19-20');
 
     builder.addEntry({
@@ -214,12 +215,12 @@ export function createFederalTrace(
         qualifyingChildren: input.qualifyingChildren?.length || 0,
         magi: result.agi,
       },
-      result: result.childTaxCredit,
-      resultFormatted: formatCents(result.childTaxCredit),
+      result: ctc,
+      resultFormatted: formatCents(ctc),
     });
   }
 
-  if (result.earnedIncomeCredit && result.earnedIncomeCredit > 0) {
+  if (eitc > 0) {
     builder.addEntry({
       step: 'eitc',
       description: 'Earned Income Credit',
@@ -228,44 +229,49 @@ export function createFederalTrace(
         earnedIncome: (input.income?.wages || 0) + (input.income?.scheduleCNet || 0),
         qualifyingChildren: input.qualifyingChildren?.length || 0,
       },
-      result: result.earnedIncomeCredit,
-      resultFormatted: formatCents(result.earnedIncomeCredit),
+      result: eitc,
+      resultFormatted: formatCents(eitc),
     });
   }
 
   // Section 9: Total Tax
+  const medicareSurtax = result.additionalTaxes?.medicareSurtax ?? 0;
+
   builder.startSection('total_tax', 'Total Tax', 'Form 1040, Line 24').addEntry({
     step: 'total_tax',
     description: 'Total tax',
     formReference: 'Form 1040, Line 24',
     formula: 'Income Tax + Other Taxes - Credits',
     inputs: {
-      incomeTax: result.incomeTax,
-      otherTaxes: (result.selfEmploymentTax || 0) + (result.additionalMedicareTax || 0),
-      credits: (result.childTaxCredit || 0) + (result.earnedIncomeCredit || 0),
+      taxBeforeCredits: result.taxBeforeCredits,
+      otherTaxes: seTax + medicareSurtax,
+      credits: ctc + eitc,
     },
     result: result.totalTax,
     resultFormatted: formatCents(result.totalTax),
   });
 
   // Section 10: Payments
+  const federalWithheld = input.payments.federalWithheld;
+  const estPayments = input.payments.estPayments;
+
   builder.startSection('payments', 'Payments', 'Form 1040, Lines 25-31').addEntry({
     step: 'federal_withholding',
     description: 'Federal income tax withheld',
     formReference: 'Form 1040, Line 25a',
-    inputs: { withholding: input.federalWithholding },
-    result: input.federalWithholding,
-    resultFormatted: formatCents(input.federalWithholding),
+    inputs: { withholding: federalWithheld },
+    result: federalWithheld,
+    resultFormatted: formatCents(federalWithheld),
   });
 
-  if (input.estimatedPayments && input.estimatedPayments > 0) {
+  if (estPayments > 0) {
     builder.addEntry({
       step: 'estimated_payments',
       description: 'Estimated tax payments',
       formReference: 'Form 1040, Line 26',
-      inputs: { payments: input.estimatedPayments },
-      result: input.estimatedPayments,
-      resultFormatted: formatCents(input.estimatedPayments),
+      inputs: { payments: estPayments },
+      result: estPayments,
+      resultFormatted: formatCents(estPayments),
     });
   }
 

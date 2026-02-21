@@ -4,13 +4,8 @@
  * Entry point for calculation tracing functionality
  */
 
-export {
-  TraceEntry,
-  TraceSection,
-  CalculationTrace,
-  TraceBuilder,
-  TraceFormatter,
-} from './types';
+export type { TraceEntry, TraceSection, CalculationTrace } from './types';
+export { TraceBuilder, TraceFormatter } from './types';
 
 export { createFederalTrace } from './federalTrace';
 export { exportTraceToJSON, exportTraceToText, exportTraceToPDF } from './exporters';

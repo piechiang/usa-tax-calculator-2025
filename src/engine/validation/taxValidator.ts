@@ -192,7 +192,8 @@ function validateIncome(
   }
 
   // Check for capital loss carryover (info)
-  if (input.income.capGainsNet < -300000) { // -$3,000 limit
+  if (input.income.capGainsNet < -300000) {
+    // -$3,000 limit
     const diagnostic = INCOME_DIAGNOSTICS.NEGATIVE_CAPITAL_LOSS_CARRYOVER!;
     info.push({
       code: diagnostic.code,
@@ -232,7 +233,7 @@ function validateIncome(
   // Check W-2 wages exceeding SS wage base
   const SS_WAGE_BASE_2025 = 17610000; // $176,100 in cents
   if (input.income.wages > SS_WAGE_BASE_2025) {
-    const diagnostic = INCOME_DIAGNOSTICS.W2_EXCEEDS_WAGE_BASE;
+    const diagnostic = INCOME_DIAGNOSTICS.W2_EXCEEDS_WAGE_BASE!;
     warnings.push({
       code: diagnostic.code,
       message: diagnostic.message,

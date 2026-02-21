@@ -30,7 +30,7 @@ export function calculateStateFromMetadata(
   config: StateTaxConfig
 ): StateResult {
   // Step 1: Calculate state AGI
-  // const stateAGI = calculateStateAGI(input, config);
+  const stateAGI = calculateStateAGI(input, config);
 
   // Step 2: Calculate deductions
   const deduction = calculateDeduction(input, stateAGI, config);
@@ -42,7 +42,12 @@ export function calculateStateFromMetadata(
   const baseTax = calculateBaseTax(input.filingStatus, taxableIncome, config);
 
   // Step 5: Calculate special taxes (if any)
-  const specialTaxAmount = calculateSpecialTaxes(input.filingStatus, stateAGI, taxableIncome, config);
+  const specialTaxAmount = calculateSpecialTaxes(
+    input.filingStatus,
+    stateAGI,
+    taxableIncome,
+    config
+  );
 
   // Step 6: Total tax before credits
   const totalTaxBeforeCredits = addCents(baseTax, specialTaxAmount);
@@ -58,19 +63,11 @@ export function calculateStateFromMetadata(
   const totalStateLiability = addCents(netStateTax, localTax);
 
   // Step 10: Calculate payments and refund/owe
-  const payments = addCents(
-    input.stateWithheld || 0,
-    input.stateEstPayments || 0
-  );
+  const payments = addCents(input.stateWithheld || 0, input.stateEstPayments || 0);
   const refundOrOwe = payments + credits.refundableCredits - totalStateLiability;
 
   // Step 11: Build calculation notes
-  const calculationNotes = buildCalculationNotes(
-    config,
-    deduction,
-    specialTaxAmount,
-    credits
-  );
+  const calculationNotes = buildCalculationNotes(config, deduction, specialTaxAmount, credits);
 
   return {
     stateAGI,
@@ -87,19 +84,16 @@ export function calculateStateFromMetadata(
     taxYear: config.metadata.taxYear,
     formReferences: [
       config.documentation.primaryForm,
-      ...(config.documentation.additionalForms || [])
+      ...(config.documentation.additionalForms || []),
     ],
-    calculationNotes
+    calculationNotes,
   };
 }
 
 /**
  * Calculate state AGI from federal AGI with state-specific modifications
  */
-function calculateStateAGI(
-  input: StateTaxInput,
-  config: StateTaxConfig
-): number {
+function calculateStateAGI(input: StateTaxInput, config: StateTaxConfig): number {
   let stateAGI = input.federalResult.agi;
 
   // Apply additions to federal AGI
@@ -124,14 +118,12 @@ function calculateStateAGI(
 /**
  * Apply a single AGI modification rule
  */
-function applyAGIModification(
-  input: StateTaxInput,
-  rule: AGIModificationRule
-): number {
+function applyAGIModification(input: StateTaxInput, rule: AGIModificationRule): number {
   // Get the input value (if user provided it)
-  const inputValue = input.stateAdditions?.[rule.inputField || ''] ||
-                    input.stateSubtractions?.[rule.inputField || ''] ||
-                    0;
+  const additionsMap = input.stateAdditions as Record<string, number | undefined> | undefined;
+  const subtractionsMap = input.stateSubtractions as Record<string, number | undefined> | undefined;
+  const inputValue =
+    additionsMap?.[rule.inputField || ''] || subtractionsMap?.[rule.inputField || ''] || 0;
 
   if (!inputValue && rule.requiresInput) {
     return 0; // No input provided, no modification
@@ -179,10 +171,7 @@ function applyAGIModification(
 /**
  * Evaluate modification conditions
  */
-function evaluateConditions(
-  input: StateTaxInput,
-  conditions: any[]
-): boolean {
+function evaluateConditions(input: StateTaxInput, conditions: any[]): boolean {
   for (const condition of conditions) {
     const result = evaluateCondition(input, condition);
     if (!result) {
@@ -195,27 +184,30 @@ function evaluateConditions(
 /**
  * Evaluate a single condition
  */
-function evaluateCondition(
-  input: StateTaxInput,
-  condition: any
-): boolean {
+function evaluateCondition(input: StateTaxInput, condition: any): boolean {
   // Simplified condition evaluation
   // In production, this would be more robust
   switch (condition.type) {
     case 'filingStatus':
-      return condition.operator === 'eq' ?
-        input.filingStatus === condition.value :
-        input.filingStatus !== condition.value;
+      return condition.operator === 'eq'
+        ? input.filingStatus === condition.value
+        : input.filingStatus !== condition.value;
 
     case 'income':
       const agi = input.federalResult.agi;
       switch (condition.operator) {
-        case 'gt': return agi > condition.value;
-        case 'gte': return agi >= condition.value;
-        case 'lt': return agi < condition.value;
-        case 'lte': return agi <= condition.value;
-        case 'eq': return agi === condition.value;
-        default: return false;
+        case 'gt':
+          return agi > condition.value;
+        case 'gte':
+          return agi >= condition.value;
+        case 'lt':
+          return agi < condition.value;
+        case 'lte':
+          return agi <= condition.value;
+        case 'eq':
+          return agi === condition.value;
+        default:
+          return false;
       }
 
     case 'age':
@@ -276,25 +268,25 @@ function calculateItemizedDeductions(
 
   // SALT deduction
   if (config.itemizedDeductions.deductions.salt?.allowed) {
-    const saltAmount = input.itemized?.stateLocalTaxes || 0;
+    const saltAmount = input.stateItemized?.propertyTaxes || 0;
     const saltLimit = config.itemizedDeductions.deductions.salt.limit;
     itemized = addCents(itemized, saltLimit ? Math.min(saltAmount, saltLimit) : saltAmount);
   }
 
   // Mortgage interest
   if (config.itemizedDeductions.deductions.mortgageInterest?.allowed) {
-    itemized = addCents(itemized, input.itemized?.mortgageInterest || 0);
+    itemized = addCents(itemized, input.stateItemized?.mortgageInterest || 0);
   }
 
   // Charitable
   if (config.itemizedDeductions.deductions.charitable?.allowed) {
-    itemized = addCents(itemized, input.itemized?.charitable || 0);
+    itemized = addCents(itemized, input.stateItemized?.charitableContributions || 0);
   }
 
   // Medical
   if (config.itemizedDeductions.deductions.medical?.allowed) {
     const threshold = config.itemizedDeductions.deductions.medical.agiThresholdPercentage;
-    const medicalExpenses = input.itemized?.medical || 0;
+    const medicalExpenses = input.stateItemized?.medicalExpenses || 0;
     const medicalFloor = multiplyCents(stateAGI, threshold);
     const deductibleMedical = max0(medicalExpenses - medicalFloor);
     itemized = addCents(itemized, deductibleMedical);
@@ -328,10 +320,7 @@ function calculateBaseTax(
 /**
  * Calculate tax from progressive brackets
  */
-function calculateTaxFromBrackets(
-  taxableIncome: number,
-  brackets: TaxBracket[]
-): number {
+function calculateTaxFromBrackets(taxableIncome: number, brackets: TaxBracket[]): number {
   let totalTax = 0;
 
   for (const bracket of brackets) {
@@ -339,10 +328,7 @@ function calculateTaxFromBrackets(
       break; // Below this bracket
     }
 
-    const taxableInBracket = Math.min(
-      taxableIncome - bracket.min,
-      bracket.max - bracket.min
-    );
+    const taxableInBracket = Math.min(taxableIncome - bracket.min, bracket.max - bracket.min);
 
     const taxInBracket = multiplyCents(taxableInBracket, bracket.rate);
     totalTax = addCents(totalTax, taxInBracket);
@@ -418,7 +404,7 @@ function calculateCredits(
 ): StateCredits {
   const result: StateCredits = {
     nonRefundableCredits: 0,
-    refundableCredits: 0
+    refundableCredits: 0,
   };
 
   if (!config.credits || config.credits.length === 0) {
@@ -459,7 +445,7 @@ function calculateCredits(
     if (creditConfig.category === 'earnedIncome') {
       result.earned_income = finalCreditAmount;
     } else if (creditConfig.category === 'child') {
-      result.child_dependent_care = finalCreditAmount;
+      result.child_dependent = finalCreditAmount;
     } else {
       result.other_credits = addCents(result.other_credits || 0, finalCreditAmount);
     }
@@ -673,21 +659,25 @@ function buildCalculationNotes(
 
   // Add structure note
   if (config.structure === 'flat') {
-    notes.push(`${config.metadata.stateName} uses a flat tax rate of ${(config.flatRate! * 100).toFixed(2)}%`);
+    notes.push(
+      `${config.metadata.stateName} uses a flat tax rate of ${(config.flatRate! * 100).toFixed(2)}%`
+    );
   } else if (config.structure === 'progressive') {
     notes.push(`${config.metadata.stateName} uses progressive tax brackets`);
   }
 
   // Deduction note
   if (deduction > 0) {
-    notes.push(`Standard deduction applied: ${(deduction / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`);
+    notes.push(
+      `Standard deduction applied: ${(deduction / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`
+    );
   } else if (config.standardDeduction?.available === false) {
     notes.push('No standard deduction available in this state');
   }
 
   // Special tax note
   if (specialTaxAmount > 0 && config.specialTaxes && config.specialTaxes.length > 0) {
-    notes.push(`Special taxes applied: ${config.specialTaxes.map(t => t.name).join(', ')}`);
+    notes.push(`Special taxes applied: ${config.specialTaxes.map((t) => t.name).join(', ')}`);
   }
 
   // Credits note

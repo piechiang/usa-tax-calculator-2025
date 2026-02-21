@@ -26,23 +26,34 @@ export function exportTraceToText(trace: CalculationTrace): string {
  *
  * TODO: Integrate with pdfmake to generate professional PDF reports
  */
-export function exportTraceToPDF(trace: CalculationTrace): Uint8Array {
-  throw new Error('PDF export not yet implemented. Use exportTraceToText() or exportTraceToJSON() instead.');
+export function exportTraceToPDF(_trace: CalculationTrace): Uint8Array {
+  throw new Error(
+    'PDF export not yet implemented. Use exportTraceToText() or exportTraceToJSON() instead.'
+  );
 }
 
 /**
- * Export trace to downloadable file
+ * Export trace to downloadable file (browser environments only).
+ * Accesses DOM APIs via globalThis to remain compatible with non-browser builds.
  */
 export function downloadTrace(trace: CalculationTrace, format: 'json' | 'txt' = 'txt'): void {
-  const content = format === 'json' ? exportTraceToJSON(trace) : exportTraceToText(trace);
-  const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/plain' });
-  const url = URL.createObjectURL(blob);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const g = globalThis as any;
+  if (typeof g.document === 'undefined' || typeof g.Blob === 'undefined') {
+    throw new Error('downloadTrace() requires a browser environment');
+  }
 
-  const a = document.createElement('a');
+  const content = format === 'json' ? exportTraceToJSON(trace) : exportTraceToText(trace);
+  const blob = new g.Blob([content], {
+    type: format === 'json' ? 'application/json' : 'text/plain',
+  }) as { size: number };
+  const url = (g.URL.createObjectURL as (b: typeof blob) => string)(blob);
+
+  const a = g.document.createElement('a') as { href: string; download: string; click(): void };
   a.href = url;
   a.download = `tax-trace-${trace.metadata.taxYear}-${trace.metadata.taxpayerId || 'unknown'}.${format}`;
-  document.body.appendChild(a);
+  g.document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  g.document.body.removeChild(a);
+  (g.URL.revokeObjectURL as (url: string) => void)(url);
 }

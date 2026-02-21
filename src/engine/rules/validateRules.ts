@@ -26,7 +26,12 @@ export function validateTaxBrackets(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const filingStatuses: FilingStatus[] = ['single', 'marriedJointly', 'marriedSeparately', 'headOfHousehold'];
+  const filingStatuses: FilingStatus[] = [
+    'single',
+    'marriedJointly',
+    'marriedSeparately',
+    'headOfHousehold',
+  ];
 
   for (const status of filingStatuses) {
     const statusBrackets = brackets[status];
@@ -37,8 +42,9 @@ export function validateTaxBrackets(
     }
 
     // 检查：第一个税档应该从0开始
-    if (statusBrackets[0].min !== 0) {
-      errors.push(`${status}: First bracket should start at 0, got ${statusBrackets[0].min}`);
+    const firstBracket = statusBrackets[0];
+    if (firstBracket && firstBracket.min !== 0) {
+      errors.push(`${status}: First bracket should start at 0, got ${firstBracket.min}`);
     }
 
     // 检查：税档应该连续（没有间隙）
@@ -46,7 +52,7 @@ export function validateTaxBrackets(
       const current = statusBrackets[i];
       const next = statusBrackets[i + 1];
 
-      if (current.max !== next.min) {
+      if (current && next && current.max !== next.min) {
         errors.push(
           `${status}: Gap in brackets between ${current.max} and ${next.min} (bracket ${i} to ${i + 1})`
         );
@@ -55,14 +61,14 @@ export function validateTaxBrackets(
 
     // 检查：最后一个税档应该到Infinity
     const lastBracket = statusBrackets[statusBrackets.length - 1];
-    if (lastBracket.max !== Infinity) {
+    if (lastBracket && lastBracket.max !== Infinity) {
       errors.push(`${status}: Last bracket should extend to Infinity, got ${lastBracket.max}`);
     }
 
     // 检查：税率应该在有效范围内 (0% - 100%)
     for (let i = 0; i < statusBrackets.length; i++) {
       const bracket = statusBrackets[i];
-      if (bracket.rate < 0 || bracket.rate > 1) {
+      if (bracket && (bracket.rate < 0 || bracket.rate > 1)) {
         errors.push(
           `${status}: Invalid tax rate ${bracket.rate} in bracket ${i} (should be between 0 and 1)`
         );
@@ -74,7 +80,7 @@ export function validateTaxBrackets(
       const current = statusBrackets[i];
       const next = statusBrackets[i + 1];
 
-      if (current.rate > next.rate) {
+      if (current && next && current.rate > next.rate) {
         warnings.push(
           `${status}: Tax rate decreases from bracket ${i} (${current.rate}) to ${i + 1} (${next.rate})`
         );
@@ -83,9 +89,7 @@ export function validateTaxBrackets(
 
     // 检查：2025年应该有7个税档
     if (year === 2025 && statusBrackets.length !== 7) {
-      warnings.push(
-        `${status}: Expected 7 tax brackets for 2025, got ${statusBrackets.length}`
-      );
+      warnings.push(`${status}: Expected 7 tax brackets for 2025, got ${statusBrackets.length}`);
     }
   }
 
@@ -107,7 +111,12 @@ export function validateStandardDeductions(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const filingStatuses: FilingStatus[] = ['single', 'marriedJointly', 'marriedSeparately', 'headOfHousehold'];
+  const filingStatuses: FilingStatus[] = [
+    'single',
+    'marriedJointly',
+    'marriedSeparately',
+    'headOfHousehold',
+  ];
 
   for (const status of filingStatuses) {
     const deduction = deductions[status];
@@ -138,9 +147,7 @@ export function validateStandardDeductions(
   if (single && mfj) {
     const ratio = mfj / single;
     if (ratio < 1.8 || ratio > 2.2) {
-      warnings.push(
-        `MFJ to Single ratio is ${ratio.toFixed(2)}, expected around 2.0`
-      );
+      warnings.push(`MFJ to Single ratio is ${ratio.toFixed(2)}, expected around 2.0`);
     }
   }
 
@@ -148,9 +155,7 @@ export function validateStandardDeductions(
   const hoh = deductions.headOfHousehold;
   if (single && mfj && hoh) {
     if (hoh <= single || hoh >= mfj) {
-      warnings.push(
-        `Head of Household deduction should be between Single and MFJ`
-      );
+      warnings.push(`Head of Household deduction should be between Single and MFJ`);
     }
   }
 
@@ -172,7 +177,12 @@ export function validateCreditThresholds(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const filingStatuses: FilingStatus[] = ['single', 'marriedJointly', 'marriedSeparately', 'headOfHousehold'];
+  const filingStatuses: FilingStatus[] = [
+    'single',
+    'marriedJointly',
+    'marriedSeparately',
+    'headOfHousehold',
+  ];
 
   for (const status of filingStatuses) {
     const threshold = thresholds[status];
@@ -218,7 +228,13 @@ export function validateEITC(eitc: any): ValidationResult {
   const warnings: string[] = [];
 
   // 检查：必需的字段
-  const requiredFields = ['maxCredits', 'phaseInRates', 'plateauAmounts', 'phaseOutStarts', 'phaseOutRates'];
+  const requiredFields = [
+    'maxCredits',
+    'phaseInRates',
+    'plateauAmounts',
+    'phaseOutStarts',
+    'phaseOutRates',
+  ];
   for (const field of requiredFields) {
     if (!eitc[field]) {
       errors.push(`Missing required EITC field: ${field}`);
@@ -327,7 +343,10 @@ export function validateTaxYearRules(year: number): void {
 
     // 验证标准扣除
     if (rules.STANDARD_DEDUCTION_2025) {
-      results['Standard Deductions'] = validateStandardDeductions(rules.STANDARD_DEDUCTION_2025, year);
+      results['Standard Deductions'] = validateStandardDeductions(
+        rules.STANDARD_DEDUCTION_2025,
+        year
+      );
     }
 
     // 验证CTC阈值
@@ -356,7 +375,7 @@ export function validateTaxYearRules(year: number): void {
     console.log(report);
 
     // 如果有错误，退出并返回错误码
-    const hasErrors = Object.values(results).some(r => !r.valid);
+    const hasErrors = Object.values(results).some((r) => !r.valid);
     if (hasErrors) {
       process.exit(1);
     }
@@ -368,7 +387,7 @@ export function validateTaxYearRules(year: number): void {
 
 // 如果直接运行此脚本
 if (require.main === module) {
-  // const year = parseInt(process.argv[2] || '2025');
+  const year = parseInt(process.argv[2] || '2025', 10);
   console.log(`验证 ${year} 年税法规则... / Validating ${year} tax rules...\n`);
   validateTaxYearRules(year);
 }
