@@ -18,7 +18,7 @@ interface ValidatedInputProps {
   'aria-label'?: string;
 }
 
-export const ValidatedInput: React.FC<ValidatedInputProps> = ({
+const ValidatedInputComponent: React.FC<ValidatedInputProps> = ({
   field,
   value,
   onChange,
@@ -30,7 +30,7 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
   max,
   help,
   className = '',
-  'aria-label': ariaLabel
+  'aria-label': ariaLabel,
 }) => {
   const [localValue, setLocalValue] = useState<string>(value?.toString() || '');
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +73,9 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
         max={max}
         aria-label={ariaLabel}
         aria-invalid={hasError ? 'true' : 'false'}
-        aria-describedby={help && !hasError ? `${field}-help` : hasError ? `${field}-error` : undefined}
+        aria-describedby={
+          help && !hasError ? `${field}-help` : hasError ? `${field}-error` : undefined
+        }
         className={`w-full px-3 py-2 border ${
           hasError ? 'border-red-300' : 'border-gray-300'
         } rounded-md focus:outline-none focus:ring-2 ${
@@ -82,7 +84,11 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
       />
 
       {hasError && (
-        <div id={`${field}-error`} className="flex items-center gap-1 text-red-600 text-xs" role="alert">
+        <div
+          id={`${field}-error`}
+          className="flex items-center gap-1 text-red-600 text-xs"
+          role="alert"
+        >
           <AlertCircle className="h-3 w-3" aria-hidden="true" />
           <span>{error}</span>
         </div>
@@ -97,10 +103,13 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
   );
 };
 
+// Memoize to prevent unnecessary re-renders
+export const ValidatedInput = React.memo(ValidatedInputComponent);
+
 interface UncontrolledInputProps {
   field: string;
-  defaultValue: string | number;
-  onChange: (field: string, value: string) => void;
+  defaultValue?: string | number;
+  onChange?: (field: string, value: string) => void;
   type?: string;
   placeholder?: string;
   step?: string;
@@ -111,7 +120,7 @@ interface UncontrolledInputProps {
   'aria-label'?: string;
 }
 
-export const UncontrolledInput: React.FC<UncontrolledInputProps> = ({
+const UncontrolledInputComponent: React.FC<UncontrolledInputProps> = ({
   field,
   defaultValue,
   onChange,
@@ -122,7 +131,7 @@ export const UncontrolledInput: React.FC<UncontrolledInputProps> = ({
   max,
   help,
   className = '',
-  'aria-label': ariaLabel
+  'aria-label': ariaLabel,
 }) => {
   const [value, setValue] = useState<string>(defaultValue?.toString() || '');
 
@@ -139,7 +148,7 @@ export const UncontrolledInput: React.FC<UncontrolledInputProps> = ({
     }
 
     setValue(newValue);
-    onChange(field, newValue);
+    onChange?.(field, newValue);
   };
 
   return (
@@ -165,3 +174,6 @@ export const UncontrolledInput: React.FC<UncontrolledInputProps> = ({
     </div>
   );
 };
+
+// Memoize to prevent unnecessary re-renders
+export const UncontrolledInput = React.memo(UncontrolledInputComponent);

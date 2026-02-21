@@ -21,28 +21,28 @@ import { multiplyCents } from '../../../util/money';
  */
 export const OR_BRACKETS_2025 = {
   single: [
-    { threshold: 0, rate: 0.0475 },        // 4.75% on $0 - $4,400
-    { threshold: 440000, rate: 0.0675 },   // 6.75% on $4,401 - $11,050
-    { threshold: 1105000, rate: 0.0875 },  // 8.75% on $11,051 - $125,000
-    { threshold: 12500000, rate: 0.0990 }, // 9.90% on $125,001+
+    { threshold: 0, rate: 0.0475 }, // 4.75% on $0 - $4,400
+    { threshold: 440000, rate: 0.0675 }, // 6.75% on $4,401 - $11,050
+    { threshold: 1105000, rate: 0.0875 }, // 8.75% on $11,051 - $125,000
+    { threshold: 12500000, rate: 0.099 }, // 9.90% on $125,001+
   ],
   marriedJointly: [
-    { threshold: 0, rate: 0.0475 },        // 4.75% on $0 - $8,800
-    { threshold: 880000, rate: 0.0675 },   // 6.75% on $8,801 - $22,100
-    { threshold: 2210000, rate: 0.0875 },  // 8.75% on $22,101 - $250,000
-    { threshold: 25000000, rate: 0.0990 }, // 9.90% on $250,001+
+    { threshold: 0, rate: 0.0475 }, // 4.75% on $0 - $8,800
+    { threshold: 880000, rate: 0.0675 }, // 6.75% on $8,801 - $22,100
+    { threshold: 2210000, rate: 0.0875 }, // 8.75% on $22,101 - $250,000
+    { threshold: 25000000, rate: 0.099 }, // 9.90% on $250,001+
   ],
   marriedSeparately: [
-    { threshold: 0, rate: 0.0475 },        // 4.75% on $0 - $4,400
-    { threshold: 440000, rate: 0.0675 },   // 6.75% on $4,401 - $11,050
-    { threshold: 1105000, rate: 0.0875 },  // 8.75% on $11,051 - $125,000
-    { threshold: 12500000, rate: 0.0990 }, // 9.90% on $125,001+
+    { threshold: 0, rate: 0.0475 }, // 4.75% on $0 - $4,400
+    { threshold: 440000, rate: 0.0675 }, // 6.75% on $4,401 - $11,050
+    { threshold: 1105000, rate: 0.0875 }, // 8.75% on $11,051 - $125,000
+    { threshold: 12500000, rate: 0.099 }, // 9.90% on $125,001+
   ],
   headOfHousehold: [
-    { threshold: 0, rate: 0.0475 },        // 4.75% on $0 - $6,600
-    { threshold: 660000, rate: 0.0675 },   // 6.75% on $6,601 - $16,600
-    { threshold: 1660000, rate: 0.0875 },  // 8.75% on $16,601 - $187,500
-    { threshold: 18750000, rate: 0.0990 }, // 9.90% on $187,501+
+    { threshold: 0, rate: 0.0475 }, // 4.75% on $0 - $6,600
+    { threshold: 660000, rate: 0.0675 }, // 6.75% on $6,601 - $16,600
+    { threshold: 1660000, rate: 0.0875 }, // 8.75% on $16,601 - $187,500
+    { threshold: 18750000, rate: 0.099 }, // 9.90% on $187,501+
   ],
 };
 
@@ -54,10 +54,10 @@ export const OR_RULES_2025 = {
    * Standard Deduction amounts (in cents)
    */
   standardDeduction: {
-    single: 283500,           // $2,835
-    marriedJointly: 567000,   // $5,670
+    single: 283500, // $2,835
+    marriedJointly: 567000, // $5,670
     marriedSeparately: 283500, // $2,835
-    headOfHousehold: 456000,  // $4,560
+    headOfHousehold: 456000, // $4,560
   },
 
   /**
@@ -65,10 +65,10 @@ export const OR_RULES_2025 = {
    * Per person for MFJ, total for others
    */
   additionalStandardDeduction: {
-    single: 120000,           // $1,200
-    marriedJointly: 100000,   // $1,000 per eligible person
+    single: 120000, // $1,200
+    marriedJointly: 100000, // $1,000 per eligible person
     marriedSeparately: 120000, // $1,200
-    headOfHousehold: 120000,  // $1,200
+    headOfHousehold: 120000, // $1,200
   },
 
   /**
@@ -80,10 +80,10 @@ export const OR_RULES_2025 = {
     amountPerPerson: 25600, // $256 in cents
     // Income limits for claiming exemption credit
     phaseoutThreshold: {
-      single: 10000000,         // $100,000
+      single: 10000000, // $100,000
       marriedJointly: 20000000, // $200,000
       marriedSeparately: 10000000, // $100,000
-      headOfHousehold: 20000000,   // $200,000 (HOH and QSS use MFJ threshold)
+      headOfHousehold: 20000000, // $200,000 (HOH and QSS use MFJ threshold)
     },
   },
 
@@ -95,10 +95,10 @@ export const OR_RULES_2025 = {
   federalTaxDeduction: {
     enabled: true,
     maxDeduction: {
-      single: 610000,           // $6,100
-      marriedJointly: 1220000,  // $12,200
+      single: 610000, // $6,100
+      marriedJointly: 1220000, // $12,200
       marriedSeparately: 610000, // $6,100
-      headOfHousehold: 610000,  // $6,100
+      headOfHousehold: 610000, // $6,100
     },
   },
 
@@ -121,10 +121,7 @@ export const OR_RULES_2025 = {
  * @param filingStatus - Filing status
  * @returns Tax amount in cents
  */
-export function calculateOregonTax(
-  taxableIncome: number,
-  filingStatus: string
-): number {
+export function calculateOregonTax(taxableIncome: number, filingStatus: string): number {
   if (taxableIncome <= 0) return 0;
 
   let brackets;
@@ -149,6 +146,8 @@ export function calculateOregonTax(
 
   for (let i = 0; i < brackets.length; i++) {
     const bracket = brackets[i];
+    if (!bracket) continue;
+
     const nextBracket = i < brackets.length - 1 ? brackets[i + 1] : null;
 
     if (taxableIncome <= bracket.threshold) {
@@ -265,10 +264,7 @@ export function calculatePersonalExemptionCredit(
  * @param federalTaxPaid - Federal income tax paid in cents
  * @returns Federal tax deduction amount in cents
  */
-export function calculateFederalTaxDeduction(
-  filingStatus: string,
-  federalTaxPaid: number
-): number {
+export function calculateFederalTaxDeduction(filingStatus: string, federalTaxPaid: number): number {
   const { federalTaxDeduction } = OR_RULES_2025;
 
   if (!federalTaxDeduction.enabled || federalTaxPaid <= 0) {

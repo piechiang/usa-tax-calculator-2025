@@ -1,34 +1,11 @@
 // Adapter to convert UI data structures to engine format with strong typing
 import { computeFederal2025 } from '../engine';
-import type {
-  FederalInput2025,
-  FederalResult2025,
-  FilingStatus,
-} from '../engine/types';
+import type { FederalInput2025, FederalResult2025, FilingStatus } from '../engine/types';
 import type { StateResult, StateTaxInput } from '../engine/types/stateTax';
 import { safeCurrencyToCents } from '../engine/util/money';
 import { getStateCalculator } from '../engine/states/registry';
-
-// Logger utility - only logs in development mode
-const logger = {
-  log: (message: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.log(message);
-    }
-  },
-  warn: (message: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.warn(message);
-    }
-  },
-  error: (message: string, error?: unknown) => {
-    // Always log errors
-    // eslint-disable-next-line no-console
-    console.error(message, error);
-  },
-};
+import { logger } from './logger';
+import { getTaxYearConfig, DEFAULT_TAX_YEAR } from '../engine/rules/taxYearConfig';
 
 /**
  * Runtime validation error class for type-safe error handling
@@ -69,11 +46,7 @@ function validateNumber(value: number, fieldName: string): void {
 function validateNonNegative(value: number, fieldName: string): void {
   validateNumber(value, fieldName);
   if (value < 0) {
-    throw new ValidationError(
-      `${fieldName} must be non-negative, got ${value}`,
-      fieldName,
-      value
-    );
+    throw new ValidationError(`${fieldName} must be non-negative, got ${value}`, fieldName, value);
   }
 }
 
@@ -88,11 +61,7 @@ function validateFilingStatus(status: FilingStatus): void {
     'headOfHousehold',
   ];
   if (!validStatuses.includes(status)) {
-    throw new ValidationError(
-      `Invalid filing status: ${status}`,
-      'filingStatus',
-      status
-    );
+    throw new ValidationError(`Invalid filing status: ${status}`, 'filingStatus', status);
   }
 }
 
@@ -109,7 +78,6 @@ function validateFederalInput(input: FederalInput2025): void {
   validateNonNegative(input.income.dividends.qualified, 'income.dividends.qualified');
   validateNumber(input.income.capGainsNet, 'income.capGainsNet'); // Can be negative
   validateNumber(input.income.scheduleCNet, 'income.scheduleCNet'); // Can be negative
-  validateNumber(input.income.businessIncome, 'income.businessIncome'); // Can be negative
 
   // Validate payments
   validateNonNegative(input.payments.federalWithheld, 'payments.federalWithheld');
@@ -118,7 +86,9 @@ function validateFederalInput(input: FederalInput2025): void {
 
   // Ensure stateWithheld is NOT in federal payments
   if ('stateWithheld' in input.payments) {
-    const paymentsWithState = input.payments as FederalInput2025['payments'] & { stateWithheld?: number };
+    const paymentsWithState = input.payments as FederalInput2025['payments'] & {
+      stateWithheld?: number;
+    };
     throw new ValidationError(
       'stateWithheld should not be in federal payments - it belongs to state tax calculation',
       'payments.stateWithheld',
@@ -183,11 +153,7 @@ function validateStateTaxInput(input: StateTaxInput): void {
   }
 
   if (!input.state || input.state.length !== 2) {
-    throw new ValidationError(
-      `Invalid state code: ${input.state}`,
-      'state',
-      input.state
-    );
+    throw new ValidationError(`Invalid state code: ${input.state}`, 'state', input.state);
   }
 
   // Validate federal result if present
@@ -384,7 +350,7 @@ const createSpouseIncome = (spouseInfo: UISpouseInfo): PersonIncome => ({
 const buildJointIncome = (
   primaryIncome: PersonIncome,
   spouseIncome: PersonIncome | null,
-  k1Data: UIK1Data,
+  k1Data: UIK1Data
 ): FederalInput2025['income'] => {
   const k1Ordinary = safeCurrencyToCents(k1Data.ordinaryIncome);
   const k1Passive = safeCurrencyToCents(k1Data.netRentalRealEstate);
@@ -394,7 +360,8 @@ const buildJointIncome = (
 
   const wages = primaryIncome.wages + (spouseIncome?.wages ?? 0);
   const interest = primaryIncome.interest + (spouseIncome?.interest ?? 0);
-  const dividendsOrdinary = primaryIncome.dividendsOrdinary + (spouseIncome?.dividendsOrdinary ?? 0);
+  const dividendsOrdinary =
+    primaryIncome.dividendsOrdinary + (spouseIncome?.dividendsOrdinary ?? 0);
   const dividendsQualified =
     primaryIncome.dividendsQualified + (spouseIncome?.dividendsQualified ?? 0);
   const scheduleCNet = primaryIncome.scheduleCNet + (spouseIncome?.scheduleCNet ?? 0);
@@ -416,7 +383,6 @@ const buildJointIncome = (
       longTerm: capitalGainsLong,
     },
     scheduleCNet,
-    businessIncome: 0,
     k1: {
       ordinaryBusinessIncome: k1Ordinary,
       passiveIncome: k1Passive,
@@ -433,7 +399,7 @@ const buildJointIncome = (
 const buildSeparateIncome = (
   personIncome: PersonIncome,
   includeHouseholdK1: boolean,
-  jointIncome: FederalInput2025['income'],
+  jointIncome: FederalInput2025['income']
 ): FederalInput2025['income'] => ({
   wages: personIncome.wages,
   interest: personIncome.interest,
@@ -447,7 +413,6 @@ const buildSeparateIncome = (
     longTerm: personIncome.capitalGainsLong,
   },
   scheduleCNet: personIncome.scheduleCNet,
-  businessIncome: 0,
   k1: includeHouseholdK1
     ? {
         ordinaryBusinessIncome: jointIncome.k1.ordinaryBusinessIncome,
@@ -475,7 +440,7 @@ const buildSeparateIncome = (
 const buildJointPayments = (
   paymentsData: UIPaymentsData,
   spouseInfo: UISpouseInfo,
-  filingStatus: FilingStatus,
+  filingStatus: FilingStatus
 ): FederalInput2025['payments'] => {
   const includeSpouse = filingStatus === 'marriedJointly';
 
@@ -495,7 +460,7 @@ const buildJointPayments = (
 const calculateStateWithheld = (
   paymentsData: UIPaymentsData,
   spouseInfo: UISpouseInfo,
-  filingStatus: FilingStatus,
+  filingStatus: FilingStatus
 ): number => {
   const includeSpouse = filingStatus === 'marriedJointly';
   return (
@@ -528,7 +493,7 @@ export function convertUIToEngineInput(
   businessDetails: UIBusinessDetails,
   paymentsData: UIPaymentsData,
   deductions: UIDeductions,
-  spouseInfo: UISpouseInfo,
+  spouseInfo: UISpouseInfo
 ): EngineConversionResult {
   const filingStatus = normalizeFilingStatus(personalInfo.filingStatus);
   const dependents = parseDependents(personalInfo.dependents);
@@ -565,13 +530,20 @@ export function convertUIToEngineInput(
   // Always pass itemized deduction values to the engine
   // The engine will compare and choose the higher one (unless forceItemized is set)
   // Support multiple field name variations for itemized deductions
+  //
+  // IMPORTANT: All monetary values from UI are in DOLLARS.
+  // The engine expects values in CENTS.
+  // Always use safeCurrencyToCents() for consistent conversion.
   let itemized: FederalInput2025['itemized'];
 
-  // If itemizedTotal is provided as a number, use it to override individual components
+  // If itemizedTotal is provided, use it to override individual components
   // This allows tests and advanced users to bypass individual deduction calculation
-  if (typeof deductions.itemizedTotal === 'number') {
-    // itemizedTotal is in dollars, need to convert to cents
-    const itemizedTotalCents = deductions.itemizedTotal * 100;
+  if (deductions.itemizedTotal !== undefined && deductions.itemizedTotal !== null) {
+    // itemizedTotal is in dollars, convert to cents
+    const itemizedTotalCents = safeCurrencyToCents(
+      deductions.itemizedTotal,
+      'deductions.itemizedTotal'
+    );
     itemized = {
       stateLocalTaxes: 0,
       mortgageInterest: 0,
@@ -581,36 +553,29 @@ export function convertUIToEngineInput(
     };
   } else {
     // Calculate from individual components
-    const stateLocalTaxesValue = typeof deductions.stateTaxesPaid === 'number'
-      ? deductions.stateTaxesPaid
-      : (deductions.stateLocalTaxes || deductions.stateTaxesPaid || '0');
-    const mortgageInterestValue = typeof deductions.mortgageInterest === 'number'
-      ? deductions.mortgageInterest.toString()
-      : (deductions.mortgageInterest || '0');
-    const charitableValue = typeof deductions.charitableDonations === 'number'
-      ? deductions.charitableDonations
-      : (deductions.charitableContributions || deductions.charitableDonations || '0');
-    const medicalValue = typeof deductions.medicalExpenses === 'number'
-      ? deductions.medicalExpenses.toString()
-      : (deductions.medicalExpenses || '0');
-    const otherValue = typeof deductions.otherDeductions === 'number'
-      ? deductions.otherDeductions
-      : (deductions.otherItemized || deductions.otherDeductions || '0');
+    // Handle field name variations - prefer newer names, fall back to deprecated ones
+    const stateLocalTaxesValue = deductions.stateLocalTaxes ?? deductions.stateTaxesPaid ?? 0;
+    const mortgageInterestValue = deductions.mortgageInterest ?? 0;
+    const charitableValue =
+      deductions.charitableContributions ?? deductions.charitableDonations ?? 0;
+    const medicalValue = deductions.medicalExpenses ?? 0;
+    const otherValue = deductions.otherItemized ?? deductions.otherDeductions ?? 0;
 
+    // Convert all values consistently using safeCurrencyToCents
+    // This handles both string and number inputs, always treating them as dollars
     itemized = {
-      stateLocalTaxes: typeof stateLocalTaxesValue === 'number' ? stateLocalTaxesValue : safeCurrencyToCents(stateLocalTaxesValue),
-      mortgageInterest: safeCurrencyToCents(mortgageInterestValue),
-      charitable: typeof charitableValue === 'number' ? charitableValue : safeCurrencyToCents(charitableValue),
-      medical: safeCurrencyToCents(medicalValue),
-      other: typeof otherValue === 'number' ? otherValue : safeCurrencyToCents(otherValue),
+      stateLocalTaxes: safeCurrencyToCents(stateLocalTaxesValue, 'deductions.stateLocalTaxes'),
+      mortgageInterest: safeCurrencyToCents(mortgageInterestValue, 'deductions.mortgageInterest'),
+      charitable: safeCurrencyToCents(charitableValue, 'deductions.charitable'),
+      medical: safeCurrencyToCents(medicalValue, 'deductions.medical'),
+      other: safeCurrencyToCents(otherValue, 'deductions.other'),
     };
   }
 
   // Only force itemized if explicitly requested via forceItemized or itemizeDeductions
   // The useStandardDeduction flag is a preference; engine still chooses the higher deduction
   const shouldForceItemized =
-    deductions.forceItemized === true ||
-    deductions.itemizeDeductions === true;
+    deductions.forceItemized === true || deductions.itemizeDeductions === true;
 
   const payments = buildJointPayments(paymentsData, spouseInfo, filingStatus);
 
@@ -653,7 +618,7 @@ const buildStateTaxInput = (
   federalResult: FederalResult2025,
   stateWithheld: number,
   stateEstPayments = 0,
-  stateDependents?: number,
+  stateDependents?: number
 ): StateTaxInput => ({
   federalResult,
   state: stateCode,
@@ -681,14 +646,14 @@ export interface UITaxResult {
   totalPayments: number;
   refundOrOwe: number;
   balance: number;
-  stateTax: number;        // Generic state tax (replaces marylandTax)
+  stateTax: number; // Generic state tax (replaces marylandTax)
   localTax: number;
   totalTax: number;
   afterTaxIncome: number;
   effectiveRate: number;
   marginalRate: number;
   // Legacy field for backward compatibility
-  marylandTax: number;     // Deprecated: use stateTax instead
+  marylandTax: number; // Deprecated: use stateTax instead
 }
 
 export interface TaxCalculationResult {
@@ -698,10 +663,23 @@ export interface TaxCalculationResult {
   stateDetails?: StateResult;
   error?: string;
   engine: 'v2-2025' | 'error';
+  /** Tax year used for calculation */
+  taxYear: number;
+  /** Whether a fallback year was used (requested year not supported) */
+  usedFallbackYear?: boolean;
 }
 
 /**
  * Enhanced tax calculation using the new engine
+ *
+ * @param personalInfo - Personal information from UI
+ * @param incomeData - Income data from UI
+ * @param k1Data - Schedule K-1 data from UI
+ * @param businessDetails - Business expense details from UI
+ * @param paymentsData - Tax payments data from UI
+ * @param deductions - Deductions data from UI
+ * @param spouseInfo - Spouse information from UI
+ * @param taxYear - Tax year for calculation (defaults to current year)
  */
 export function calculateTaxResultsWithEngine(
   personalInfo: UIPersonalInfo,
@@ -711,7 +689,16 @@ export function calculateTaxResultsWithEngine(
   paymentsData: UIPaymentsData,
   deductions: UIDeductions,
   spouseInfo: UISpouseInfo,
+  taxYear: number = DEFAULT_TAX_YEAR
 ): TaxCalculationResult {
+  // Get tax year configuration (validates and potentially falls back)
+  const taxConfig = getTaxYearConfig(taxYear);
+  const usedFallbackYear = taxConfig.taxYear !== taxYear;
+
+  if (usedFallbackYear) {
+    logger.warn(`Tax year ${taxYear} not fully supported, using ${taxConfig.taxYear} rules`);
+  }
+
   try {
     const conversion = convertUIToEngineInput(
       personalInfo,
@@ -720,12 +707,14 @@ export function calculateTaxResultsWithEngine(
       businessDetails,
       paymentsData,
       deductions,
-      spouseInfo,
+      spouseInfo
     );
 
     // Runtime validation of federal input
     validateFederalInput(conversion.federalInput);
 
+    // TODO: In future, use taxConfig to parameterize computation
+    // For now, we still use computeFederal2025 but track the year
     const federalResult = computeFederal2025(conversion.federalInput);
 
     // Runtime validation of federal output
@@ -735,7 +724,11 @@ export function calculateTaxResultsWithEngine(
     if (conversion.stateCode) {
       const stateCalc = getStateCalculator(conversion.stateCode);
       if (stateCalc) {
-        const stateWithheld = calculateStateWithheld(paymentsData, spouseInfo, conversion.federalInput.filingStatus);
+        const stateWithheld = calculateStateWithheld(
+          paymentsData,
+          spouseInfo,
+          conversion.federalInput.filingStatus
+        );
         const stateInput = buildStateTaxInput(
           conversion.stateCode,
           conversion.county,
@@ -744,7 +737,7 @@ export function calculateTaxResultsWithEngine(
           federalResult,
           stateWithheld,
           undefined,
-          conversion.dependents,
+          conversion.dependents
         );
         // Runtime validation of state input
         validateStateTaxInput(stateInput);
@@ -756,7 +749,7 @@ export function calculateTaxResultsWithEngine(
       federalResult,
       stateResult ?? null,
       conversion.federalInput.filingStatus,
-      conversion.stateCode,
+      conversion.stateCode
     );
 
     return {
@@ -765,14 +758,18 @@ export function calculateTaxResultsWithEngine(
       federalDetails: federalResult,
       stateDetails: stateResult,
       engine: 'v2-2025',
+      taxYear: taxConfig.taxYear,
+      usedFallbackYear,
     };
   } catch (error) {
-    logger.error('Tax calculation error:', error);
+    logger.error('Tax calculation error:', error instanceof Error ? error : undefined);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown tax calculation error',
       result: getEmptyTaxResult(),
       engine: 'error',
+      taxYear: taxConfig.taxYear,
+      usedFallbackYear,
     };
   }
 }
@@ -788,7 +785,7 @@ export interface FilingComparison {
     federalTax: number;
     stateTax: number;
   };
-  recommended: string;
+  recommended: 'joint' | 'separate';
   savings: number;
 }
 
@@ -800,6 +797,7 @@ export function calculateFilingComparisonWithEngine(
   incomeData: UIIncomeData,
   spouseInfo: UISpouseInfo,
   paymentsData: UIPaymentsData,
+  taxYear: number = DEFAULT_TAX_YEAR
 ): FilingComparison | null {
   const filingStatus = normalizeFilingStatus(personalInfo.filingStatus);
   if (filingStatus !== 'marriedJointly') {
@@ -814,7 +812,7 @@ export function calculateFilingComparisonWithEngine(
       {},
       paymentsData,
       {},
-      spouseInfo,
+      spouseInfo
     );
 
     const jointFederal = computeFederal2025(conversion.federalInput);
@@ -832,7 +830,7 @@ export function calculateFilingComparisonWithEngine(
           jointFederal,
           stateWithheldJoint,
           undefined,
-          conversion.dependents,
+          conversion.dependents
         );
         jointState = stateCalc.calculator(stateInput);
       }
@@ -909,7 +907,7 @@ export function calculateFilingComparisonWithEngine(
           taxpayerFederal,
           taxpayerStateWithheld,
           undefined,
-          conversion.dependents,
+          conversion.dependents
         );
         taxpayerState = stateCalc.calculator(taxpayerInput);
 
@@ -921,7 +919,7 @@ export function calculateFilingComparisonWithEngine(
           spouseFederal,
           spouseStateWithheld,
           undefined,
-          0,
+          0
         );
         spouseState = stateCalc.calculator(spouseInput);
       }
@@ -947,14 +945,14 @@ export function calculateFilingComparisonWithEngine(
         federalTax: Math.round((taxpayerFederal.totalTax + spouseFederal.totalTax) / 100),
         stateTax: Math.round(
           ((taxpayerState?.totalStateLiability ?? 0) + (spouseState?.totalStateLiability ?? 0)) /
-            100,
+            100
         ),
       },
       recommended,
       savings: Math.abs(jointTotalTax - separateTotalTax) / 100,
     };
   } catch (error) {
-    logger.error('Filing comparison error:', error);
+    logger.error('Filing comparison error:', error instanceof Error ? error : undefined);
     return null;
   }
 }
@@ -966,7 +964,7 @@ export function convertEngineToUIResult(
   federalResult: FederalResult2025,
   stateResult: StateResult | null = null,
   filingStatus: FilingStatus = 'single',
-  stateCode: string | null = null,
+  stateCode: string | null = null
 ): UITaxResult {
   const standardDeduction = Math.round(federalResult.standardDeduction / 100);
   const itemizedDeduction = federalResult.itemizedDeduction
@@ -983,7 +981,7 @@ export function convertEngineToUIResult(
     childTaxCredit: Math.round((federalResult.credits.ctc ?? 0) / 100),
     earnedIncomeCredit: Math.round((federalResult.credits.eitc ?? 0) / 100),
     educationCredits: Math.round(
-      ((federalResult.credits.aotc ?? 0) + (federalResult.credits.llc ?? 0)) / 100,
+      ((federalResult.credits.aotc ?? 0) + (federalResult.credits.llc ?? 0)) / 100
     ),
     selfEmploymentTax: Math.round((federalResult.additionalTaxes?.seTax ?? 0) / 100),
     netInvestmentIncomeTax: Math.round((federalResult.additionalTaxes?.niit ?? 0) / 100),
@@ -1009,7 +1007,8 @@ export function convertEngineToUIResult(
   }
 
   result.afterTaxIncome = result.adjustedGrossIncome - result.totalTax;
-  result.effectiveRate = result.adjustedGrossIncome > 0 ? result.totalTax / result.adjustedGrossIncome : 0;
+  result.effectiveRate =
+    result.adjustedGrossIncome > 0 ? result.totalTax / result.adjustedGrossIncome : 0;
   // Use taxable income (not AGI) for marginal rate calculation
   result.marginalRate = calculateMarginalRate(result.taxableIncome, filingStatus);
 
@@ -1020,16 +1019,13 @@ export function convertEngineToUIResult(
  * Calculate marginal tax rate based on taxable income and filing status
  * Uses 2025 federal tax brackets from IRS Rev. Proc. 2024-40
  */
-function calculateMarginalRate(
-  taxableIncomeDollars: number,
-  filingStatus: FilingStatus
-): number {
+function calculateMarginalRate(taxableIncomeDollars: number, filingStatus: FilingStatus): number {
   if (taxableIncomeDollars <= 0) return 0;
 
   // 2025 Federal Tax Brackets (amounts in dollars)
   const brackets: Record<FilingStatus, Array<{ max: number; rate: number }>> = {
     single: [
-      { max: 11925, rate: 0.10 },
+      { max: 11925, rate: 0.1 },
       { max: 48475, rate: 0.12 },
       { max: 103350, rate: 0.22 },
       { max: 197300, rate: 0.24 },
@@ -1038,7 +1034,7 @@ function calculateMarginalRate(
       { max: Infinity, rate: 0.37 },
     ],
     marriedJointly: [
-      { max: 23850, rate: 0.10 },
+      { max: 23850, rate: 0.1 },
       { max: 96950, rate: 0.12 },
       { max: 206700, rate: 0.22 },
       { max: 394600, rate: 0.24 },
@@ -1047,7 +1043,7 @@ function calculateMarginalRate(
       { max: Infinity, rate: 0.37 },
     ],
     marriedSeparately: [
-      { max: 11925, rate: 0.10 },
+      { max: 11925, rate: 0.1 },
       { max: 48475, rate: 0.12 },
       { max: 103350, rate: 0.22 },
       { max: 197300, rate: 0.24 },
@@ -1056,7 +1052,7 @@ function calculateMarginalRate(
       { max: Infinity, rate: 0.37 },
     ],
     headOfHousehold: [
-      { max: 17000, rate: 0.10 },
+      { max: 17000, rate: 0.1 },
       { max: 64850, rate: 0.12 },
       { max: 103350, rate: 0.22 },
       { max: 197300, rate: 0.24 },

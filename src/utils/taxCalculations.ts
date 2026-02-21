@@ -5,7 +5,13 @@
  *
  * See: src/utils/engineAdapter.ts for the current tax calculation implementation
  */
-import { federalTaxBrackets, standardDeductions, marylandTaxBrackets, marylandCountyRates, TaxBracket } from '../constants/taxBrackets';
+import {
+  federalTaxBrackets,
+  standardDeductions,
+  marylandTaxBrackets,
+  marylandCountyRates,
+  TaxBracket,
+} from '../constants/taxBrackets';
 import type {
   UIPersonalInfo,
   UIIncomeData,
@@ -13,7 +19,6 @@ import type {
   UIBusinessDetails,
   UIPaymentsData,
   UIDeductions,
-  UISpouseInfo,
 } from './engineAdapter';
 
 export const calculateTax = (taxableIncome: number, brackets: TaxBracket[]): number => {
@@ -35,7 +40,13 @@ interface PersonalInfo extends UIPersonalInfo {
 
 type IncomeData = UIIncomeData;
 
-interface SpouseInfo extends UISpouseInfo {
+interface SpouseInfo {
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string | null;
+  isBlind?: boolean;
+  ssn?: string;
+  hasIncome?: boolean;
   wages?: number;
   interestIncome?: number;
   dividends?: number;
@@ -78,17 +89,25 @@ export const calculateFilingComparison = (
 ): FilingComparisonResult | null => {
   if (personalInfo.filingStatus !== 'marriedJointly') return null;
 
-  const taxpayerIncome = Object.values(incomeData).reduce((sum: number, value) => sum + Number(value || 0), 0);
-  const spouseIncome = Number(spouseInfo.wages || 0) +
-                       Number(spouseInfo.interestIncome || 0) +
-                       Number(spouseInfo.dividends || 0) +
-                       Number(spouseInfo.capitalGains || 0) +
-                       Number(spouseInfo.businessIncome || 0) +
-                       Number(spouseInfo.otherIncome || 0);
+  const taxpayerIncome = Object.values(incomeData).reduce(
+    (sum: number, value) => sum + Number(value || 0),
+    0
+  );
+  const spouseIncome =
+    Number(spouseInfo.wages || 0) +
+    Number(spouseInfo.interestIncome || 0) +
+    Number(spouseInfo.dividends || 0) +
+    Number(spouseInfo.capitalGains || 0) +
+    Number(spouseInfo.businessIncome || 0) +
+    Number(spouseInfo.otherIncome || 0);
   const totalIncome = taxpayerIncome + spouseIncome;
 
-  const taxpayerPayments = Object.values(paymentsData).reduce((sum: number, value) => sum + Number(value || 0), 0);
-  const spousePayments = Number(spouseInfo.federalWithholding || 0) + Number(spouseInfo.stateWithholding || 0);
+  const taxpayerPayments = Object.values(paymentsData).reduce(
+    (sum: number, value) => sum + Number(value || 0),
+    0
+  );
+  const spousePayments =
+    Number(spouseInfo.federalWithholding || 0) + Number(spouseInfo.stateWithholding || 0);
   const totalPayments = taxpayerPayments + spousePayments;
 
   // Calculate joint filing
@@ -99,7 +118,10 @@ export const calculateFilingComparison = (
 
   let jointMarylandTax = 0;
   if (personalInfo.isMaryland) {
-    const marylandTaxableIncome = Math.max(0, totalIncome - (personalInfo.filingStatus === 'marriedJointly' ? 4850 : 2400));
+    const marylandTaxableIncome = Math.max(
+      0,
+      totalIncome - (personalInfo.filingStatus === 'marriedJointly' ? 4850 : 2400)
+    );
     jointMarylandTax = calculateTax(marylandTaxableIncome, marylandTaxBrackets);
 
     const localRate = marylandCountyRates[personalInfo.county || ''] || 0.032;
@@ -114,7 +136,10 @@ export const calculateFilingComparison = (
   const taxpayerTaxableIncome = Math.max(0, taxpayerIncome - separateStandardDeduction);
   const spouseTaxableIncome = Math.max(0, spouseIncome - separateStandardDeduction);
 
-  const taxpayerFederalTax = calculateTax(taxpayerTaxableIncome, federalTaxBrackets.marriedSeparately);
+  const taxpayerFederalTax = calculateTax(
+    taxpayerTaxableIncome,
+    federalTaxBrackets.marriedSeparately
+  );
   const spouseFederalTax = calculateTax(spouseTaxableIncome, federalTaxBrackets.marriedSeparately);
 
   let taxpayerMarylandTax = 0;
@@ -131,21 +156,22 @@ export const calculateFilingComparison = (
     spouseMarylandTax += spouseMarylandTaxableIncome * localRate;
   }
 
-  const separateTotalTax = taxpayerFederalTax + spouseFederalTax + taxpayerMarylandTax + spouseMarylandTax;
+  const separateTotalTax =
+    taxpayerFederalTax + spouseFederalTax + taxpayerMarylandTax + spouseMarylandTax;
   const separateBalance = totalPayments - separateTotalTax;
 
   return {
     joint: {
       totalTax: jointTotalTax,
       balance: jointBalance,
-      savings: separateTotalTax - jointTotalTax
+      savings: separateTotalTax - jointTotalTax,
     },
     separate: {
       totalTax: separateTotalTax,
       balance: separateBalance,
-      savings: jointTotalTax - separateTotalTax
+      savings: jointTotalTax - separateTotalTax,
     },
-    recommended: jointTotalTax < separateTotalTax ? 'joint' : 'separate'
+    recommended: jointTotalTax < separateTotalTax ? 'joint' : 'separate',
   };
 };
 
@@ -172,19 +198,29 @@ export const calculateTaxResults = (
   spouseInfo: SpouseInfo | null = null
 ): TaxResults => {
   // Calculate AGI
-  const totalIncome = Object.values(incomeData).reduce((sum: number, value) => sum + Number(value || 0), 0);
-  const totalK1Income = Object.values(k1Data).reduce((sum: number, value) => sum + Number(value || 0), 0);
-  const businessIncome: number = Number(businessDetails.grossReceipts || 0) - Number(businessDetails.costOfGoodsSold || 0) - Number(businessDetails.businessExpenses || 0);
+  const totalIncome = Object.values(incomeData).reduce(
+    (sum: number, value) => sum + Number(value || 0),
+    0
+  );
+  const totalK1Income = Object.values(k1Data).reduce(
+    (sum: number, value) => sum + Number(value || 0),
+    0
+  );
+  const businessIncome: number =
+    Number(businessDetails.grossReceipts || 0) -
+    Number(businessDetails.costOfGoodsSold || 0) -
+    Number(businessDetails.businessExpenses || 0);
 
   // Include spouse income if filing jointly
   let spouseIncome = 0;
   if (personalInfo.filingStatus === 'marriedJointly' && spouseInfo) {
-    spouseIncome = Number(spouseInfo.wages || 0) +
-                   Number(spouseInfo.interestIncome || 0) +
-                   Number(spouseInfo.dividends || 0) +
-                   Number(spouseInfo.capitalGains || 0) +
-                   Number(spouseInfo.businessIncome || 0) +
-                   Number(spouseInfo.otherIncome || 0);
+    spouseIncome =
+      Number(spouseInfo.wages || 0) +
+      Number(spouseInfo.interestIncome || 0) +
+      Number(spouseInfo.dividends || 0) +
+      Number(spouseInfo.capitalGains || 0) +
+      Number(spouseInfo.businessIncome || 0) +
+      Number(spouseInfo.otherIncome || 0);
   }
 
   const adjustedGrossIncome = totalIncome + totalK1Income + businessIncome + spouseIncome;
@@ -197,7 +233,8 @@ export const calculateTaxResults = (
   const federalTaxableIncome = Math.max(0, adjustedGrossIncome - federalDeduction);
 
   // Calculate federal tax
-  const federalBrackets = federalTaxBrackets[personalInfo.filingStatus as keyof typeof federalTaxBrackets];
+  const federalBrackets =
+    federalTaxBrackets[personalInfo.filingStatus as keyof typeof federalTaxBrackets];
   const federalTax = calculateTax(federalTaxableIncome, federalBrackets);
 
   // Calculate Maryland tax
@@ -218,13 +255,16 @@ export const calculateTaxResults = (
   // Include spouse payments if filing jointly
   let spousePayments = 0;
   if (personalInfo.filingStatus === 'marriedJointly' && spouseInfo) {
-    spousePayments = Number(spouseInfo.federalWithholding || 0) + Number(spouseInfo.stateWithholding || 0);
+    spousePayments =
+      Number(spouseInfo.federalWithholding || 0) + Number(spouseInfo.stateWithholding || 0);
   }
 
-  const totalPayments = Object.values(paymentsData).reduce((sum: number, value) => sum + Number(value || 0), 0) + spousePayments;
+  const totalPayments =
+    Object.values(paymentsData).reduce((sum: number, value) => sum + Number(value || 0), 0) +
+    spousePayments;
   const balance = totalPayments - totalTax;
 
-  const effectiveRate = adjustedGrossIncome > 0 ? (totalTax / adjustedGrossIncome) : 0;
+  const effectiveRate = adjustedGrossIncome > 0 ? totalTax / adjustedGrossIncome : 0;
   const afterTaxIncome = adjustedGrossIncome - totalTax;
 
   return {
@@ -237,6 +277,6 @@ export const calculateTaxResults = (
     totalPayments,
     balance,
     effectiveRate,
-    afterTaxIncome
+    afterTaxIncome,
   };
 };

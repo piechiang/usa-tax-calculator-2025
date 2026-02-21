@@ -11,12 +11,19 @@ import { addCents, subtractCents, max0 } from '../../../util/money';
 import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 export function computeVT2025(input: StateTaxInput): StateResult {
-  const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
+  const {
+    federalResult,
+    filingStatus,
+    stateWithheld = 0,
+    stateEstPayments = 0,
+    stateDependents = 0,
+  } = input;
 
   const vtAGI = federalResult.agi;
   const standardDeduction = VT_RULES_2025.standardDeduction[filingStatus];
 
-  const numberOfExemptions = filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
+  const numberOfExemptions =
+    filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
   const personalExemptions = VT_RULES_2025.personalExemption * numberOfExemptions;
 
   const totalDeductions = addCents(standardDeduction, personalExemptions);
@@ -25,7 +32,7 @@ export function computeVT2025(input: StateTaxInput): StateResult {
   const fullBrackets = convertToFullBrackets(VT_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(vtTaxableIncome, fullBrackets);
 
-  const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
+  const federalEITC = federalResult.credits?.eitc || 0;
   const vtEITC = Math.round(federalEITC * VT_RULES_2025.eitcPercentage);
   const taxAfterCredits = max0(taxBeforeCredits - vtEITC);
 
@@ -57,7 +64,9 @@ export function computeVT2025(input: StateTaxInput): StateResult {
       `Vermont uses 4-bracket progressive system (3.35%-8.75%)`,
       `Standard deduction: $${(standardDeduction / 100).toFixed(2)}`,
       `Personal exemptions: $${(personalExemptions / 100).toFixed(2)} (${numberOfExemptions} exemption${numberOfExemptions !== 1 ? 's' : ''})`,
-      vtEITC > 0 ? `Vermont EITC (36% of federal, refundable): $${(vtEITC / 100).toFixed(2)}` : null,
+      vtEITC > 0
+        ? `Vermont EITC (36% of federal, refundable): $${(vtEITC / 100).toFixed(2)}`
+        : null,
     ].filter((note): note is string => note !== null),
   };
 }

@@ -79,9 +79,7 @@ export interface SaversCreditResult {
  * @param input Saver's credit calculation input
  * @returns Complete saver's credit calculation
  */
-export function computeSaversCredit2025(
-  input: SaversCreditInput
-): SaversCreditResult {
+export function computeSaversCredit2025(input: SaversCreditInput): SaversCreditResult {
   // Step 1: Check taxpayer eligibility
   const taxpayerEligibility = checkEligibility(
     input.taxpayerAge,
@@ -100,15 +98,11 @@ export function computeSaversCredit2025(
   }
 
   // If neither taxpayer nor spouse is eligible, return zero credit
-  if (
-    !taxpayerEligibility.eligible &&
-    (!spouseEligibility || !spouseEligibility.eligible)
-  ) {
+  if (!taxpayerEligibility.eligible && (!spouseEligibility || !spouseEligibility.eligible)) {
     return {
       isTaxpayerEligible: false,
       isSpouseEligible: spouseEligibility ? spouseEligibility.eligible : undefined,
-      disqualificationReason:
-        taxpayerEligibility.reason || spouseEligibility?.reason,
+      disqualificationReason: taxpayerEligibility.reason || spouseEligibility?.reason,
       creditRate: 0,
       agiTier: 4,
       taxpayerGrossContributions: input.taxpayerContributions,
@@ -147,9 +141,7 @@ export function computeSaversCredit2025(
 
   if (taxpayerEligibility.eligible) {
     const taxpayerDistributions = input.taxpayerDistributions || 0;
-    taxpayerNetContributions = max0(
-      input.taxpayerContributions - taxpayerDistributions
-    );
+    taxpayerNetContributions = max0(input.taxpayerContributions - taxpayerDistributions);
     taxpayerEligibleContributions = Math.min(
       taxpayerNetContributions,
       SAVERS_CREDIT_MAX_CONTRIBUTION
@@ -271,7 +263,7 @@ export function calculateAgeAtYearEnd(birthDate: string, taxYear: number): numbe
   // const birthDay = parseInt(parts[2] || '0', 10);
 
   // Age at end of tax year (December 31)
-  let age = taxYear - birthYear;
+  const age = taxYear - birthYear;
 
   // If birthday is after December 31, subtract 1
   // (This doesn't happen since we're checking Dec 31)

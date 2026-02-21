@@ -46,6 +46,18 @@ export interface NOLResult {
   nolDeduction: number; // Total NOL deduction allowed (cents)
   limitedByEightyPercent: boolean; // Was deduction limited to 80%?
   eightyPercentLimit: number; // 80% limit amount (cents)
+  /**
+   * The limitation type applied based on tax year:
+   * - '100%': CARES Act years (2018-2020) or pre-TCJA
+   * - '80%': Post-CARES Act years (2021+)
+   */
+  limitationType: '100%' | '80%';
+  /**
+   * The effective deduction limit applied (may differ from 80% limit)
+   * For 2021+: equals eightyPercentLimit
+   * For 2018-2020: equals taxableIncomeBeforeNOL (100%)
+   */
+  effectiveLimit: number;
   nolsUsed: {
     taxYear: number;
     amountUsed: number; // Amount used from this year's NOL (cents)
@@ -62,32 +74,57 @@ export interface NOLResult {
  * @returns NOL deduction result
  */
 export function calculateNOLDeduction(input: NOLInput): NOLResult {
-  const {
-    taxableIncomeBeforeNOL,
-    nolCarryforwards,
-    taxYear,
-  } = input;
+  const { taxableIncomeBeforeNOL, nolCarryforwards, taxYear } = input;
 
   // No deduction if no taxable income or no NOLs
   if (taxableIncomeBeforeNOL <= 0 || nolCarryforwards.length === 0) {
+    // Determine limitation type even for early return (for consistency)
+    const earlyLimitationType =
+      taxYear >= 2018 && taxYear <= 2020
+        ? ('100%' as const)
+        : taxYear >= 2021
+          ? ('80%' as const)
+          : ('100%' as const);
     return {
       nolDeduction: 0,
       limitedByEightyPercent: false,
       eightyPercentLimit: 0,
+      limitationType: earlyLimitationType,
+      effectiveLimit: 0,
       nolsUsed: [],
       updatedCarryforwards: nolCarryforwards,
       excessNOL: nolCarryforwards.reduce((sum, nol) => sum + nol.remainingNOL, 0),
     };
   }
 
-  // 80% limitation (post-TCJA)
-  // NOL deduction cannot exceed 80% of taxable income (before NOL)
-  const eightyPercentLimit = Math.floor(taxableIncomeBeforeNOL * 0.80);
+  // Determine NOL deduction limit based on tax year being filed
+  // TCJA (2018+): 80% limitation
+  // CARES Act (2018-2020): 100% limitation (80% suspended)
+  // Post-CARES (2021+): 80% limitation reinstated
+  let deductionLimit: number;
+  let limitationType: '100%' | '80%';
+
+  if (taxYear >= 2018 && taxYear <= 2020) {
+    // CARES Act suspension: NOLs can offset 100% of taxable income
+    deductionLimit = taxableIncomeBeforeNOL;
+    limitationType = '100%';
+  } else if (taxYear >= 2021) {
+    // Post-CARES Act: 80% limitation reinstated
+    deductionLimit = Math.floor(taxableIncomeBeforeNOL * 0.8);
+    limitationType = '80%';
+  } else {
+    // Pre-TCJA (before 2018): Different rules, but simplified to 100% for compatibility
+    deductionLimit = taxableIncomeBeforeNOL;
+    limitationType = '100%';
+  }
+
+  const eightyPercentLimit = Math.floor(taxableIncomeBeforeNOL * 0.8);
 
   // Sort NOLs chronologically (FIFO - First In, First Out)
   const sortedNOLs = [...nolCarryforwards].sort((a, b) => a.taxYear - b.taxYear);
 
-  let remainingDeduction = eightyPercentLimit;
+  // Use year-specific deduction limit (100% for CARES Act years, 80% for 2021+)
+  let remainingDeduction = deductionLimit;
   const nolsUsed: NOLResult['nolsUsed'] = [];
   const updatedCarryforwards: NOLCarryforward[] = [];
 
@@ -125,15 +162,22 @@ export function calculateNOLDeduction(input: NOLInput): NOLResult {
   const totalNOLDeduction = nolsUsed.reduce((sum, usage) => sum + usage.amountUsed, 0);
   const excessNOL = updatedCarryforwards.reduce((sum, nol) => sum + nol.remainingNOL, 0);
 
-  // Check if limited by 80% rule
+  // Check if limited by the applicable rule (80% for 2021+, 100% for CARES Act years)
   const totalAvailableNOL = sortedNOLs.reduce((sum, nol) => sum + nol.remainingNOL, 0);
-  const limitedByEightyPercent = totalNOLDeduction < totalAvailableNOL &&
-                                  totalNOLDeduction >= eightyPercentLimit;
+
+  // For 2021+, check if limited by 80% rule
+  // For CARES Act years (2018-2020), 80% limit doesn't apply
+  const limitedByEightyPercent =
+    limitationType === '80%' &&
+    totalNOLDeduction < totalAvailableNOL &&
+    totalNOLDeduction >= deductionLimit;
 
   return {
     nolDeduction: totalNOLDeduction,
     limitedByEightyPercent,
     eightyPercentLimit,
+    limitationType,
+    effectiveLimit: deductionLimit,
     nolsUsed,
     updatedCarryforwards,
     excessNOL,
@@ -147,20 +191,34 @@ export function formatNOLResult(result: NOLResult): string {
   const lines: string[] = [];
 
   lines.push('=== NOL Deduction Summary ===');
-  lines.push(`Total NOL Deduction: $${(result.nolDeduction / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-  lines.push(`80% Limit: $${(result.eightyPercentLimit / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+  lines.push(
+    `Total NOL Deduction: $${(result.nolDeduction / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  );
+  lines.push(
+    `Limitation Type: ${result.limitationType} (${result.limitationType === '100%' ? 'CARES Act/Pre-TCJA' : 'Post-2020 TCJA'})`
+  );
+  lines.push(
+    `Effective Limit: $${(result.effectiveLimit / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  );
+  lines.push(
+    `80% Limit (Reference): $${(result.eightyPercentLimit / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  );
   lines.push(`Limited by 80% rule: ${result.limitedByEightyPercent ? 'YES' : 'NO'}`);
   lines.push('');
 
   if (result.nolsUsed.length > 0) {
     lines.push('NOLs Used:');
     for (const usage of result.nolsUsed) {
-      lines.push(`  ${usage.taxYear}: $${(usage.amountUsed / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} used, $${(usage.remainingAfter / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} remaining`);
+      lines.push(
+        `  ${usage.taxYear}: $${(usage.amountUsed / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} used, $${(usage.remainingAfter / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} remaining`
+      );
     }
     lines.push('');
   }
 
-  lines.push(`Total NOL Carryforward to Next Year: $${(result.excessNOL / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+  lines.push(
+    `Total NOL Carryforward to Next Year: $${(result.excessNOL / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  );
 
   return lines.join('\n');
 }
@@ -182,7 +240,9 @@ export function validateNOLCarryforwards(
 
     // Remaining NOL cannot exceed original NOL
     if (nol.remainingNOL > nol.originalNOL) {
-      errors.push(`Remaining NOL ($${nol.remainingNOL / 100}) exceeds original NOL ($${nol.originalNOL / 100}) for year ${nol.taxYear}`);
+      errors.push(
+        `Remaining NOL ($${nol.remainingNOL / 100}) exceeds original NOL ($${nol.originalNOL / 100}) for year ${nol.taxYear}`
+      );
     }
 
     // Remaining NOL must be non-negative
@@ -198,7 +258,9 @@ export function validateNOLCarryforwards(
     // For post-TCJA NOLs (2018+), carryback should not exist
     // (except for farming losses, which we'll allow)
     if (nol.taxYear >= 2018 && nol.taxYear < currentTaxYear - 50) {
-      errors.push(`NOL from year ${nol.taxYear} is suspiciously old (post-TCJA NOLs have unlimited carryforward)`);
+      errors.push(
+        `NOL from year ${nol.taxYear} is suspiciously old (post-TCJA NOLs have unlimited carryforward)`
+      );
     }
   }
 

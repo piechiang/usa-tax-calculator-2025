@@ -1,12 +1,15 @@
-import { useState } from 'react';
-import useDeepCompareEffect from 'use-deep-compare-effect';
+import { useState, useEffect, useCallback } from 'react';
 import {
   calculateTaxResultsWithEngine,
   calculateFilingComparisonWithEngine,
 } from '../utils/engineAdapter';
 import { generateTaxOptimizations } from '../utils/taxOptimization';
+import { useTaxDataHash } from './useDependencyHash';
+import { logger } from '../utils/logger';
 import type { PersonalInfo, SpouseInfo, TaxResult } from '../types/CommonTypes';
 import type { Deductions } from './useDeductionState';
+import type { FederalDiagnostics2025, FederalResult2025 } from '../engine/types';
+import type { TraceSection } from '../engine/trace/types';
 
 // Type definitions for income-related state
 interface IncomeData {
@@ -36,7 +39,7 @@ interface FilingComparison {
     federalTax: number;
     stateTax: number;
   };
-  recommended: string;
+  recommended: 'joint' | 'separate';
   savings: number;
 }
 
@@ -63,6 +66,7 @@ interface UseTaxResultsParams {
   businessDetails: BusinessDetails;
   paymentsData: PaymentsData;
   deductions: Deductions;
+  taxYear?: number;
 }
 
 /**
@@ -78,6 +82,7 @@ export const useTaxResults = ({
   businessDetails,
   paymentsData,
   deductions,
+  taxYear,
 }: UseTaxResultsParams) => {
   const [taxResult, setTaxResult] = useState<TaxResult>({
     adjustedGrossIncome: 0,
@@ -99,10 +104,26 @@ export const useTaxResults = ({
   const [filingComparison, setFilingComparison] = useState<FilingComparison | null>(null);
   const [taxOptimizations, setTaxOptimizations] = useState<TaxOptimization[]>([]);
 
-  // Calculate tax results whenever relevant data changes (deep comparison)
-  // Using useDeepCompareEffect instead of JSON.stringify for better performance
-  useDeepCompareEffect(() => {
+  // Engine diagnostics and calculation trace for audit/review
+  const [diagnostics, setDiagnostics] = useState<FederalDiagnostics2025 | null>(null);
+  const [trace, setTrace] = useState<TraceSection[] | null>(null);
+  const [federalDetails, setFederalDetails] = useState<FederalResult2025 | null>(null);
 
+  // Create a stable hash of all tax-relevant data
+  // This is more efficient than deep comparison as it only computes a string hash
+  const dataHash = useTaxDataHash(
+    personalInfo,
+    spouseInfo,
+    incomeData,
+    k1Data,
+    businessDetails,
+    paymentsData,
+    deductions
+  );
+
+  // Calculate tax results whenever the data hash changes
+  // Using hash-based dependency tracking for better performance
+  useEffect(() => {
     // Use new tax engine
     const engineResults = calculateTaxResultsWithEngine(
       personalInfo,
@@ -111,7 +132,8 @@ export const useTaxResults = ({
       businessDetails,
       paymentsData,
       deductions,
-      spouseInfo
+      spouseInfo,
+      taxYear
     );
 
     if (engineResults.success && engineResults.result) {
@@ -143,8 +165,19 @@ export const useTaxResults = ({
         netInvestmentIncomeTax: result.netInvestmentIncomeTax,
         additionalMedicareTax: result.additionalMedicareTax,
       });
+
+      // Extract diagnostics and trace from engine results for audit/review
+      if (engineResults.federalDetails) {
+        setFederalDetails(engineResults.federalDetails);
+        setDiagnostics(engineResults.federalDetails.diagnostics);
+        setTrace(engineResults.federalDetails.trace ?? null);
+      }
     } else {
-      console.error('Tax calculation failed:', engineResults.error);
+      logger.error('Tax calculation failed', new Error(engineResults.error || 'Unknown error'));
+      // Clear diagnostics on error
+      setDiagnostics(null);
+      setTrace(null);
+      setFederalDetails(null);
       // Set empty result on error
       setTaxResult({
         adjustedGrossIncome: 0,
@@ -181,7 +214,8 @@ export const useTaxResults = ({
         personalInfo,
         incomeData,
         spouseInfo,
-        paymentsData
+        paymentsData,
+        taxYear
       );
 
       setFilingComparison(engineComparison);
@@ -200,9 +234,10 @@ export const useTaxResults = ({
       spouseInfo
     );
     setTaxOptimizations(optimizations);
-  }, [personalInfo, incomeData, k1Data, businessDetails, paymentsData, deductions, spouseInfo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataHash]);
 
-  const recalculate = () => {
+  const recalculate = useCallback(() => {
     // Force recalculation
 
     // Use new tax engine v2
@@ -213,7 +248,8 @@ export const useTaxResults = ({
       businessDetails,
       paymentsData,
       deductions,
-      spouseInfo
+      spouseInfo,
+      taxYear
     );
 
     if (engineResults.success && engineResults.result) {
@@ -245,8 +281,21 @@ export const useTaxResults = ({
         netInvestmentIncomeTax: result.netInvestmentIncomeTax,
         additionalMedicareTax: result.additionalMedicareTax,
       });
+
+      // Extract diagnostics and trace
+      if (engineResults.federalDetails) {
+        setFederalDetails(engineResults.federalDetails);
+        setDiagnostics(engineResults.federalDetails.diagnostics);
+        setTrace(engineResults.federalDetails.trace ?? null);
+      }
     } else {
-      console.error('Tax calculation failed:', engineResults.error);
+      logger.error(
+        'Tax calculation failed (recalculate)',
+        new Error(engineResults.error || 'Unknown error')
+      );
+      setDiagnostics(null);
+      setTrace(null);
+      setFederalDetails(null);
       setTaxResult({
         adjustedGrossIncome: 0,
         taxableIncome: 0,
@@ -275,7 +324,33 @@ export const useTaxResults = ({
         additionalMedicareTax: undefined,
       });
     }
-  };
+  }, [
+    personalInfo,
+    incomeData,
+    k1Data,
+    businessDetails,
+    paymentsData,
+    deductions,
+    spouseInfo,
+    taxYear,
+  ]);
+
+  /**
+   * Check if there are any warnings from the calculation engine.
+   */
+  const hasWarnings = diagnostics && diagnostics.warnings.length > 0;
+
+  /**
+   * Check if there are any errors from the calculation engine.
+   */
+  const hasErrors = diagnostics && diagnostics.errors.length > 0;
+
+  /**
+   * Get the count of diagnostic messages.
+   */
+  const diagnosticsCount = diagnostics
+    ? diagnostics.warnings.length + diagnostics.errors.length
+    : 0;
 
   return {
     taxResult,
@@ -283,7 +358,17 @@ export const useTaxResults = ({
     taxOptimizations,
     setTaxResult,
     recalculate,
+    // Engine diagnostics and trace for audit/review
+    diagnostics,
+    trace,
+    federalDetails,
+    // Convenience flags
+    hasWarnings,
+    hasErrors,
+    diagnosticsCount,
   };
 };
 
 export type { TaxResult, FilingComparison, TaxOptimization };
+export type { FederalDiagnostics2025 as TaxDiagnostics } from '../engine/types';
+export type { TraceSection as TaxTrace } from '../engine/trace/types';

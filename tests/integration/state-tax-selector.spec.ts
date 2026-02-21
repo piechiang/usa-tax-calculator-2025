@@ -15,7 +15,7 @@ import type {
   UIIncomeData,
   UIK1Data,
   UIBusinessDetails,
-  UIPaymentsData
+  UIPaymentsData,
 } from '../../src/utils/engineAdapter';
 import type { Deductions } from '../../src/hooks/useDeductionState';
 import type { SpouseInfo } from '../../src/types/CommonTypes';
@@ -37,7 +37,6 @@ const createTestIncomeData = (wages: string = '50000'): UIIncomeData => ({
   dividends: '0',
   qualifiedDividends: '0',
   capitalGains: '0',
-  businessIncome: '0',
   rentalIncome: '0',
   farmIncome: '0',
   unemployment: '0',
@@ -56,7 +55,6 @@ const createTestK1Data = (): UIK1Data => ({
 });
 
 const createTestBusinessDetails = (): UIBusinessDetails => ({
-  businessIncome: '0',
   businessExpenses: '0',
   selfEmploymentIncome: '0',
 });
@@ -87,7 +85,6 @@ const createTestSpouseInfo = (): SpouseInfo => ({
   interestIncome: '0',
   dividends: '0',
   capitalGains: '0',
-  businessIncome: '0',
   otherIncome: '0',
   federalWithholding: '0',
   stateWithholding: '0',

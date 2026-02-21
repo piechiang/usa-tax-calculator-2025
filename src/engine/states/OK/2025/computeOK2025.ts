@@ -11,12 +11,19 @@ import { addCents, subtractCents, max0 } from '../../../util/money';
 import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 export function computeOK2025(input: StateTaxInput): StateResult {
-  const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
+  const {
+    federalResult,
+    filingStatus,
+    stateWithheld = 0,
+    stateEstPayments = 0,
+    stateDependents = 0,
+  } = input;
 
   const okAGI = federalResult.agi;
   const standardDeduction = OK_RULES_2025.standardDeduction[filingStatus];
 
-  const numberOfExemptions = filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
+  const numberOfExemptions =
+    filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
   const personalExemptions = OK_RULES_2025.personalExemption * numberOfExemptions;
 
   const totalDeductions = addCents(standardDeduction, personalExemptions);
@@ -25,7 +32,7 @@ export function computeOK2025(input: StateTaxInput): StateResult {
   const fullBrackets = convertToFullBrackets(OK_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(okTaxableIncome, fullBrackets);
 
-  const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
+  const federalEITC = federalResult.credits?.eitc || 0;
   const okEITC = Math.round(federalEITC * OK_RULES_2025.eitcPercentage);
   const finalTax = max0(taxBeforeCredits - okEITC);
 

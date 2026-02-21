@@ -5,7 +5,11 @@
  * during tax calculations.
  */
 
-import type { FederalDiagnostics2025, FederalDiagnosticsMessage2025 } from '../types';
+import type {
+  FederalDiagnostics2025,
+  FederalDiagnosticsMessage2025,
+  CalculationPhase,
+} from '../types';
 import type { DiagnosticCode } from './codes';
 import { formatDiagnosticMessage, getSeverity } from './codes';
 
@@ -16,17 +20,19 @@ export function createDiagnostics(): FederalDiagnostics2025 {
   return {
     warnings: [],
     errors: [],
+    byPhase: {},
   };
 }
 
 /**
- * Add a diagnostic message
+ * Add a diagnostic message with optional phase information
  */
 export function addDiagnostic(
   diagnostics: FederalDiagnostics2025,
   code: DiagnosticCode,
   context?: Record<string, unknown>,
-  field?: string
+  field?: string,
+  phase?: CalculationPhase
 ): void {
   const message = formatDiagnosticMessage(code, context);
   const severity = getSeverity(code);
@@ -42,12 +48,24 @@ export function addDiagnostic(
     field,
     severity, // Now guaranteed to be 'error' | 'warning'
     context,
+    phase,
   };
 
   if (severity === 'error') {
     diagnostics.errors.push(diagnostic);
   } else {
     diagnostics.warnings.push(diagnostic);
+  }
+
+  // Add to phase-based grouping if phase is specified
+  if (phase) {
+    if (!diagnostics.byPhase) {
+      diagnostics.byPhase = {};
+    }
+    if (!diagnostics.byPhase[phase]) {
+      diagnostics.byPhase[phase] = [];
+    }
+    diagnostics.byPhase[phase]!.push(diagnostic);
   }
 }
 
@@ -58,12 +76,13 @@ export function addError(
   diagnostics: FederalDiagnostics2025,
   code: DiagnosticCode,
   context?: Record<string, unknown>,
-  field?: string
+  field?: string,
+  phase?: CalculationPhase
 ): void {
   if (getSeverity(code) !== 'error') {
     throw new Error(`Code ${code} is not an error code`);
   }
-  addDiagnostic(diagnostics, code, context, field);
+  addDiagnostic(diagnostics, code, context, field, phase);
 }
 
 /**
@@ -73,12 +92,13 @@ export function addWarning(
   diagnostics: FederalDiagnostics2025,
   code: DiagnosticCode,
   context?: Record<string, unknown>,
-  field?: string
+  field?: string,
+  phase?: CalculationPhase
 ): void {
   if (getSeverity(code) !== 'warning') {
     throw new Error(`Code ${code} is not a warning code`);
   }
-  addDiagnostic(diagnostics, code, context, field);
+  addDiagnostic(diagnostics, code, context, field, phase);
 }
 
 /**
@@ -98,7 +118,9 @@ export function hasWarnings(diagnostics: FederalDiagnostics2025): boolean {
 /**
  * Get all diagnostic messages as a flat array
  */
-export function getAllMessages(diagnostics: FederalDiagnostics2025): FederalDiagnosticsMessage2025[] {
+export function getAllMessages(
+  diagnostics: FederalDiagnostics2025
+): FederalDiagnosticsMessage2025[] {
   return [...diagnostics.errors, ...diagnostics.warnings];
 }
 
@@ -119,7 +141,24 @@ export function getMessagesByCategory(
   diagnostics: FederalDiagnostics2025,
   category: 'INPUT' | 'CALC' | 'CREDIT' | 'FORM'
 ): FederalDiagnosticsMessage2025[] {
-  return getAllMessages(diagnostics).filter(msg => msg.code.startsWith(category));
+  return getAllMessages(diagnostics).filter((msg) => msg.code.startsWith(category));
+}
+
+/**
+ * Get diagnostic messages by calculation phase
+ */
+export function getMessagesByPhase(
+  diagnostics: FederalDiagnostics2025,
+  phase: CalculationPhase
+): FederalDiagnosticsMessage2025[] {
+  return diagnostics.byPhase?.[phase] || [];
+}
+
+/**
+ * Get all phases that have diagnostics
+ */
+export function getPhasesWithDiagnostics(diagnostics: FederalDiagnostics2025): CalculationPhase[] {
+  return Object.keys(diagnostics.byPhase || {}) as CalculationPhase[];
 }
 
 /**
@@ -130,20 +169,48 @@ export function formatDiagnostics(diagnostics: FederalDiagnostics2025): string {
 
   if (diagnostics.errors.length > 0) {
     lines.push('ERRORS:');
-    diagnostics.errors.forEach(err => {
+    diagnostics.errors.forEach((err) => {
       lines.push(`  [${err.code}] ${err.message}`);
       if (err.field) lines.push(`    Field: ${err.field}`);
+      if (err.phase) lines.push(`    Phase: ${err.phase}`);
     });
   }
 
   if (diagnostics.warnings.length > 0) {
     if (lines.length > 0) lines.push('');
     lines.push('WARNINGS:');
-    diagnostics.warnings.forEach(warn => {
+    diagnostics.warnings.forEach((warn) => {
       lines.push(`  [${warn.code}] ${warn.message}`);
       if (warn.field) lines.push(`    Field: ${warn.field}`);
+      if (warn.phase) lines.push(`    Phase: ${warn.phase}`);
     });
   }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format diagnostics grouped by phase for display
+ */
+export function formatDiagnosticsByPhase(diagnostics: FederalDiagnostics2025): string {
+  const lines: string[] = [];
+  const phases = getPhasesWithDiagnostics(diagnostics);
+
+  if (phases.length === 0) {
+    return 'No diagnostics';
+  }
+
+  phases.forEach((phase) => {
+    const messages = getMessagesByPhase(diagnostics, phase);
+    if (messages.length > 0) {
+      lines.push(`\n${phase.toUpperCase()}:`);
+      messages.forEach((msg) => {
+        const prefix = msg.severity === 'error' ? 'ERROR' : 'WARN';
+        lines.push(`  [${prefix}] [${msg.code}] ${msg.message}`);
+        if (msg.field) lines.push(`    Field: ${msg.field}`);
+      });
+    }
+  });
 
   return lines.join('\n');
 }

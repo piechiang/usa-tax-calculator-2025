@@ -181,35 +181,31 @@ The UI follows a layered architecture:
 - **Local Storage**: Persisted data for client profiles and preferences
 - **Backup System**: Timestamped snapshots with integrity validation
 
-## Roadmap
+## State Coverage
 
-### Currently Supported
+### Federal
+- ✅ **Federal taxes** (2025): Complete — all major forms, brackets, standard deductions, CTC, EITC, AOTC/LLC, AMT, SE tax, LTCG
+  Source: IRS Rev. Proc. 2024-40, Publication 17, Form 1040 instructions
 
-- ✅ **Federal taxes** (2025): Complete implementation with all major forms and credits  
-  Source: IRS Rev. Proc. 2024-40, Publication 17, Form 1040 instructions (last updated Jan 2025)
-- ✅ **Maryland state taxes** (2025): Full state + local calculation with county-specific rates  
-  Source: [Maryland Comptroller](https://www.marylandtaxes.gov) (last updated Jan 2025, EITC 45% of federal)
-- ✅ **California state taxes** (2025): Progressive brackets, CalEITC, YCTC, renters credit, mental health surtax  
-  Source: [California Franchise Tax Board](https://www.ftb.ca.gov) (last updated Oct 2025)
-- ✅ **No-tax states** (9): AK, FL, NV, NH, SD, TN, TX, WA, WY  
-  Sources: individual state revenue departments (last verified Jan 2025)
+### All 50 States + DC
+The engine implements calculators for all 50 states and Washington D.C.:
 
-### In Progress
+- ✅ **No-income-tax states** (9): AK, FL, NV, NH, SD, TN, TX, WA, WY — pass-through with zero state income tax
+- ✅ **Flat-tax states** (9): CO, IL, IN, KY, MA, MI, NC, PA, UT
+- ✅ **Progressive-bracket states** (32+): AL, AR, AZ, CA, CT, DC, DE, GA, HI, IA, ID, KS, LA, MD, ME, MN, MO, MS, MT, NJ, NM, NY, OH, OK, OR, RI, SC, VA, VT, WI, WV, and more
+- ✅ **Special calculations**: MD (county-level local tax), NY (NYC/Yonkers surcharge), HI (additions/subtractions), NJ (separate bracket schedule)
 
-- 🔄 **50-state expansion**: Phase 1A underway — CA delivered; NY, TX, FL data collection & rule design in progress (see [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md))
-- 🔄 **PDF export**: ReportBuilder/PDFRenderer shipped; UI export workflow & E2E validation pending (see [PDF Export Design](docs/PDF_EXPORT_DESIGN.md))
+State engines are registered in `src/engine/states/registry.ts` and selected automatically based on the taxpayer's state.
+
+### PDF Export
+- ✅ **ReportBuilder/PDFRenderer**: Shipped — generates structured tax summary PDFs
 
 ### Planned Features
 
-- Multi-year tax comparison
-- Advanced optimization suggestions
+- E2E validation of state calculations against published worksheets
+- Multi-year tax comparison UI
 - Quarterly estimated payment calculator
-- Accountant collaboration tools
-
-For detailed implementation plans, see:
-- [State Engine Implementation Guide](docs/STATE_ENGINE_GUIDE.md) - How to add new states
-- [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md) - Full 50-state expansion timeline
-- [PDF Export Design](docs/PDF_EXPORT_DESIGN.md) - PDF report specifications
+- e-File XML generation (roadmap: [docs/EFILE_INTEGRATION_ROADMAP.md](docs/EFILE_INTEGRATION_ROADMAP.md))
 
 ## Notes
 

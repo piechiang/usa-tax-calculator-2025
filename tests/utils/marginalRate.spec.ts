@@ -5,7 +5,15 @@
 
 import { describe, it, expect } from 'vitest';
 import { calculateTaxResultsWithEngine } from '../../src/utils/engineAdapter';
-import type { UIPersonalInfo, UIIncomeData, UIPaymentsData, UIDeductions, UISpouseInfo, UIK1Data, UIBusinessDetails } from '../../src/utils/engineAdapter';
+import type {
+  UIPersonalInfo,
+  UIIncomeData,
+  UIPaymentsData,
+  UIDeductions,
+  UISpouseInfo,
+  UIK1Data,
+  UIBusinessDetails,
+} from '../../src/utils/engineAdapter';
 
 describe('Marginal Tax Rate Calculation', () => {
   const createBaseInput = (filingStatus: string, wages: number) => {
@@ -26,7 +34,6 @@ describe('Marginal Tax Rate Calculation', () => {
       interestIncome: '0',
       dividends: '0',
       capitalGains: '0',
-      businessIncome: '0',
       otherIncome: '0',
     };
 
@@ -56,7 +63,6 @@ describe('Marginal Tax Rate Calculation', () => {
       interestIncome: '0',
       dividends: '0',
       capitalGains: '0',
-      businessIncome: '0',
       otherIncome: '0',
       federalWithholding: '0',
       stateWithholding: '0',
@@ -83,7 +89,15 @@ describe('Marginal Tax Rate Calculation', () => {
       businessExpenses: '0',
     };
 
-    return { personalInfo, incomeData, paymentsData, deductions, spouseInfo, k1Data, businessDetails };
+    return {
+      personalInfo,
+      incomeData,
+      paymentsData,
+      deductions,
+      spouseInfo,
+      k1Data,
+      businessDetails,
+    };
   };
 
   describe('Single Filing Status', () => {
@@ -96,7 +110,7 @@ describe('Marginal Tax Rate Calculation', () => {
         input.businessDetails,
         input.paymentsData,
         input.deductions,
-        input.spouseInfo,
+        input.spouseInfo
       );
 
       expect(result.success).toBe(true);
@@ -114,7 +128,7 @@ describe('Marginal Tax Rate Calculation', () => {
         input.businessDetails,
         input.paymentsData,
         input.deductions,
-        input.spouseInfo,
+        input.spouseInfo
       );
 
       expect(result.success).toBe(true);
@@ -132,7 +146,7 @@ describe('Marginal Tax Rate Calculation', () => {
         input.businessDetails,
         input.paymentsData,
         input.deductions,
-        input.spouseInfo,
+        input.spouseInfo
       );
 
       expect(result.success).toBe(true);
@@ -152,7 +166,7 @@ describe('Marginal Tax Rate Calculation', () => {
         input.businessDetails,
         input.paymentsData,
         input.deductions,
-        input.spouseInfo,
+        input.spouseInfo
       );
 
       expect(result.success).toBe(true);
@@ -170,7 +184,7 @@ describe('Marginal Tax Rate Calculation', () => {
         input.businessDetails,
         input.paymentsData,
         input.deductions,
-        input.spouseInfo,
+        input.spouseInfo
       );
 
       expect(result.success).toBe(true);
@@ -188,7 +202,7 @@ describe('Marginal Tax Rate Calculation', () => {
         input.businessDetails,
         input.paymentsData,
         input.deductions,
-        input.spouseInfo,
+        input.spouseInfo
       );
 
       expect(result.success).toBe(true);
@@ -208,7 +222,7 @@ describe('Marginal Tax Rate Calculation', () => {
         singleInput.businessDetails,
         singleInput.paymentsData,
         singleInput.deductions,
-        singleInput.spouseInfo,
+        singleInput.spouseInfo
       );
 
       const marriedResult = calculateTaxResultsWithEngine(
@@ -218,7 +232,7 @@ describe('Marginal Tax Rate Calculation', () => {
         marriedInput.businessDetails,
         marriedInput.paymentsData,
         marriedInput.deductions,
-        marriedInput.spouseInfo,
+        marriedInput.spouseInfo
       );
 
       expect(singleResult.success).toBe(true);
@@ -245,7 +259,7 @@ describe('Marginal Tax Rate Calculation', () => {
         input.businessDetails,
         input.paymentsData,
         input.deductions,
-        input.spouseInfo,
+        input.spouseInfo
       );
 
       expect(result.success).toBe(true);
@@ -265,7 +279,7 @@ describe('Marginal Tax Rate Calculation', () => {
         input.businessDetails,
         input.paymentsData,
         input.deductions,
-        input.spouseInfo,
+        input.spouseInfo
       );
 
       expect(result.success).toBe(true);

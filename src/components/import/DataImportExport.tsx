@@ -1,5 +1,18 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Download, FileText, Camera, CheckCircle, AlertCircle, Loader2, FileSpreadsheet, FileJson, Calendar, LucideIcon } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  Upload,
+  Download,
+  FileText,
+  Camera,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  FileSpreadsheet,
+  FileJson,
+  Calendar,
+  LucideIcon,
+} from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 // Type for imported/exported tax data
 interface TaxData {
@@ -74,7 +87,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
   onImport,
   onExport,
   currentData,
-  t: _t
+  t: _t,
 }) => {
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [selectedImportSource, setSelectedImportSource] = useState<string>('');
@@ -85,15 +98,25 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const importSources: ImportSource[] = [
     {
       id: 'previous-year',
       name: 'Previous Year Tax Return',
-      description: 'Import personal information and carryover data from last year\'s return',
+      description: "Import personal information and carryover data from last year's return",
       icon: Calendar,
       supportedFormats: ['JSON', 'PDF'],
-      isAvailable: true
+      isAvailable: true,
     },
     {
       id: 'csv-file',
@@ -101,7 +124,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       description: 'Import data from a CSV file with tax information',
       icon: FileSpreadsheet,
       supportedFormats: ['CSV'],
-      isAvailable: true
+      isAvailable: true,
     },
     {
       id: 'json-file',
@@ -109,7 +132,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       description: 'Import structured tax data from a JSON file',
       icon: FileJson,
       supportedFormats: ['JSON'],
-      isAvailable: true
+      isAvailable: true,
     },
     {
       id: 'document-scan',
@@ -117,7 +140,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       description: 'Scan W-2s, 1099s, and other tax documents with OCR',
       icon: Camera,
       supportedFormats: ['PDF', 'JPG', 'PNG'],
-      isAvailable: true
+      isAvailable: true,
     },
     {
       id: 'bank-import',
@@ -125,7 +148,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       description: 'Import transactions from bank statements (CSV/OFX)',
       icon: FileText,
       supportedFormats: ['CSV', 'OFX', 'QFX'],
-      isAvailable: false // Feature coming soon
+      isAvailable: false, // Feature coming soon
     },
     {
       id: 'third-party',
@@ -133,8 +156,8 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       description: 'Import from TurboTax, H&R Block, or other tax software',
       icon: Upload,
       supportedFormats: ['Various'],
-      isAvailable: false // Feature coming soon
-    }
+      isAvailable: false, // Feature coming soon
+    },
   ];
 
   const exportFormats: ExportFormat[] = [
@@ -143,57 +166,57 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       name: 'PDF Tax Summary',
       description: 'Complete tax calculation summary ready for filing',
       icon: FileText,
-      fileExtension: 'pdf'
+      fileExtension: 'pdf',
     },
     {
       id: 'json-backup',
       name: 'JSON Backup',
       description: 'Complete backup of all tax data for future use',
       icon: FileJson,
-      fileExtension: 'json'
+      fileExtension: 'json',
     },
     {
       id: 'csv-data',
       name: 'CSV Data Export',
       description: 'Spreadsheet-friendly format for analysis',
       icon: FileSpreadsheet,
-      fileExtension: 'csv'
+      fileExtension: 'csv',
     },
     {
       id: 'tax-preparer',
       name: 'Tax Preparer Package',
       description: 'Professional package for CPA or tax preparer review',
       icon: FileText,
-      fileExtension: 'zip'
-    }
+      fileExtension: 'zip',
+    },
   ];
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploadedFile(file);
     processImportFile(file);
-  };
+  }, []);
 
   const processImportFile = async (file: File) => {
     setImportProgress({
       stage: 'uploading',
       progress: 0,
-      message: 'Uploading file...'
+      message: 'Uploading file...',
     });
 
     try {
       // Simulate file upload progress
       for (let i = 0; i <= 100; i += 10) {
-        setImportProgress(prev => prev ? { ...prev, progress: i } : null);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        setImportProgress((prev) => (prev ? { ...prev, progress: i } : null));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       setImportProgress({
         stage: 'processing',
         progress: 0,
-        message: 'Processing file...'
+        message: 'Processing file...',
       });
 
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -214,16 +237,16 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
         setImportProgress({
           stage: 'mapping',
           progress: 50,
-          message: 'Mapping data fields...'
+          message: 'Mapping data fields...',
         });
 
         // Simulate field mapping
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         setImportProgress({
           stage: 'validating',
           progress: 80,
-          message: 'Validating data...'
+          message: 'Validating data...',
         });
 
         // Validate imported data
@@ -234,7 +257,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
             stage: 'error',
             progress: 100,
             message: 'Validation failed',
-            errors: validationErrors
+            errors: validationErrors,
           });
           return;
         }
@@ -242,14 +265,14 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
         setImportProgress({
           stage: 'complete',
           progress: 100,
-          message: 'Import completed successfully!'
+          message: 'Import completed successfully!',
         });
 
         // Apply imported data
         onImport(parsedData);
 
         // Clear progress after success
-        setTimeout(() => {
+        timeoutRef.current = setTimeout(() => {
           setImportProgress(null);
           setUploadedFile(null);
         }, 2000);
@@ -259,15 +282,15 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
         stage: 'error',
         progress: 100,
         message: 'Import failed',
-        errors: [error instanceof Error ? error.message : 'Unknown error occurred']
+        errors: [error instanceof Error ? error.message : 'Unknown error occurred'],
       });
     }
   };
 
-  const handleDocumentScan = () => {
+  const handleDocumentScan = useCallback(() => {
     // Trigger camera/file input for document scanning
     cameraInputRef.current?.click();
-  };
+  }, []);
 
   const processCameraCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -276,7 +299,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
     setImportProgress({
       stage: 'processing',
       progress: 0,
-      message: 'Scanning document...'
+      message: 'Scanning document...',
     });
 
     try {
@@ -288,29 +311,32 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
       setImportProgress({
         stage: 'complete',
         progress: 100,
-        message: 'Document scanned successfully!'
+        message: 'Document scanned successfully!',
       });
 
-      setTimeout(() => setImportProgress(null), 2000);
+      timeoutRef.current = setTimeout(() => setImportProgress(null), 2000);
     } catch (error) {
       setImportProgress({
         stage: 'error',
         progress: 100,
         message: 'Document scan failed',
-        errors: [error instanceof Error ? error.message : 'Scan failed']
+        errors: [error instanceof Error ? error.message : 'Scan failed'],
       });
     }
   };
 
-  const handleExport = async (formatId: string) => {
-    try {
-      await onExport(formatId);
-    } catch (error) {
-      console.error('Export failed:', error);
-    }
-  };
+  const handleExport = useCallback(
+    async (formatId: string) => {
+      try {
+        await onExport(formatId);
+      } catch (error) {
+        logger.error('Export failed', error instanceof Error ? error : undefined, { formatId });
+      }
+    },
+    [onExport]
+  );
 
-  const importPreviousYear = () => {
+  const importPreviousYear = useCallback(() => {
     // Simulate previous year data import
     const samplePriorYearData = {
       personalInfo: {
@@ -320,19 +346,19 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
           street: '123 Main St',
           city: 'Anytown',
           state: 'CA',
-          zipCode: '12345'
-        }
+          zipCode: '12345',
+        },
       },
       // Don't import SSN for security
       carryoverData: {
         capitalLossCarryover: 2500,
-        charitableCarryover: 1000
-      }
+        charitableCarryover: 1000,
+      },
     };
 
     setPriorYearData(samplePriorYearData);
     onImport(samplePriorYearData);
-  };
+  }, [onImport]);
 
   const renderImportProgress = () => {
     if (!importProgress) return null;
@@ -398,9 +424,15 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
         </div>
 
         <div className="space-y-2 text-sm">
-          <div><strong>Document Type:</strong> {documentScanResult.type}</div>
-          <div><strong>Confidence:</strong> {documentScanResult.confidence}%</div>
-          <div><strong>Fields Extracted:</strong> {documentScanResult.fieldsCount}</div>
+          <div>
+            <strong>Document Type:</strong> {documentScanResult.type}
+          </div>
+          <div>
+            <strong>Confidence:</strong> {documentScanResult.confidence}%
+          </div>
+          <div>
+            <strong>Fields Extracted:</strong> {documentScanResult.fieldsCount}
+          </div>
         </div>
 
         <button
@@ -420,7 +452,7 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
         <nav className="flex space-x-8 px-6">
           {[
             { id: 'import', label: 'Import Data', icon: Upload },
-            { id: 'export', label: 'Export Data', icon: Download }
+            { id: 'export', label: 'Export Data', icon: Download },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -459,19 +491,23 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
                     selectedImportSource === source.id
                       ? 'border-blue-500 bg-blue-50'
                       : source.isAvailable
-                      ? 'border-gray-200 hover:border-gray-300'
-                      : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                        ? 'border-gray-200 hover:border-gray-300'
+                        : 'border-gray-100 bg-gray-50 cursor-not-allowed'
                   }`}
                   onClick={() => source.isAvailable && setSelectedImportSource(source.id)}
                 >
                   <div className="flex items-start gap-3">
-                    <source.icon className={`w-6 h-6 mt-1 ${
-                      source.isAvailable ? 'text-blue-600' : 'text-gray-400'
-                    }`} />
+                    <source.icon
+                      className={`w-6 h-6 mt-1 ${
+                        source.isAvailable ? 'text-blue-600' : 'text-gray-400'
+                      }`}
+                    />
                     <div className="flex-1">
-                      <h4 className={`font-medium ${
-                        source.isAvailable ? 'text-gray-900' : 'text-gray-500'
-                      }`}>
+                      <h4
+                        className={`font-medium ${
+                          source.isAvailable ? 'text-gray-900' : 'text-gray-500'
+                        }`}
+                      >
                         {source.name}
                         {!source.isAvailable && (
                           <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
@@ -479,9 +515,11 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
                           </span>
                         )}
                       </h4>
-                      <p className={`text-sm mt-1 ${
-                        source.isAvailable ? 'text-gray-600' : 'text-gray-400'
-                      }`}>
+                      <p
+                        className={`text-sm mt-1 ${
+                          source.isAvailable ? 'text-gray-600' : 'text-gray-400'
+                        }`}
+                      >
                         {source.description}
                       </p>
                       <div className="mt-2">
@@ -590,10 +628,14 @@ export const DataImportExport: React.FC<DataImportExportProps> = ({
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Export Preview</h4>
                 <div className="text-sm text-gray-600 space-y-1">
-                  <div>Personal Information: {currentData.personalInfo ? 'Complete' : 'Incomplete'}</div>
+                  <div>
+                    Personal Information: {currentData.personalInfo ? 'Complete' : 'Incomplete'}
+                  </div>
                   <div>Income Data: {currentData.incomeData ? 'Complete' : 'Incomplete'}</div>
                   <div>Deductions: {currentData.deductions ? 'Complete' : 'Incomplete'}</div>
-                  <div>Tax Calculations: {currentData.calculations ? 'Complete' : 'Not calculated'}</div>
+                  <div>
+                    Tax Calculations: {currentData.calculations ? 'Complete' : 'Not calculated'}
+                  </div>
                 </div>
               </div>
             )}
@@ -632,14 +674,14 @@ const parsePDF = async (_file: File): Promise<ParsedData> => {
     extractedData: {
       wages: 50000,
       federalWithholding: 5000,
-      stateWithholding: 2000
-    }
+      stateWithholding: 2000,
+    },
   };
 };
 
 const simulateOCR = async (_file: File): Promise<DocumentScanResult> => {
   // Simulate OCR processing
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   return {
     type: 'W-2',
@@ -650,8 +692,8 @@ const simulateOCR = async (_file: File): Promise<DocumentScanResult> => {
       federalWithholding: 8500,
       stateWithholding: 3200,
       socialSecurityWages: 65000,
-      medicareWages: 65000
-    }
+      medicareWages: 65000,
+    },
   };
 };
 
@@ -677,4 +719,5 @@ const validateImportedData = (data: ParsedData | TaxData): string[] => {
   return errors;
 };
 
-export default DataImportExport;
+// Export with React.memo for performance
+export default React.memo(DataImportExport);

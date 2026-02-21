@@ -37,11 +37,7 @@ interface TaxAssistantProps {
   t: (key: string) => string;
 }
 
-export const TaxAssistant: React.FC<TaxAssistantProps> = ({
-  formData,
-  taxResult,
-  t
-}) => {
+export const TaxAssistant: React.FC<TaxAssistantProps> = ({ formData, taxResult, t }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -51,9 +47,9 @@ export const TaxAssistant: React.FC<TaxAssistantProps> = ({
       suggestions: [
         t('assistant.suggestion1'),
         t('assistant.suggestion2'),
-        t('assistant.suggestion3')
-      ]
-    }
+        t('assistant.suggestion3'),
+      ],
+    },
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -74,16 +70,22 @@ export const TaxAssistant: React.FC<TaxAssistantProps> = ({
     if (message.includes('reduce') || message.includes('lower') || message.includes('save')) {
       const wagesValue = formData.incomeData?.wages;
       const income = wagesValue ? parseFloat(String(wagesValue)) : 0;
-      let suggestions = [];
+      const suggestions = [];
 
       if (income > 50000) {
-        suggestions.push("• Maximize your 401(k) contributions - you could save up to " + (Math.min(23000, income * 0.2) * 0.22).toLocaleString() + " in taxes");
+        suggestions.push(
+          '• Maximize your 401(k) contributions - you could save up to ' +
+            (Math.min(23000, income * 0.2) * 0.22).toLocaleString() +
+            ' in taxes'
+        );
       }
       if (income > 25000) {
-        suggestions.push("• Consider an HSA if available - $4,300 contribution could save $946 in taxes");
+        suggestions.push(
+          '• Consider an HSA if available - $4,300 contribution could save $946 in taxes'
+        );
       }
-      suggestions.push("• Track business expenses if self-employed");
-      suggestions.push("• Consider tax-loss harvesting for investments");
+      suggestions.push('• Track business expenses if self-employed');
+      suggestions.push('• Consider tax-loss harvesting for investments');
 
       return `Based on your income of $${income.toLocaleString()}, here are ways to reduce your taxes:\n\n${suggestions.join('\n')}`;
     }
@@ -118,16 +120,22 @@ Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGr
     }
 
     // Filing status questions
-    if (message.includes('filing status') || message.includes('married') || message.includes('single')) {
+    if (
+      message.includes('filing status') ||
+      message.includes('married') ||
+      message.includes('single')
+    ) {
       const status = formData.personalInfo?.filingStatus;
       let advice = '';
 
       if (status === 'marriedJointly') {
-        advice = "Filing jointly typically provides better tax benefits for married couples, but consider comparing with filing separately if you have significantly different incomes or large itemized deductions.";
+        advice =
+          'Filing jointly typically provides better tax benefits for married couples, but consider comparing with filing separately if you have significantly different incomes or large itemized deductions.';
       } else if (status === 'marriedSeparately') {
-        advice = "Filing separately might make sense if one spouse has large medical expenses or miscellaneous deductions, but joint filing usually results in lower taxes overall.";
+        advice =
+          'Filing separately might make sense if one spouse has large medical expenses or miscellaneous deductions, but joint filing usually results in lower taxes overall.';
       } else {
-        advice = "Your filing status determines your tax brackets and standard deduction amount.";
+        advice = 'Your filing status determines your tax brackets and standard deduction amount.';
       }
 
       return `Your current filing status is "${status ?? 'not set'}". ${advice}`;
@@ -137,9 +145,9 @@ Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGr
     if (message.includes('state tax') || message.includes('state')) {
       const isMaryland = formData.personalInfo?.isMaryland;
       if (isMaryland) {
-        return "Maryland has both state and local income taxes. The state rate ranges from 2% to 5.75%, plus local taxes that vary by county (typically around 3.2% for Baltimore City).";
+        return 'Maryland has both state and local income taxes. The state rate ranges from 2% to 5.75%, plus local taxes that vary by county (typically around 3.2% for Baltimore City).';
       } else {
-        return "State taxes vary significantly by state. Some states like Florida, Texas, and Washington have no income tax, while others like California and New York have high rates.";
+        return 'State taxes vary significantly by state. Some states like Florida, Texas, and Washington have no income tax, while others like California and New York have high rates.';
       }
     }
 
@@ -154,7 +162,11 @@ Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGr
     }
 
     // Business/self-employment
-    if (message.includes('business') || message.includes('self-employed') || message.includes('1099')) {
+    if (
+      message.includes('business') ||
+      message.includes('self-employed') ||
+      message.includes('1099')
+    ) {
       return `Self-employment tax considerations:
 
 • You'll pay both employer and employee portions of Social Security/Medicare (15.3%)
@@ -186,26 +198,29 @@ Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGr
       id: Date.now().toString(),
       content: inputMessage,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputMessage('');
     setIsTyping(true);
 
     // Simulate typing delay
-    setTimeout(() => {
-      const response = generateResponse(inputMessage);
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: response,
-        sender: 'assistant',
-        timestamp: new Date()
-      };
+    setTimeout(
+      () => {
+        const response = generateResponse(inputMessage);
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: response,
+          sender: 'assistant',
+          timestamp: new Date(),
+        };
 
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+        setMessages((prev) => [...prev, assistantMessage]);
+        setIsTyping(false);
+      },
+      1000 + Math.random() * 1000
+    );
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -223,7 +238,7 @@ Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGr
     { icon: Calculator, label: t('assistant.quickAction1'), query: t('assistant.query1') },
     { icon: FileText, label: t('assistant.quickAction2'), query: t('assistant.query2') },
     { icon: TrendingUp, label: t('assistant.quickAction3'), query: t('assistant.query3') },
-    { icon: Lightbulb, label: t('assistant.quickAction4'), query: t('assistant.query4') }
+    { icon: Lightbulb, label: t('assistant.quickAction4'), query: t('assistant.query4') },
   ];
 
   return (
@@ -262,22 +277,28 @@ Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGr
               message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'
             }`}
           >
-            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-              message.sender === 'user'
-                ? 'bg-blue-500 text-white'
-                : 'bg-purple-500 text-white'
-            }`}>
-              {message.sender === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+            <div
+              className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-purple-500 text-white'
+              }`}
+            >
+              {message.sender === 'user' ? (
+                <User className="h-4 w-4" />
+              ) : (
+                <Bot className="h-4 w-4" />
+              )}
             </div>
 
-            <div className={`max-w-[80%] ${
-              message.sender === 'user' ? 'text-right' : 'text-left'
-            }`}>
-              <div className={`inline-block p-3 rounded-lg ${
-                message.sender === 'user'
-                  ? 'bg-blue-500 text-white rounded-br-none'
-                  : 'bg-gray-100 text-gray-900 rounded-bl-none'
-              }`}>
+            <div
+              className={`max-w-[80%] ${message.sender === 'user' ? 'text-right' : 'text-left'}`}
+            >
+              <div
+                className={`inline-block p-3 rounded-lg ${
+                  message.sender === 'user'
+                    ? 'bg-blue-500 text-white rounded-br-none'
+                    : 'bg-gray-100 text-gray-900 rounded-bl-none'
+                }`}
+              >
                 <div className="whitespace-pre-wrap text-sm">{message.content}</div>
               </div>
 
@@ -310,8 +331,14 @@ Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGr
             <div className="bg-gray-100 rounded-lg rounded-bl-none p-3">
               <div className="flex space-x-1">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                <div
+                  className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+                  style={{ animationDelay: '0.2s' }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"
+                  style={{ animationDelay: '0.4s' }}
+                ></div>
               </div>
             </div>
           </div>
@@ -343,9 +370,7 @@ Your effective tax rate is ${(((taxResult.totalTax ?? 0) / (taxResult.adjustedGr
           </button>
         </div>
 
-        <div className="text-xs text-gray-500 mt-2 text-center">
-          💡 {t('assistant.tip')}
-        </div>
+        <div className="text-xs text-gray-500 mt-2 text-center">💡 {t('assistant.tip')}</div>
       </div>
     </div>
   );

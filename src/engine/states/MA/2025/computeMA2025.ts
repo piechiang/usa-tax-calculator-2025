@@ -1,15 +1,7 @@
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
-import {
-  MA_RULES_2025,
-  calculateMassachusettsTax,
-} from '../../../rules/2025/states/ma';
+import { MA_RULES_2025, calculateMassachusettsTax } from '../../../rules/2025/states/ma';
 import type { MAStateSpecific } from '../../../rules/2025/states/ma';
-import {
-  addCents,
-  max0,
-  multiplyCents,
-  subtractCents,
-} from '../../../util/money';
+import { addCents, max0, multiplyCents, subtractCents } from '../../../util/money';
 
 /**
  * Compute Massachusetts state tax for 2025
@@ -77,25 +69,28 @@ export function computeMA2025(input: StateTaxInput): StateResult {
   const finalTax = totalTax;
 
   // Step 11: Calculate refund or amount owed
-  const totalPayments = addCents(
-    maSpecific?.stateWithheld ?? 0,
-    maSpecific?.stateEstPayments ?? 0
-  );
+  const totalPayments = addCents(maSpecific?.stateWithheld ?? 0, maSpecific?.stateEstPayments ?? 0);
   const refundOrOwe = totalPayments - finalTax;
 
   return {
     state: 'MA',
-    year: 2025,
-    agiState: maAGI,
-    taxableIncomeState: maTaxableIncome,
+    taxYear: 2025,
+    stateAGI: maAGI,
+    stateTaxableIncome: maTaxableIncome,
     stateTax: finalTax,
+    localTax: 0,
     totalStateLiability: finalTax,
-    stateWithheld: maSpecific?.stateWithheld,
+    stateDeduction: totalExemptions,
+    stateWithheld: maSpecific?.stateWithheld ?? 0,
+    stateEstPayments: maSpecific?.stateEstPayments ?? 0,
     stateRefundOrOwe: refundOrOwe,
-    credits,
-    calculationNotes: surtax > 0
-      ? [`Millionaire surtax applied: $${(surtax / 100).toFixed(2)} (4% on income over $${(MA_RULES_2025.surtaxThreshold / 100).toLocaleString()})`]
-      : undefined,
+    stateCredits: credits,
+    calculationNotes:
+      surtax > 0
+        ? [
+            `Millionaire surtax applied: $${(surtax / 100).toFixed(2)} (4% on income over $${(MA_RULES_2025.surtaxThreshold / 100).toLocaleString()})`,
+          ]
+        : undefined,
   };
 }
 

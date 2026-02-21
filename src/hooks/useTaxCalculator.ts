@@ -10,10 +10,10 @@ import type { TaxResult, FilingComparison, TaxOptimization } from './useTaxResul
 
 // Re-export types for backward compatibility
 export type {
-  IncomeData,
-  K1Data,
-  BusinessDetails,
-  PaymentsData,
+  UIIncomeData as IncomeData,
+  UIK1Data as K1Data,
+  UIBusinessDetails as BusinessDetails,
+  UIPaymentsData as PaymentsData,
 } from '../utils/engineAdapter';
 
 export type { Deductions, TaxResult, FilingComparison, TaxOptimization };
@@ -69,12 +69,8 @@ export const useTaxCalculator = () => {
   } = useIncomeState();
 
   // Deductions state
-  const {
-    deductions,
-    setDeductions,
-    handleDeductionChange,
-    updateStandardDeduction,
-  } = useDeductionState(standardDeduction);
+  const { deductions, setDeductions, handleDeductionChange, updateStandardDeduction } =
+    useDeductionState(standardDeduction);
 
   // Update deductions' standard deduction when it changes
   useEffect(() => {
@@ -82,29 +78,19 @@ export const useTaxCalculator = () => {
   }, [standardDeduction, updateStandardDeduction]);
 
   // Tax results and calculations
-  const {
-    taxResult,
-    filingComparison,
-    taxOptimizations,
-    setTaxResult,
-    recalculate,
-  } = useTaxResults({
-    personalInfo,
-    spouseInfo,
-    incomeData,
-    k1Data,
-    businessDetails,
-    paymentsData,
-    deductions,
-  });
+  const { taxResult, filingComparison, taxOptimizations, setTaxResult, recalculate } =
+    useTaxResults({
+      personalInfo,
+      spouseInfo,
+      incomeData,
+      k1Data,
+      businessDetails,
+      paymentsData,
+      deductions,
+    });
 
   // Form validation
-  const {
-    errors,
-    touched,
-    setError,
-    setFieldTouched,
-  } = useFormValidation();
+  const { errors, touched, setError, setFieldTouched } = useFormValidation();
 
   // Snapshot functionality for save/load
   const getSnapshot = (): TaxCalculatorSnapshot => ({

@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Download, Tag, Calendar, DollarSign, Search, Trash2, Receipt, PieChart, BarChart3 } from 'lucide-react';
+import {
+  Plus,
+  Download,
+  Tag,
+  Calendar,
+  DollarSign,
+  Search,
+  Trash2,
+  Receipt,
+  PieChart,
+  BarChart3,
+} from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 interface Expense {
   id: string;
@@ -32,26 +44,36 @@ interface ExpenseTrackerProps {
   onExpenseUpdate: (expenses: Expense[]) => void;
 }
 
-export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
-  onExpenseUpdate
-}) => {
+export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ onExpenseUpdate }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories] = useState<ExpenseCategory[]>([
     {
       id: 'medical',
       name: 'Medical & Health',
       deductionType: 'itemized',
-      subcategories: ['Doctor Visits', 'Prescriptions', 'Health Insurance', 'Dental', 'Vision', 'Medical Equipment'],
+      subcategories: [
+        'Doctor Visits',
+        'Prescriptions',
+        'Health Insurance',
+        'Dental',
+        'Vision',
+        'Medical Equipment',
+      ],
       description: 'Medical expenses exceeding 7.5% of AGI',
-      limits: { percentage: 7.5 }
+      limits: { percentage: 7.5 },
     },
     {
       id: 'charitable',
       name: 'Charitable Donations',
       deductionType: 'itemized',
-      subcategories: ['Cash Donations', 'Non-Cash Donations', 'Volunteer Expenses', 'Religious Organizations'],
+      subcategories: [
+        'Cash Donations',
+        'Non-Cash Donations',
+        'Volunteer Expenses',
+        'Religious Organizations',
+      ],
       description: 'Donations to qualified organizations',
-      limits: { percentage: 60 }
+      limits: { percentage: 60 },
     },
     {
       id: 'taxes',
@@ -59,36 +81,44 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
       deductionType: 'itemized',
       subcategories: ['State Income Tax', 'Property Tax', 'Sales Tax', 'Personal Property Tax'],
       description: 'State and local tax deductions',
-      limits: { maxAmount: 10000 }
+      limits: { maxAmount: 10000 },
     },
     {
       id: 'mortgage',
       name: 'Mortgage Interest',
       deductionType: 'itemized',
       subcategories: ['Primary Residence', 'Second Home', 'Points', 'PMI'],
-      description: 'Mortgage interest on qualified residences'
+      description: 'Mortgage interest on qualified residences',
     },
     {
       id: 'business',
       name: 'Business Expenses',
       deductionType: 'business',
-      subcategories: ['Office Supplies', 'Travel', 'Meals', 'Equipment', 'Software', 'Professional Services', 'Marketing'],
-      description: 'Ordinary and necessary business expenses'
+      subcategories: [
+        'Office Supplies',
+        'Travel',
+        'Meals',
+        'Equipment',
+        'Software',
+        'Professional Services',
+        'Marketing',
+      ],
+      description: 'Ordinary and necessary business expenses',
     },
     {
       id: 'education',
       name: 'Education',
       deductionType: 'credit',
       subcategories: ['Tuition', 'Books', 'Supplies', 'Student Loan Interest'],
-      description: 'Education expenses and credits'
+      description: 'Education expenses and credits',
     },
     {
       id: 'retirement',
       name: 'Retirement Contributions',
       deductionType: 'adjustment',
       subcategories: ['Traditional IRA', 'SEP-IRA', 'SIMPLE IRA', '401(k)', 'HSA'],
-      description: 'Pre-tax retirement contributions'
-    }
+      description: 'Pre-tax retirement contributions',
+    },
   ]);
 
   const [newExpense, setNewExpense] = useState<Partial<Expense>>({
@@ -100,7 +130,7 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
     isDeductible: true,
     notes: '',
     tags: [],
-    businessUse: 100
+    businessUse: 100,
   });
 
   const [filter, setFilter] = useState({
@@ -109,7 +139,7 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
     minAmount: '',
     maxAmount: '',
     searchTerm: '',
-    deductibleOnly: false
+    deductibleOnly: false,
   });
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -126,12 +156,12 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
       const parsedExpenses = JSON.parse(savedExpenses) as StoredExpense[];
       const normalizedExpenses: Expense[] = parsedExpenses.map((exp) => ({
         ...exp,
-        date: new Date(exp.date)
+        date: new Date(exp.date),
       }));
 
       setExpenses(normalizedExpenses);
     } catch (error) {
-      console.error('Failed to parse stored expenses', error);
+      logger.error('Failed to parse stored expenses', error instanceof Error ? error : undefined);
     }
   }, []);
 
@@ -156,10 +186,10 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
       isDeductible: newExpense.isDeductible ?? true,
       notes: newExpense.notes || '',
       tags: newExpense.tags || [],
-      businessUse: newExpense.businessUse || 100
+      businessUse: newExpense.businessUse || 100,
     };
 
-    setExpenses(prev => [expense, ...prev]);
+    setExpenses((prev) => [expense, ...prev]);
     setNewExpense({
       description: '',
       amount: 0,
@@ -169,21 +199,25 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
       isDeductible: true,
       notes: '',
       tags: [],
-      businessUse: 100
+      businessUse: 100,
     });
     setShowAddForm(false);
   };
 
   const deleteExpense = (id: string) => {
     if (confirm('Are you sure you want to delete this expense?')) {
-      setExpenses(prev => prev.filter(exp => exp.id !== id));
+      setExpenses((prev) => prev.filter((exp) => exp.id !== id));
     }
   };
 
-  const filteredExpenses = expenses.filter(expense => {
+  const filteredExpenses = expenses.filter((expense) => {
     if (filter.category && expense.category.id !== filter.category) return false;
     if (filter.deductibleOnly && !expense.isDeductible) return false;
-    if (filter.searchTerm && !expense.description.toLowerCase().includes(filter.searchTerm.toLowerCase())) return false;
+    if (
+      filter.searchTerm &&
+      !expense.description.toLowerCase().includes(filter.searchTerm.toLowerCase())
+    )
+      return false;
     if (filter.minAmount && expense.amount < parseFloat(filter.minAmount)) return false;
     if (filter.maxAmount && expense.amount > parseFloat(filter.maxAmount)) return false;
 
@@ -193,7 +227,11 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
 
       switch (filter.dateRange) {
         case 'thisMonth':
-          if (expenseDate.getMonth() !== now.getMonth() || expenseDate.getFullYear() !== now.getFullYear()) return false;
+          if (
+            expenseDate.getMonth() !== now.getMonth() ||
+            expenseDate.getFullYear() !== now.getFullYear()
+          )
+            return false;
           break;
         case 'thisYear':
           if (expenseDate.getFullYear() !== now.getFullYear()) return false;
@@ -209,7 +247,7 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
 
   const getTotalByCategory = () => {
     const totals: Record<string, number> = {};
-    filteredExpenses.forEach(expense => {
+    filteredExpenses.forEach((expense) => {
       if (expense.isDeductible) {
         const categoryName = expense.category.name;
         totals[categoryName] = (totals[categoryName] || 0) + expense.amount;
@@ -219,19 +257,30 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
   };
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Description', 'Amount', 'Category', 'Subcategory', 'Deductible', 'Business Use %', 'Notes'];
+    const headers = [
+      'Date',
+      'Description',
+      'Amount',
+      'Category',
+      'Subcategory',
+      'Deductible',
+      'Business Use %',
+      'Notes',
+    ];
     const csvContent = [
       headers.join(','),
-      ...filteredExpenses.map(exp => [
-        exp.date.toLocaleDateString(),
-        `"${exp.description}"`,
-        exp.amount,
-        exp.category.name,
-        exp.subcategory,
-        exp.isDeductible ? 'Yes' : 'No',
-        exp.businessUse || 100,
-        `"${exp.notes || ''}"`
-      ].join(','))
+      ...filteredExpenses.map((exp) =>
+        [
+          exp.date.toLocaleDateString(),
+          `"${exp.description}"`,
+          exp.amount,
+          exp.category.name,
+          exp.subcategory,
+          exp.isDeductible ? 'Yes' : 'No',
+          exp.businessUse || 100,
+          `"${exp.notes || ''}"`,
+        ].join(',')
+      ),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -291,7 +340,11 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
             <div className="bg-white rounded-lg p-3">
               <div className="text-sm text-gray-600 mb-1">Total Deductible</div>
               <div className="text-xl font-bold text-green-600">
-                ${filteredExpenses.filter(e => e.isDeductible).reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+                $
+                {filteredExpenses
+                  .filter((e) => e.isDeductible)
+                  .reduce((sum, e) => sum + e.amount, 0)
+                  .toLocaleString()}
               </div>
             </div>
             <div className="bg-white rounded-lg p-3">
@@ -303,7 +356,12 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
             <div className="bg-white rounded-lg p-3">
               <div className="text-sm text-gray-600 mb-1">Potential Savings</div>
               <div className="text-xl font-bold text-purple-600">
-                ${(filteredExpenses.filter(e => e.isDeductible).reduce((sum, e) => sum + e.amount, 0) * 0.22).toLocaleString()}
+                $
+                {(
+                  filteredExpenses
+                    .filter((e) => e.isDeductible)
+                    .reduce((sum, e) => sum + e.amount, 0) * 0.22
+                ).toLocaleString()}
               </div>
               <div className="text-xs text-gray-500">Est. at 22% tax rate</div>
             </div>
@@ -331,12 +389,14 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select
               value={filter.category}
-              onChange={(e) => setFilter(prev => ({ ...prev, category: e.target.value }))}
+              onChange={(e) => setFilter((prev) => ({ ...prev, category: e.target.value }))}
               className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
               ))}
             </select>
           </div>
@@ -345,7 +405,7 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
             <select
               value={filter.dateRange}
-              onChange={(e) => setFilter(prev => ({ ...prev, dateRange: e.target.value }))}
+              onChange={(e) => setFilter((prev) => ({ ...prev, dateRange: e.target.value }))}
               className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="all">All Time</option>
@@ -362,7 +422,7 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
               <input
                 type="text"
                 value={filter.searchTerm}
-                onChange={(e) => setFilter(prev => ({ ...prev, searchTerm: e.target.value }))}
+                onChange={(e) => setFilter((prev) => ({ ...prev, searchTerm: e.target.value }))}
                 placeholder="Search expenses..."
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               />
@@ -374,7 +434,9 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
               <input
                 type="checkbox"
                 checked={filter.deductibleOnly}
-                onChange={(e) => setFilter(prev => ({ ...prev, deductibleOnly: e.target.checked }))}
+                onChange={(e) =>
+                  setFilter((prev) => ({ ...prev, deductibleOnly: e.target.checked }))
+                }
                 className="rounded"
               />
               <span className="text-sm text-gray-700">Deductible only</span>
@@ -393,14 +455,21 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
           </div>
         ) : (
           filteredExpenses.map((expense) => (
-            <div key={expense.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div
+              key={expense.id}
+              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h4 className="font-medium text-gray-900">{expense.description}</h4>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      expense.isDeductible ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        expense.isDeductible
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       {expense.isDeductible ? 'Deductible' : 'Non-deductible'}
                     </span>
                     <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
@@ -426,15 +495,11 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
                       </div>
                     )}
                     {expense.businessUse && expense.businessUse < 100 && (
-                      <div className="text-orange-600">
-                        {expense.businessUse}% business use
-                      </div>
+                      <div className="text-orange-600">{expense.businessUse}% business use</div>
                     )}
                   </div>
 
-                  {expense.notes && (
-                    <p className="text-sm text-gray-600 mt-2">{expense.notes}</p>
-                  )}
+                  {expense.notes && <p className="text-sm text-gray-600 mt-2">{expense.notes}</p>}
                 </div>
 
                 <div className="flex gap-1 ml-4">
@@ -469,11 +534,15 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                  </label>
                   <input
                     type="text"
                     value={newExpense.description || ''}
-                    onChange={(e) => setNewExpense(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) =>
+                      setNewExpense((prev) => ({ ...prev, description: e.target.value }))
+                    }
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="Enter expense description"
                   />
@@ -485,7 +554,12 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
                     type="number"
                     step="0.01"
                     value={newExpense.amount || ''}
-                    onChange={(e) => setNewExpense(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                    onChange={(e) =>
+                      setNewExpense((prev) => ({
+                        ...prev,
+                        amount: parseFloat(e.target.value) || 0,
+                      }))
+                    }
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="0.00"
                   />
@@ -496,7 +570,9 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
                   <input
                     type="date"
                     value={newExpense.date?.toISOString().split('T')[0] || ''}
-                    onChange={(e) => setNewExpense(prev => ({ ...prev, date: new Date(e.target.value) }))}
+                    onChange={(e) =>
+                      setNewExpense((prev) => ({ ...prev, date: new Date(e.target.value) }))
+                    }
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
@@ -506,41 +582,56 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
                   <select
                     value={newExpense.category?.id || ''}
                     onChange={(e) => {
-                      const category = categories.find(cat => cat.id === e.target.value);
-                      setNewExpense(prev => ({ ...prev, category, subcategory: '' }));
+                      const category = categories.find((cat) => cat.id === e.target.value);
+                      setNewExpense((prev) => ({ ...prev, category, subcategory: '' }));
                     }}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subcategory
+                  </label>
                   <select
                     value={newExpense.subcategory || ''}
-                    onChange={(e) => setNewExpense(prev => ({ ...prev, subcategory: e.target.value }))}
+                    onChange={(e) =>
+                      setNewExpense((prev) => ({ ...prev, subcategory: e.target.value }))
+                    }
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     disabled={!newExpense.category}
                   >
                     <option value="">Select subcategory</option>
-                    {newExpense.category?.subcategories.map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
+                    {newExpense.category?.subcategories.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 {newExpense.category?.deductionType === 'business' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Business Use %</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Use %
+                    </label>
                     <input
                       type="number"
                       min="0"
                       max="100"
                       value={newExpense.businessUse || 100}
-                      onChange={(e) => setNewExpense(prev => ({ ...prev, businessUse: parseInt(e.target.value) || 100 }))}
+                      onChange={(e) =>
+                        setNewExpense((prev) => ({
+                          ...prev,
+                          businessUse: parseInt(e.target.value) || 100,
+                        }))
+                      }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
@@ -550,7 +641,7 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
                   <textarea
                     value={newExpense.notes || ''}
-                    onChange={(e) => setNewExpense(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) => setNewExpense((prev) => ({ ...prev, notes: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     rows={3}
                     placeholder="Additional notes or details"
@@ -561,7 +652,9 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({
                   <input
                     type="checkbox"
                     checked={newExpense.isDeductible ?? true}
-                    onChange={(e) => setNewExpense(prev => ({ ...prev, isDeductible: e.target.checked }))}
+                    onChange={(e) =>
+                      setNewExpense((prev) => ({ ...prev, isDeductible: e.target.checked }))
+                    }
                     className="rounded"
                   />
                   <label className="text-sm text-gray-700">This expense is tax deductible</label>

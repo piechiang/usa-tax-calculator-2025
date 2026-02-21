@@ -1,11 +1,7 @@
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
 import type { FederalResult2025, FilingStatus } from '../../../types';
 import { NY_RULES_2025 } from '../../../rules/2025/states/ny/ny';
-import {
-  addCents,
-  max0,
-  multiplyCents
-} from '../../../util/money';
+import { addCents, max0, multiplyCents } from '../../../util/money';
 import { calculateTaxFromBrackets } from '../../../util/taxCalculations';
 
 /**
@@ -85,12 +81,19 @@ export function computeNY2025(input: StateTaxInput): StateResult {
     state: 'NY',
     ...(input.county && { county: input.county }),
     taxYear: 2025,
-    formReferences: ['IT-201 (NY Resident Income Tax Return)', 'IT-215 (Claim for Earned Income Credit)'],
+    formReferences: [
+      'IT-201 (NY Resident Income Tax Return)',
+      'IT-215 (Claim for Earned Income Credit)',
+    ],
     calculationNotes: [
       'New York standard deduction and personal exemptions applied',
-      localTax > 0 ? `Local tax for ${input.city || input.county || 'locality'} applied` : undefined,
-      credits.earned_income && credits.earned_income > 0 ? 'New York EITC (30% of federal, refundable) applied' : undefined
-    ].filter(Boolean) as string[]
+      localTax > 0
+        ? `Local tax for ${input.city || input.county || 'locality'} applied`
+        : undefined,
+      credits.earned_income && credits.earned_income > 0
+        ? 'New York EITC (30% of federal, refundable) applied'
+        : undefined,
+    ].filter(Boolean) as string[],
   };
 }
 
@@ -150,10 +153,7 @@ function calculateNYAGI(input: StateTaxInput): number {
  * @param nyAGI - New York AGI (currently unused, but available for AGI-based phaseouts)
  * @returns Total deductions and exemptions in cents
  */
-function calculateNYDeductionsAndExemptions(
-  input: StateTaxInput,
-  nyAGI: number
-): number {
+function calculateNYDeductionsAndExemptions(input: StateTaxInput, nyAGI: number): number {
   const { filingStatus } = input;
   const rules = NY_RULES_2025;
 
@@ -180,7 +180,6 @@ function calculateNYDeductionsAndExemptions(
 
   return deduction + dependentExemptions;
 }
-
 
 /**
  * Calculate New York local tax
@@ -224,7 +223,6 @@ function calculateNYLocalTax(
   return 0;
 }
 
-
 /**
  * Calculate New York tax credits
  *
@@ -251,25 +249,20 @@ function calculateNYCredits(
   nyAGI: number,
   nyTax: number
 ): StateCredits {
-  let nonRefundableCredits = 0;
+  const nonRefundableCredits = 0;
   let refundableCredits = 0;
-
 
   // New York EITC (30% of federal EITC) - REFUNDABLE
   // Source: https://www.tax.ny.gov/pit/credits/earned_income_credit.htm
   // New York's EITC is refundable (taxpayer can receive it even if they owe no tax)
-  const nyEITC = multiplyCents(
-    federalResult.credits.eitc || 0,
-    0.3
-  );
+  const nyEITC = multiplyCents(federalResult.credits.eitc || 0, 0.3);
 
   // New York EITC is refundable
   refundableCredits += nyEITC;
 
-
   return {
     earned_income: nyEITC,
     nonRefundableCredits,
-    refundableCredits
+    refundableCredits,
   };
 }

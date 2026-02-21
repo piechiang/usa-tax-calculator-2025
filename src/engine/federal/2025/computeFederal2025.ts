@@ -1,5 +1,14 @@
-import type { FederalDiagnostics2025, FederalInput2025, FederalResult2025, FilingStatus } from '../../types';
-import { STANDARD_DEDUCTION_2025, ADDITIONAL_STANDARD_DEDUCTION_2025, SALT_CAP_2025 } from '../../rules/2025/federal/deductions';
+import type {
+  FederalDiagnostics2025,
+  FederalInput2025,
+  FederalResult2025,
+  FilingStatus,
+} from '../../types';
+import {
+  STANDARD_DEDUCTION_2025,
+  ADDITIONAL_STANDARD_DEDUCTION_2025,
+  SALT_CAP_2025,
+} from '../../rules/2025/federal/deductions';
 import { NIIT_THRESHOLDS_2025 } from '../../rules/2025/federal/medicareSocialSecurity';
 
 // Import Schedule 1 adjustment constants
@@ -22,7 +31,7 @@ import { computeAMT2025, type AMTInput } from '../../tax/amt';
 import {
   calculateAdvancedCTC,
   calculateAdvancedAOTC,
-  calculateAdvancedLLC
+  calculateAdvancedLLC,
 } from './advancedCredits';
 
 // Import QBI deduction module
@@ -47,13 +56,13 @@ import { TaxInputValidator } from '../../validation/inputValidation';
 /**
  * Compute federal tax for 2025 tax year using IRS-authoritative constants and methods
  * Implements precise calculation flow following IRS worksheet order
- * 
+ *
  * Sources:
  * - Rev. Proc. 2024-40 (2025 inflation adjustments)
  * - IRS Form 1040 instructions
  * - Schedule SE (self-employment tax)
  * - Capital gains worksheets
- * 
+ *
  * @param input Taxpayer input data
  * @returns Complete federal tax calculation result
  */
@@ -63,20 +72,27 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
 
   // === STEP A: Calculate Self-Employment Tax (needed for AGI adjustment) ===
   const seTaxResult = calculateSelfEmploymentTax(input);
-  if (input.income.scheduleCNet !== 0 || input.income.businessIncome !== 0) {
-    pushWarning(diagnostics, 'FORM-W-001', { field: 'income.scheduleCNet' });
+  if (input.income.scheduleCNet !== 0) {
+    pushWarning(diagnostics, 'FORM-W-001', {
+      field: 'income.scheduleCNet',
+      phase: 'self-employment',
+    });
   }
   if (seTaxResult.totalSETax > 0) {
     pushWarning(diagnostics, 'CALC-W-004', {
       field: 'income.scheduleCNet',
-      context: { amount: formatCents(seTaxResult.netEarningsFromSE) }
+      context: { amount: formatCents(seTaxResult.netEarningsFromSE) },
+      phase: 'self-employment',
     });
-    pushWarning(diagnostics, 'FORM-W-005', { field: 'income.scheduleCNet' });
+    pushWarning(diagnostics, 'FORM-W-005', {
+      field: 'income.scheduleCNet',
+      phase: 'self-employment',
+    });
   }
-  
+
   // === STEP B: Calculate Adjusted Gross Income (AGI) ===
   const agi = calculateAGI(input, seTaxResult.halfDeduction, diagnostics);
-  
+
   // === STEP C: Calculate Deductions (Standard vs Itemized) ===
   const deductionResult = calculateDeductions(input, agi, diagnostics);
 
@@ -92,12 +108,14 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
       pushWarning(diagnostics, 'CALC-W-005', {
         field: 'qbiDeduction',
         context: { amount: formatCents(0) },
-        message: 'Qualified Business Income deduction not available—verify wage/UBIA thresholds'
+        message: 'Qualified Business Income deduction not available—verify wage/UBIA thresholds',
+        phase: 'qbi',
       });
     } else if (qbiResult.isLimitedByOverall) {
       pushWarning(diagnostics, 'CALC-W-005', {
         field: 'qbiDeduction',
-        context: { amount: formatCents(qbiResult.qbiDeduction) }
+        context: { amount: formatCents(qbiResult.qbiDeduction) },
+        phase: 'qbi',
       });
     }
   }
@@ -111,16 +129,32 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
     const nolInput: NOLInput = {
       taxableIncomeBeforeNOL,
       nolCarryforwards: input.nolCarryforwards,
-      taxYear: 2025,
+      taxYear: 2025, // For 2025, 80% limitation applies (post-CARES Act)
       filingStatus: input.filingStatus,
     };
     const nolResult = calculateNOLDeduction(nolInput);
     nolDeduction = nolResult.nolDeduction;
 
+    // Warn about limitation applied based on tax year
     if (nolResult.limitedByEightyPercent) {
       pushWarning(diagnostics, 'CALC-W-019', {
         field: 'nolCarryforwards',
-        context: { amount: formatCents(nolResult.eightyPercentLimit) },
+        context: {
+          amount: formatCents(nolResult.effectiveLimit),
+          limitationType: nolResult.limitationType,
+        },
+        message: `NOL deduction limited to ${nolResult.limitationType} of taxable income ($${formatCents(nolResult.effectiveLimit)})`,
+        phase: 'nol',
+      });
+    }
+
+    // Informational: Note when excess NOL is carried forward
+    if (nolResult.excessNOL > 0) {
+      pushWarning(diagnostics, 'NOL-W-001', {
+        field: 'nolCarryforwards',
+        context: { carryforward: formatCents(nolResult.excessNOL) },
+        message: `$${formatCents(nolResult.excessNOL)} NOL will carry forward to future years`,
+        phase: 'nol',
       });
     }
   }
@@ -137,7 +171,7 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
       taxResult.capitalGainsDetails.at20Percent
     );
     if (preferentialTotal > 0) {
-      pushWarning(diagnostics, 'FORM-W-002', { field: 'income.capGainsNet' });
+      pushWarning(diagnostics, 'FORM-W-002', { field: 'income.capGainsNet', phase: 'income-tax' });
     }
   }
 
@@ -151,10 +185,17 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
     seTaxResult,
     diagnostics
   );
-  
+
   // === STEP G: Calculate Credits ===
-  const credits = calculateCredits(input, agi, taxableIncome, taxResult.totalIncomeTax, diagnostics);
-  
+  const creditsResult = calculateCredits(
+    input,
+    agi,
+    taxableIncome,
+    taxResult.totalIncomeTax,
+    diagnostics
+  );
+  const credits = creditsResult.credits;
+
   // === STEP H: Calculate Final Tax Liability ===
   const totalNonRefundableCredits = addCents(
     credits.ctc || 0,
@@ -165,9 +206,7 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
     credits.otherNonRefundable || 0
   );
 
-  const taxAfterNonRefundableCredits = max0(
-    taxResult.totalIncomeTax - totalNonRefundableCredits
-  );
+  const taxAfterNonRefundableCredits = max0(taxResult.totalIncomeTax - totalNonRefundableCredits);
 
   const totalTax = addCents(
     taxAfterNonRefundableCredits,
@@ -185,15 +224,91 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
     input.payments.eitcAdvance
   );
 
+  // Add diagnostic warnings for unusual payment patterns
+  if (totalPayments > 0 && totalTax > 0) {
+    const paymentRatio = totalPayments / totalTax;
+    if (paymentRatio > 1.5) {
+      pushWarning(diagnostics, 'PAYMENT-W-001', {
+        field: 'payments',
+        context: {
+          payments: formatCents(totalPayments),
+          tax: formatCents(totalTax),
+          ratio: (paymentRatio * 100).toFixed(0) + '%',
+        },
+        message: 'Payments significantly exceed tax liability—verify withholding accuracy',
+        phase: 'payments',
+      });
+    }
+  }
+
   const refundableCredits = addCents(
     credits.eitc || 0,
     credits.adoptionCreditRefundable || 0,
     credits.ptc || 0, // Premium Tax Credit is refundable
     credits.otherRefundable || 0
   );
-  
+
   const refundOrOwe = addCents(totalPayments, refundableCredits) - totalTax;
-  
+
+  // Warn about large refunds (may indicate overwithholding)
+  if (refundOrOwe > 500000) {
+    // > $5,000
+    pushWarning(diagnostics, 'PAYMENT-W-002', {
+      field: 'refundOrOwe',
+      context: { refund: formatCents(refundOrOwe) },
+      message:
+        'Large refund detected—consider adjusting withholding to avoid interest-free loan to IRS',
+      phase: 'payments',
+    });
+  }
+
+  // Warn about large amounts owed (may trigger underpayment penalty)
+  if (refundOrOwe < -100000 && totalPayments < multiplyCents(totalTax, 0.9)) {
+    // Owe > $1,000 and paid < 90%
+    pushWarning(diagnostics, 'PAYMENT-W-003', {
+      field: 'refundOrOwe',
+      context: { owed: formatCents(-refundOrOwe) },
+      message: 'Significant amount owed—may be subject to underpayment penalty (Form 2210)',
+      phase: 'payments',
+    });
+  }
+
+  // === STEP I2: Build Detailed Payment Breakdown ===
+  const paymentBreakdown: import('../../types').PaymentBreakdown = {
+    federalWithheld: input.payments.federalWithheld,
+    estimatedPayments: input.payments.estPayments,
+    eitcAdvancePayments: input.payments.eitcAdvance,
+    totalPayments,
+  };
+
+  // === STEP I3: Build Detailed Refundable Credits Breakdown ===
+  const refundableCreditsBreakdown: import('../../types').RefundableCreditsBreakdown = {
+    eitc: credits.eitc || 0,
+    additionalChildTaxCredit: creditsResult.actc || 0,
+    aotcRefundable: creditsResult.aotcRefundable || 0,
+    adoptionCreditRefundable: credits.adoptionCreditRefundable || 0,
+    ptc: credits.ptc || 0,
+    otherRefundable: credits.otherRefundable || 0,
+    totalRefundableCredits: refundableCredits,
+  };
+
+  // === STEP I4: Build Detailed Refund/Owe Breakdown ===
+  const refundOrOweBreakdown: import('../../types').RefundOrOweBreakdown = {
+    totalTax,
+    totalNonRefundableCredits,
+    taxAfterNonRefundableCredits,
+    totalAdditionalTaxes: addCents(
+      additionalTaxes.seTax || 0,
+      additionalTaxes.niit || 0,
+      additionalTaxes.medicareSurtax || 0,
+      additionalTaxes.amt || 0
+    ),
+    totalPayments,
+    totalRefundableCredits: refundableCredits,
+    paymentsAndCredits: addCents(totalPayments, refundableCredits),
+    refundOrOwe,
+  };
+
   return {
     agi,
     taxableIncome,
@@ -201,7 +316,9 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
     standardDeduction: deductionResult.standardDeduction,
     // Always include itemizedDeduction if user provided any itemized amounts (for reference)
     ...(deductionResult.itemizedTotal > 0 && { itemizedDeduction: deductionResult.itemizedTotal }),
-    ...((input.qbiBusinesses?.length || input.qbiREITPTP) && { qbiDeduction: qbiResult.qbiDeduction }),
+    ...((input.qbiBusinesses?.length || input.qbiREITPTP) && {
+      qbiDeduction: qbiResult.qbiDeduction,
+    }),
     // Include qbiDetails if there are QBI businesses or REIT/PTP income, even if deduction is 0
     ...((input.qbiBusinesses?.length || input.qbiREITPTP) && { qbiDetails: qbiResult }),
     ...(nolDeduction > 0 && { nolDeduction }),
@@ -212,6 +329,9 @@ export function computeFederal2025(input: FederalInput2025): FederalResult2025 {
     totalTax,
     totalPayments,
     refundOrOwe,
+    paymentBreakdown,
+    refundableCreditsBreakdown,
+    refundOrOweBreakdown,
     diagnostics,
   };
 }
@@ -268,14 +388,18 @@ function calculateAGI(
     income.k1.ordinaryBusinessIncome,
     income.k1.passiveIncome,
     income.k1.portfolioIncome,
-    income.businessIncome,
     income.other.otherIncome,
     income.other.royalties,
     income.other.guaranteedPayments
   );
 
   // Calculate Schedule 1 Part II Adjustments
-  const schedule1Adjustments = calculateSchedule1Adjustments(input, totalIncome, seTaxDeduction, diagnostics);
+  const schedule1Adjustments = calculateSchedule1Adjustments(
+    input,
+    totalIncome,
+    seTaxDeduction,
+    diagnostics
+  );
 
   return max0(totalIncome - schedule1Adjustments.totalAdjustments);
 }
@@ -301,7 +425,8 @@ function calculateSchedule1Adjustments(
   if (requestedEducator > maxEducator) {
     pushWarning(diagnostics, 'CALC-W-010', {
       field: 'adjustments.educatorExpenses',
-      context: { max: formatCents(maxEducator), requested: formatCents(requestedEducator) }
+      context: { max: formatCents(maxEducator), requested: formatCents(requestedEducator) },
+      phase: 'agi',
     });
   }
 
@@ -315,7 +440,8 @@ function calculateSchedule1Adjustments(
   if (hsaDeduction > HSA_LIMITS_2025.familyCoverage + HSA_LIMITS_2025.catchUpAge55) {
     pushWarning(diagnostics, 'CALC-W-018', {
       field: 'adjustments.hsaDeduction',
-      context: { amount: formatCents(hsaDeduction) }
+      context: { amount: formatCents(hsaDeduction) },
+      phase: 'agi',
     });
   }
 
@@ -333,7 +459,8 @@ function calculateSchedule1Adjustments(
   if (requestedRetirement > 0 && sepSimpleLimit < requestedRetirement) {
     pushWarning(diagnostics, 'CALC-W-015', {
       field: 'adjustments.selfEmployedRetirement',
-      context: { allowed: formatCents(sepSimpleLimit) }
+      context: { allowed: formatCents(sepSimpleLimit) },
+      phase: 'agi',
     });
   }
 
@@ -348,7 +475,8 @@ function calculateSchedule1Adjustments(
   if (requestedHealthIns > 0 && seHealthInsurance < requestedHealthIns) {
     pushWarning(diagnostics, 'CALC-W-016', {
       field: 'adjustments.selfEmployedHealthInsurance',
-      context: { allowed: formatCents(seHealthInsurance) }
+      context: { allowed: formatCents(seHealthInsurance) },
+      phase: 'agi',
     });
   }
 
@@ -358,7 +486,8 @@ function calculateSchedule1Adjustments(
   breakdown.alimonyPaid = alimonyDeduction;
   if (requestedAlimony > 0 && alimonyDeduction === 0) {
     pushWarning(diagnostics, 'CALC-W-017', {
-      field: 'adjustments.alimonyPaid'
+      field: 'adjustments.alimonyPaid',
+      phase: 'agi',
     });
   }
 
@@ -372,27 +501,37 @@ function calculateSchedule1Adjustments(
   if (requestedIRA > 0 && iraDeduction === 0) {
     pushWarning(diagnostics, 'CALC-W-012', {
       field: 'adjustments.iraDeduction',
-      context: { threshold: formatCents(IRA_DEDUCTION_LIMITS_2025.coveredByPlan.single.noDeduction) }
+      context: {
+        threshold: formatCents(IRA_DEDUCTION_LIMITS_2025.coveredByPlan.single.noDeduction),
+      },
+      phase: 'agi',
     });
   } else if (requestedIRA > 0 && iraDeduction < requestedIRA) {
     pushWarning(diagnostics, 'CALC-W-011', {
       field: 'adjustments.iraDeduction',
-      context: { requested: formatCents(requestedIRA), allowed: formatCents(iraDeduction) }
+      context: { requested: formatCents(requestedIRA), allowed: formatCents(iraDeduction) },
+      phase: 'agi',
     });
   }
 
   // Line 21: Student loan interest deduction (max $2,500, subject to phaseout)
   const requestedSLI = adjustments.studentLoanInterest || 0;
-  const studentLoanDeduction = calculateStudentLoanDeduction(requestedSLI, totalIncome, filingStatus);
+  const studentLoanDeduction = calculateStudentLoanDeduction(
+    requestedSLI,
+    totalIncome,
+    filingStatus
+  );
   breakdown.studentLoanInterest = studentLoanDeduction;
   if (requestedSLI > 0 && filingStatus === 'marriedSeparately') {
     pushWarning(diagnostics, 'CALC-W-014', {
-      field: 'adjustments.studentLoanInterest'
+      field: 'adjustments.studentLoanInterest',
+      phase: 'agi',
     });
   } else if (requestedSLI > 0 && studentLoanDeduction < requestedSLI && studentLoanDeduction > 0) {
     pushWarning(diagnostics, 'CALC-W-013', {
       field: 'adjustments.studentLoanInterest',
-      context: { requested: formatCents(requestedSLI), allowed: formatCents(studentLoanDeduction) }
+      context: { requested: formatCents(requestedSLI), allowed: formatCents(studentLoanDeduction) },
+      phase: 'agi',
     });
   }
 
@@ -492,9 +631,10 @@ function calculateIRADeduction(input: FederalInput2025, totalIncome: number): nu
   };
 
   const primaryAge = calculateAge(primary?.birthDate);
-  const maxContribution = primaryAge >= 50
-    ? IRA_DEDUCTION_LIMITS_2025.contributionLimit + IRA_DEDUCTION_LIMITS_2025.catchUpAge50
-    : IRA_DEDUCTION_LIMITS_2025.contributionLimit;
+  const maxContribution =
+    primaryAge >= 50
+      ? IRA_DEDUCTION_LIMITS_2025.contributionLimit + IRA_DEDUCTION_LIMITS_2025.catchUpAge50
+      : IRA_DEDUCTION_LIMITS_2025.contributionLimit;
 
   // Cap contribution at maximum
   const cappedContribution = Math.min(contribution, maxContribution);
@@ -537,9 +677,10 @@ function calculateStudentLoanDeduction(
   const cappedInterest = Math.min(interestPaid, maxDeduction);
 
   // Get phaseout range for filing status
-  const phaseoutRange = filingStatus === 'marriedJointly'
-    ? STUDENT_LOAN_INTEREST_2025.phaseOut.marriedJointly
-    : STUDENT_LOAN_INTEREST_2025.phaseOut.single;
+  const phaseoutRange =
+    filingStatus === 'marriedJointly'
+      ? STUDENT_LOAN_INTEREST_2025.phaseOut.marriedJointly
+      : STUDENT_LOAN_INTEREST_2025.phaseOut.single;
 
   return applyPhaseout(cappedInterest, magi, phaseoutRange.start, phaseoutRange.end);
 }
@@ -570,7 +711,9 @@ function applyPhaseout(
  */
 function getPhaseoutRange(
   filingStatus: FilingStatus,
-  ranges: typeof IRA_DEDUCTION_LIMITS_2025.coveredByPlan | typeof IRA_DEDUCTION_LIMITS_2025.spouseNotCovered
+  ranges:
+    | typeof IRA_DEDUCTION_LIMITS_2025.coveredByPlan
+    | typeof IRA_DEDUCTION_LIMITS_2025.spouseNotCovered
 ): { fullDeduction: number; noDeduction: number } | null {
   // Check if this is the spouseNotCovered ranges (has different structure)
   if ('fullDeduction' in ranges && 'noDeduction' in ranges) {
@@ -619,9 +762,14 @@ function calculateDeductions(
 
   // Additional standard deduction for age 65+ and/or blindness
   // Use correct amounts based on filing status (married vs unmarried)
-  const isMarried = input.filingStatus === 'marriedJointly' || input.filingStatus === 'marriedSeparately';
-  const age65Amount = isMarried ? ADDITIONAL_STANDARD_DEDUCTION_2025.age65OrOlderMarried : ADDITIONAL_STANDARD_DEDUCTION_2025.age65OrOlderUnmarried;
-  const blindAmount = isMarried ? ADDITIONAL_STANDARD_DEDUCTION_2025.blindMarried : ADDITIONAL_STANDARD_DEDUCTION_2025.blindUnmarried;
+  const isMarried =
+    input.filingStatus === 'marriedJointly' || input.filingStatus === 'marriedSeparately';
+  const age65Amount = isMarried
+    ? ADDITIONAL_STANDARD_DEDUCTION_2025.age65OrOlderMarried
+    : ADDITIONAL_STANDARD_DEDUCTION_2025.age65OrOlderUnmarried;
+  const blindAmount = isMarried
+    ? ADDITIONAL_STANDARD_DEDUCTION_2025.blindMarried
+    : ADDITIONAL_STANDARD_DEDUCTION_2025.blindUnmarried;
 
   if (input.primary) {
     if (input.primary.isBlind) {
@@ -640,24 +788,21 @@ function calculateDeductions(
       standardDeduction += age65Amount;
     }
   }
-  
+
   // Calculate itemized deductions
   const itemized = input.itemized;
-  
+
   if ((itemized.stateLocalTaxes || 0) > SALT_CAP_2025) {
-    pushWarning(diagnostics, 'CALC-W-006', { field: 'itemized.stateLocalTaxes' });
+    pushWarning(diagnostics, 'CALC-W-006', {
+      field: 'itemized.stateLocalTaxes',
+      phase: 'deductions',
+    });
   }
 
-  const saltDeduction = Math.min(
-    itemized.stateLocalTaxes || 0,
-    SALT_CAP_2025
-  );
-  
-  const medicalDeduction = calculateMedicalDeduction(
-    itemized.medical || 0,
-    agi
-  );
-  
+  const saltDeduction = Math.min(itemized.stateLocalTaxes || 0, SALT_CAP_2025);
+
+  const medicalDeduction = calculateMedicalDeduction(itemized.medical || 0, agi);
+
   const itemizedTotal = addCents(
     saltDeduction,
     itemized.mortgageInterest,
@@ -667,15 +812,16 @@ function calculateDeductions(
   );
 
   // Choose higher deduction (unless user explicitly forces itemized)
-  const useStandard = input.forceItemized ? false : (standardDeduction >= itemizedTotal);
+  const useStandard = input.forceItemized ? false : standardDeduction >= itemizedTotal;
 
   if (useStandard && itemizedTotal > 0) {
     pushWarning(diagnostics, 'CALC-W-007', {
       field: 'itemized',
       context: {
         stdAmount: formatCents(standardDeduction),
-        itemAmount: formatCents(itemizedTotal)
-      }
+        itemAmount: formatCents(itemizedTotal),
+      },
+      phase: 'deductions',
     });
   } else if (input.forceItemized && standardDeduction > itemizedTotal) {
     // Warn user they're forcing itemized when standard is higher
@@ -684,8 +830,9 @@ function calculateDeductions(
       context: {
         stdAmount: formatCents(standardDeduction),
         itemAmount: formatCents(itemizedTotal),
-        taxImpact: formatCents(standardDeduction - itemizedTotal)
-      }
+        taxImpact: formatCents(standardDeduction - itemizedTotal),
+      },
+      phase: 'deductions',
     });
   }
 
@@ -693,7 +840,7 @@ function calculateDeductions(
     deduction: useStandard ? standardDeduction : itemizedTotal,
     isStandard: useStandard,
     standardDeduction,
-    itemizedTotal
+    itemizedTotal,
   };
 }
 
@@ -713,32 +860,32 @@ function calculateIncomeTax(input: FederalInput2025, taxableIncome: number) {
   const qualifiedDividends = input.income.dividends.qualified || 0;
   const longTermCapGains = Math.max(0, input.income.capGainsNet || 0); // Only positive LTCG get preferential rates
   const totalPreferential = qualifiedDividends + longTermCapGains;
-  
+
   if (totalPreferential === 0 || taxableIncome <= 0) {
     // No preferential income - use regular tax brackets only
     return {
       regularTax: calculateRegularTax2025(taxableIncome, input.filingStatus),
       preferentialTax: 0,
       totalIncomeTax: calculateRegularTax2025(taxableIncome, input.filingStatus),
-      capitalGainsDetails: null
+      capitalGainsDetails: null,
     };
   }
-  
+
   // Calculate tax using IRS worksheet method
   const ordinaryIncome = Math.max(0, taxableIncome - totalPreferential);
   const ordinaryTax = calculateRegularTax2025(ordinaryIncome, input.filingStatus);
-  
+
   const preferentialResult = computePreferentialRatesTax2025({
     filingStatus: input.filingStatus,
     taxableIncome,
-    qualifiedDividendsAndLTCG: totalPreferential
+    qualifiedDividendsAndLTCG: totalPreferential,
   });
-  
+
   return {
     regularTax: ordinaryTax,
     preferentialTax: preferentialResult.preferentialTax,
     totalIncomeTax: ordinaryTax + preferentialResult.preferentialTax,
-    capitalGainsDetails: preferentialResult
+    capitalGainsDetails: preferentialResult,
   };
 }
 
@@ -808,9 +955,13 @@ function calculateAdditionalTaxes(
   if (niit > 0) {
     pushWarning(diagnostics, 'CALC-W-002', {
       field: 'income.capGainsNet',
-      context: { amount: formatCents(niitBase) }
+      context: { amount: formatCents(niitBase) },
+      phase: 'additional-taxes',
     });
-    pushWarning(diagnostics, 'FORM-W-007', { field: 'income.capGainsNet' });
+    pushWarning(diagnostics, 'FORM-W-007', {
+      field: 'income.capGainsNet',
+      phase: 'additional-taxes',
+    });
   }
 
   // Additional Medicare Tax is already calculated in SE tax
@@ -819,21 +970,19 @@ function calculateAdditionalTaxes(
     const medicareBase = Math.round(medicareSurtax / 0.009);
     pushWarning(diagnostics, 'CALC-W-003', {
       field: 'income.wages',
-      context: { amount: formatCents(medicareBase) }
+      context: { amount: formatCents(medicareBase) },
+      phase: 'additional-taxes',
     });
-    pushWarning(diagnostics, 'FORM-W-006', { field: 'income.wages' });
+    pushWarning(diagnostics, 'FORM-W-006', { field: 'income.wages', phase: 'additional-taxes' });
   }
 
   // Alternative Minimum Tax (AMT) - Form 6251
-  const amtResult = calculateAMT(
-    input,
-    agi,
-    taxableIncome,
-    deductionResult,
-    regularTax
-  );
+  const amtResult = calculateAMT(input, agi, taxableIncome, deductionResult, regularTax);
   if (amtResult.amt > 0) {
-    pushWarning(diagnostics, 'CALC-W-001', { field: 'additionalTaxes.amt' });
+    pushWarning(diagnostics, 'CALC-W-001', {
+      field: 'additionalTaxes.amt',
+      phase: 'additional-taxes',
+    });
   }
 
   return {
@@ -854,32 +1003,36 @@ function calculateCredits(
   taxableIncome: number,
   taxBeforeCredits: number,
   diagnostics: FederalDiagnostics2025
-): FederalResult2025['credits'] {
+): {
+  credits: FederalResult2025['credits'];
+  actc: number;
+  aotcRefundable: number;
+} {
   // Earned Income Tax Credit using new 2025 authoritative calculation
   const earnedIncome = addCents(
     input.income.wages,
     input.income.scheduleCNet // SE income
   );
-  
+
   const investmentIncome = addCents(
     input.income.interest,
     input.income.dividends.ordinary,
     input.income.dividends.qualified,
     Math.max(0, input.income.capGainsNet || 0)
   );
-  
+
   // Determine qualifying children count (convert from legacy dependents if needed)
   // Note: EITC has a maximum of 3 qualifying children per IRS rules
   let qualifyingChildrenCount: 0 | 1 | 2 | 3 = 0;
   if (input.qualifyingChildren && input.qualifyingChildren.length > 0) {
     // Use actual qualifying children array if available
     const count = input.qualifyingChildren.length;
-    qualifyingChildrenCount = (Math.min(3, count) as 0 | 1 | 2 | 3);
+    qualifyingChildrenCount = Math.min(3, count) as 0 | 1 | 2 | 3;
   } else if (input.dependents > 0) {
     // Fallback to dependents count (legacy support)
     // This is not ideal as not all dependents are qualifying children for EITC
     const count = input.dependents;
-    qualifyingChildrenCount = (Math.min(3, count) as 0 | 1 | 2 | 3);
+    qualifyingChildrenCount = Math.min(3, count) as 0 | 1 | 2 | 3;
   }
 
   // Calculate ages for EITC eligibility (childless taxpayers need age 25-64)
@@ -901,16 +1054,16 @@ function calculateCredits(
     qualifyingChildren: qualifyingChildrenCount,
     investmentIncome,
     ...(primaryAge !== undefined && { primaryAge }),
-    ...(spouseAge !== undefined && { spouseAge })
+    ...(spouseAge !== undefined && { spouseAge }),
   });
-  
+
   // Child Tax Credit using existing advanced logic
   const ctcResult = calculateAdvancedCTC(input, agi, taxBeforeCredits);
-  
+
   // Education credits using existing advanced logic
   const aotcResult = calculateAdvancedAOTC(input, agi);
   const llcResult = calculateAdvancedLLC(input, agi);
-  
+
   // Prefer AOTC over LLC if both are available (mutual exclusion)
   const finalAOTC = aotcResult.aotc;
   const finalLLC = finalAOTC > 0 ? 0 : llcResult.llc;
@@ -926,13 +1079,14 @@ function calculateCredits(
       isTaxpayerDependent: input.saversCreditInfo.isTaxpayerDependent ?? false,
       taxpayerContributions: input.saversCreditInfo.taxpayerContributions || 0,
       taxpayerDistributions: input.saversCreditInfo.taxpayerDistributions,
-      ...(input.filingStatus === 'marriedJointly' && input.saversCreditInfo.spouseAge && {
-        spouseAge: input.saversCreditInfo.spouseAge,
-        isSpouseStudent: input.saversCreditInfo.isSpouseStudent ?? false,
-        isSpouseDependent: input.saversCreditInfo.isSpouseDependent ?? false,
-        spouseContributions: input.saversCreditInfo.spouseContributions,
-        spouseDistributions: input.saversCreditInfo.spouseDistributions,
-      }),
+      ...(input.filingStatus === 'marriedJointly' &&
+        input.saversCreditInfo.spouseAge && {
+          spouseAge: input.saversCreditInfo.spouseAge,
+          isSpouseStudent: input.saversCreditInfo.isSpouseStudent ?? false,
+          isSpouseDependent: input.saversCreditInfo.isSpouseDependent ?? false,
+          spouseContributions: input.saversCreditInfo.spouseContributions,
+          spouseDistributions: input.saversCreditInfo.spouseDistributions,
+        }),
     });
     saversCredit = saversCreditResult.saversCredit;
   }
@@ -1015,10 +1169,7 @@ function calculateCredits(
     ptc,
     ptcRepayment,
     otherNonRefundable: addCents(saversCredit, childCareCredit),
-    otherRefundable: addCents(
-      ctcResult.additionalChildTaxCredit,
-      aotcResult.refundableAOTC
-    ),
+    otherRefundable: addCents(ctcResult.additionalChildTaxCredit, aotcResult.refundableAOTC),
   };
 
   const baseCTC = ctcResult.eligibleChildren * CTC_2025.maxCredit;
@@ -1027,7 +1178,8 @@ function calculateCredits(
     if (reduction > 0) {
       pushWarning(diagnostics, 'CREDIT-W-001', {
         field: 'credits.ctc',
-        context: { amount: formatCents(reduction) }
+        context: { amount: formatCents(reduction) },
+        phase: 'credits',
       });
     }
   }
@@ -1035,35 +1187,37 @@ function calculateCredits(
   if (eitcResult.disqualified) {
     pushWarning(diagnostics, 'CREDIT-W-002', {
       field: 'credits.eitc',
-      message: 'Earned Income Tax Credit disqualified—review age, SSN, and investment income tests'
+      message: 'Earned Income Tax Credit disqualified—review age, SSN, and investment income tests',
+      phase: 'credits',
     });
   } else if (eitcResult.eitc > 0 && eitcResult.details.maxCredit > eitcResult.eitc) {
     const reduction = eitcResult.details.maxCredit - eitcResult.eitc;
     if (reduction > 0) {
       pushWarning(diagnostics, 'CREDIT-W-002', {
         field: 'credits.eitc',
-        context: { amount: formatCents(reduction) }
+        context: { amount: formatCents(reduction) },
+        phase: 'credits',
       });
     }
   }
 
-  return creditsResult;
+  return {
+    credits: creditsResult,
+    actc: ctcResult.additionalChildTaxCredit,
+    aotcRefundable: aotcResult.refundableAOTC,
+  };
 }
 
 /**
  * Calculate Qualified Business Income (QBI) Deduction - IRC §199A
  * Form 8995 (simplified) or Form 8995-A (complex)
  */
-function calculateQBIDeduction(
-  input: FederalInput2025,
-  taxableIncomeBeforeQBI: number
-) {
+function calculateQBIDeduction(input: FederalInput2025, taxableIncomeBeforeQBI: number) {
   // If no QBI businesses or REIT/PTP income, no deduction
   const hasQBIBusinesses = input.qbiBusinesses && input.qbiBusinesses.length > 0;
-  const hasREITPTP = input.qbiREITPTP && (
-    (input.qbiREITPTP.reitDividends || 0) > 0 ||
-    (input.qbiREITPTP.ptpIncome || 0) > 0
-  );
+  const hasREITPTP =
+    input.qbiREITPTP &&
+    ((input.qbiREITPTP.reitDividends || 0) > 0 || (input.qbiREITPTP.ptpIncome || 0) > 0);
 
   if (!hasQBIBusinesses && !hasREITPTP) {
     // No QBI deduction - return zero result
@@ -1105,17 +1259,20 @@ function calculateQBIDeduction(
 
 /**
  * Collect input-related diagnostics before calculations
+ * Performs comprehensive multi-field consistency validation
  */
 function collectInputDiagnostics(
   input: FederalInput2025,
   diagnostics: FederalDiagnostics2025
 ): void {
+  // === Filing Status Validations ===
   const marriedSeparatelyError = TaxInputValidator.validateMarriedSeparately(input);
   if (marriedSeparatelyError) {
     pushError(diagnostics, 'INPUT-E-001', {
       field: 'spouse',
       context: { field: 'spouse' },
-      message: marriedSeparatelyError
+      message: marriedSeparatelyError,
+      phase: 'input-validation',
     });
   }
 
@@ -1124,7 +1281,8 @@ function collectInputDiagnostics(
     pushError(diagnostics, 'INPUT-E-001', {
       field: 'spouse',
       context: { field: 'spouse' },
-      message: marriedJointlyError
+      message: marriedJointlyError,
+      phase: 'input-validation',
     });
   }
 
@@ -1133,15 +1291,88 @@ function collectInputDiagnostics(
     pushError(diagnostics, 'INPUT-E-001', {
       field: 'filingStatus',
       context: { field: 'filingStatus' },
-      message: hohError
+      message: hohError,
+      phase: 'input-validation',
     });
   }
 
+  const singleStatusError = TaxInputValidator.validateSingleFilingStatus(input);
+  if (singleStatusError) {
+    pushError(diagnostics, 'INPUT-E-001', {
+      field: 'filingStatus',
+      context: { field: 'filingStatus' },
+      message: singleStatusError,
+      phase: 'input-validation',
+    });
+  }
+
+  // === Dependents Consistency ===
+  const dependentsConsistencyError = TaxInputValidator.validateDependentsConsistency(input);
+  if (dependentsConsistencyError) {
+    pushError(diagnostics, 'INPUT-E-001', {
+      field: 'dependents',
+      context: { field: 'dependents' },
+      message: dependentsConsistencyError,
+      phase: 'input-validation',
+    });
+  }
+
+  // === Children Age Warnings ===
   const childAgeWarnings = TaxInputValidator.validateQualifyingChildrenAges(input);
-  childAgeWarnings.forEach(message => {
+  childAgeWarnings.forEach((message) => {
     pushWarning(diagnostics, 'CREDIT-W-006', {
       field: 'qualifyingChildren',
-      message
+      message,
+      phase: 'input-validation',
+    });
+  });
+
+  // === Income Reasonableness ===
+  const withholdingWarning = TaxInputValidator.validateWithholdingReasonableness(input);
+  if (withholdingWarning) {
+    pushWarning(diagnostics, 'INPUT-W-001', {
+      field: 'payments.federalWithheld',
+      message: withholdingWarning,
+      phase: 'input-validation',
+    });
+  }
+
+  const negativeIncomeWarnings = TaxInputValidator.validateNegativeIncome(input);
+  negativeIncomeWarnings.forEach((message) => {
+    pushWarning(diagnostics, 'INPUT-W-002', {
+      field: 'income',
+      message,
+      phase: 'input-validation',
+    });
+  });
+
+  // === Education Expenses Consistency ===
+  const educationConsistencyWarning = TaxInputValidator.validateEducationExpensesConsistency(input);
+  if (educationConsistencyWarning) {
+    pushWarning(diagnostics, 'INPUT-W-003', {
+      field: 'educationExpenses',
+      message: educationConsistencyWarning,
+      phase: 'input-validation',
+    });
+  }
+
+  // === QBI Consistency ===
+  const qbiConsistencyWarning = TaxInputValidator.validateQBIConsistency(input);
+  if (qbiConsistencyWarning) {
+    pushWarning(diagnostics, 'INPUT-W-004', {
+      field: 'qbiBusinesses',
+      message: qbiConsistencyWarning,
+      phase: 'input-validation',
+    });
+  }
+
+  // === Itemized Deductions Reasonableness ===
+  const itemizedWarnings = TaxInputValidator.validateItemizedDeductionsReasonableness(input);
+  itemizedWarnings.forEach((message) => {
+    pushWarning(diagnostics, 'INPUT-W-005', {
+      field: 'itemized',
+      message,
+      phase: 'input-validation',
     });
   });
 }
@@ -1150,6 +1381,7 @@ interface DiagnosticOptions {
   field?: string;
   context?: Record<string, unknown>;
   message?: string;
+  phase?: import('../../types').CalculationPhase;
 }
 
 function pushWarning(
@@ -1157,7 +1389,7 @@ function pushWarning(
   code: DiagnosticCode,
   options: DiagnosticOptions = {}
 ): void {
-  addWarning(diagnostics, code, options.context, options.field);
+  addWarning(diagnostics, code, options.context, options.field, options.phase);
   if (options.message) {
     const last = diagnostics.warnings[diagnostics.warnings.length - 1];
     if (last && last.code === code) {
@@ -1171,7 +1403,7 @@ function pushError(
   code: DiagnosticCode,
   options: DiagnosticOptions = {}
 ): void {
-  addError(diagnostics, code, options.context, options.field);
+  addError(diagnostics, code, options.context, options.field, options.phase);
   if (options.message) {
     const last = diagnostics.errors[diagnostics.errors.length - 1];
     if (last && last.code === code) {

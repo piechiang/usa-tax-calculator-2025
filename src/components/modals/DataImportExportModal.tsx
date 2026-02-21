@@ -25,7 +25,7 @@ export function DataImportExportModal({
   onImport,
   onExport,
   currentData,
-  t
+  t,
 }: DataImportExportModalProps) {
   if (!isOpen) {
     return null;
@@ -50,7 +50,13 @@ export function DataImportExportModal({
         </div>
         <div className="p-6">
           <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
-            <DataImportExport onImport={onImport} onExport={onExport} currentData={currentData} t={t} />
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <DataImportExport
+              onImport={onImport}
+              onExport={onExport}
+              currentData={currentData as any}
+              t={t}
+            />
           </Suspense>
         </div>
       </div>

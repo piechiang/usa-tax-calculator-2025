@@ -33,10 +33,7 @@ import { dollarsToCents } from '../../../util/money';
  * - Next $2,500 (single) / $5,000 (MFJ): 4%
  * - Over $3,000 (single) / $6,000 (MFJ): 5%
  */
-export const AL_TAX_BRACKETS_2025: Record<
-  FilingStatus,
-  Array<{ max: number; rate: number }>
-> = {
+export const AL_TAX_BRACKETS_2025: Record<FilingStatus, Array<{ max: number; rate: number }>> = {
   single: [
     { max: dollarsToCents(500), rate: 0.02 }, // 2% on first $500
     { max: dollarsToCents(3000), rate: 0.04 }, // 4% on $501-$3,000
@@ -127,8 +124,9 @@ export function getDependentExemptionAmount(agi: number): number {
     }
   }
   // Should never reach here due to Infinity in last tier
-  return AL_DEPENDENT_EXEMPTIONS_2025[AL_DEPENDENT_EXEMPTIONS_2025.length - 1]
-    .exemptionAmount;
+  return (
+    AL_DEPENDENT_EXEMPTIONS_2025[AL_DEPENDENT_EXEMPTIONS_2025.length - 1]?.exemptionAmount ?? 0
+  );
 }
 
 /**

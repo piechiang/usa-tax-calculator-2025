@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   listClients,
   saveClientSecure,
@@ -34,7 +34,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
   useEffect(() => {
     if (isOpen) {
       const clientList = listClients();
-      const hasUnencrypted = clientList.some(c => !c.isEncrypted);
+      const hasUnencrypted = clientList.some((c) => !c.isEncrypted);
       setShowMigrationBanner(hasUnencrypted && isCryptoAvailable());
     }
   }, [isOpen]);
@@ -86,7 +86,11 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
     setError('');
     try {
       const snap = getSnapshot();
-      const row = await saveClientSecure(name || 'Untitled Return', snap, selected || undefined);
+      const row = await saveClientSecure(
+        name || 'Untitled Return',
+        snap as unknown as Parameters<typeof saveClientSecure>[1],
+        selected || undefined
+      );
       setName(row.name);
       setSelected(row.id);
       refresh();
@@ -112,7 +116,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
     try {
       const snap = await loadClientSecure(selected);
       if (snap) {
-        loadFromSnapshot(snap);
+        loadFromSnapshot(snap as unknown as Partial<TaxCalculatorSnapshot>);
         onClose();
       } else {
         setError('Failed to load client data');
@@ -158,7 +162,11 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
   };
 
   const handleMigrateAll = async () => {
-    if (!confirm('Migrate all unencrypted clients to encrypted storage? This is recommended for security.')) {
+    if (
+      !confirm(
+        'Migrate all unencrypted clients to encrypted storage? This is recommended for security.'
+      )
+    ) {
       return;
     }
 
@@ -187,7 +195,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
     }
   };
 
-  const selectedClient = clients.find(c => c.id === selected);
+  const selectedClient = clients.find((c) => c.id === selected);
   const selectedIsEncrypted = selectedClient?.isEncrypted ?? false;
 
   return (
@@ -240,8 +248,8 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
             <div className="mx-4 mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
               <p className="font-medium">⚠️ Encryption Unavailable</p>
               <p className="mt-1">
-                Your browser doesn't support encryption. Client data will be saved unencrypted.
-                Use HTTPS or localhost for encryption support.
+                Your browser doesn't support encryption. Client data will be saved unencrypted. Use
+                HTTPS or localhost for encryption support.
               </p>
             </div>
           )}
@@ -252,7 +260,8 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                 <div>
                   <p className="font-medium">🔐 Enhance Security</p>
                   <p className="mt-1">
-                    You have unencrypted client data. Migrate to encrypted storage for better protection.
+                    You have unencrypted client data. Migrate to encrypted storage for better
+                    protection.
                   </p>
                 </div>
                 <div className="flex gap-2 ml-4">
@@ -289,10 +298,13 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                 {clients.length === 0 && (
                   <div className="p-3 text-gray-500 text-sm">No clients yet</div>
                 )}
-                {clients.map(c => (
+                {clients.map((c) => (
                   <button
                     key={c.id}
-                    onClick={() => { setSelected(c.id); setName(c.name); }}
+                    onClick={() => {
+                      setSelected(c.id);
+                      setName(c.name);
+                    }}
                     className={`w-full text-left p-3 hover:bg-gray-50 ${selected === c.id ? 'bg-blue-50 border-l-2 border-blue-600' : ''}`}
                     aria-label={`Select client ${c.name}, last updated ${new Date(c.updatedAt).toLocaleDateString()}`}
                   >
@@ -346,7 +358,7 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                 className="w-full border rounded px-3 py-2"
                 placeholder="Client name (e.g., John & Jane 2025)"
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 aria-label="Client name for saving tax return"
               />
               <div className="mt-2">
@@ -354,7 +366,11 @@ export default function ClientManager({ isOpen, onClose, getSnapshot, loadFromSn
                   onClick={handleSave}
                   disabled={isLoading}
                   className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                  aria-label={selected ? 'Update existing client with current data' : 'Save current tax return as new client'}
+                  aria-label={
+                    selected
+                      ? 'Update existing client with current data'
+                      : 'Save current tax return as new client'
+                  }
                 >
                   {isLoading ? 'Saving...' : selected ? 'Update' : 'Save New'}
                 </button>

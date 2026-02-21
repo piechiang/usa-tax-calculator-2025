@@ -6,8 +6,9 @@ import {
   TaxCalculationResult,
   UserProgress,
   ValidationError,
-  TaxDataImport
+  TaxDataImport,
 } from '../types/EnhancedTaxTypes';
+import { logger } from '../utils/logger';
 
 interface WizardState {
   data: Partial<EnhancedTaxReturn>;
@@ -83,7 +84,7 @@ export const useEnhancedTaxWizard = (
     autoSave = true,
     autoSaveInterval = 30000,
     autoCalculate = true,
-    storageKey = 'enhancedTaxWizard'
+    storageKey = 'enhancedTaxWizard',
   } = options;
 
   const [wizardState, setWizardState] = useState<WizardState>({
@@ -93,16 +94,16 @@ export const useEnhancedTaxWizard = (
       currentSection: 'basic-info',
       overallProgress: 0,
       lastSaved: new Date(),
-      estimatedTimeRemaining: 0
+      estimatedTimeRemaining: 0,
     },
     validation: {
       errors: [],
-      warnings: []
+      warnings: [],
     },
     calculations: null,
     isDirty: false,
     isCalculating: false,
-    lastCalculated: null
+    lastCalculated: null,
   });
 
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -114,19 +115,19 @@ export const useEnhancedTaxWizard = (
       const dataToSave = {
         data: wizardState.data,
         progress: wizardState.progress,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
 
-      setWizardState(prev => ({
+      setWizardState((prev) => ({
         ...prev,
         progress: {
           ...prev.progress,
-          lastSaved: new Date()
-        }
+          lastSaved: new Date(),
+        },
       }));
     } catch (error) {
-      console.error('Failed to save to storage:', error);
+      logger.error('Failed to save to storage', error instanceof Error ? error : undefined);
     }
   }, [wizardState.data, wizardState.progress, storageKey]);
 
@@ -135,14 +136,14 @@ export const useEnhancedTaxWizard = (
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsedData = JSON.parse(saved);
-        setWizardState(prev => ({
+        setWizardState((prev) => ({
           ...prev,
           data: parsedData.data || {},
-          progress: parsedData.progress || prev.progress
+          progress: parsedData.progress || prev.progress,
         }));
       }
     } catch (error) {
-      console.error('Failed to load from storage:', error);
+      logger.error('Failed to load from storage', error instanceof Error ? error : undefined);
     }
   }, [storageKey]);
 
@@ -176,22 +177,25 @@ export const useEnhancedTaxWizard = (
   }, [wizardState.isDirty, autoSave, autoSaveInterval, saveToStorage]);
 
   // getData function
-  const getData = useCallback((path?: string) => {
-    if (!path) return wizardState.data;
-    return getValueAtPath(wizardState.data, path);
-  }, [wizardState.data]);
+  const getData = useCallback(
+    (path?: string) => {
+      if (!path) return wizardState.data;
+      return getValueAtPath(wizardState.data, path);
+    },
+    [wizardState.data]
+  );
 
   // Calculate function
   const calculate = useCallback(async (): Promise<void> => {
-    setWizardState(prev => ({ ...prev, isCalculating: true }));
+    setWizardState((prev) => ({ ...prev, isCalculating: true }));
 
     try {
       // Simulate calculation delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Perform tax calculations based on current data
       const personalInfo = getData('personalInfo') as Partial<PersonalInformation>;
-      const incomeSourcesEach = getData('incomeSourcesEach') as IncomeSource[] || [];
+      const incomeSourcesEach = (getData('incomeSourcesEach') as IncomeSource[]) || [];
 
       const totalIncome = incomeSourcesEach.reduce((sum, income) => sum + (income.amount || 0), 0);
       const standardDeduction = getStandardDeduction(personalInfo?.filingStatus);
@@ -222,29 +226,32 @@ export const useEnhancedTaxWizard = (
         calculationDetails: [],
         optimizationSuggestions: [],
         warnings: [],
-        errors: []
+        errors: [],
       };
 
-      setWizardState(prev => ({
+      setWizardState((prev) => ({
         ...prev,
         calculations: result,
         isCalculating: false,
         lastCalculated: new Date(),
-        isDirty: false
+        isDirty: false,
       }));
     } catch (error) {
-      console.error('Calculation error:', error);
-      setWizardState(prev => ({
+      logger.error('Calculation error', error instanceof Error ? error : undefined);
+      setWizardState((prev) => ({
         ...prev,
         isCalculating: false,
         validation: {
           ...prev.validation,
-          errors: [...prev.validation.errors, {
-            field: 'calculation',
-            message: 'Error occurred during tax calculation',
-            severity: 'error' as const
-          }]
-        }
+          errors: [
+            ...prev.validation.errors,
+            {
+              field: 'calculation',
+              message: 'Error occurred during tax calculation',
+              severity: 'error' as const,
+            },
+          ],
+        },
       }));
     }
   }, [getData]);
@@ -269,7 +276,7 @@ export const useEnhancedTaxWizard = (
   }, [wizardState.isDirty, wizardState.isCalculating, autoCalculate, calculate]);
 
   const updateData = useCallback((path: string, value: unknown) => {
-    setWizardState(prev => {
+    setWizardState((prev) => {
       const newData = { ...prev.data };
       setValueAtPath(newData, path, value);
 
@@ -279,14 +286,14 @@ export const useEnhancedTaxWizard = (
         isDirty: true,
         validation: {
           ...prev.validation,
-          errors: prev.validation.errors.filter(e => e.field !== path)
-        }
+          errors: prev.validation.errors.filter((e) => e.field !== path),
+        },
       };
     });
   }, []);
 
   const resetData = useCallback(() => {
-    setWizardState(prev => ({
+    setWizardState((prev) => ({
       ...prev,
       data: {},
       isDirty: false,
@@ -297,69 +304,72 @@ export const useEnhancedTaxWizard = (
         currentSection: 'basic-info',
         overallProgress: 0,
         lastSaved: new Date(),
-        estimatedTimeRemaining: 0
-      }
+        estimatedTimeRemaining: 0,
+      },
     }));
     clearStorage();
   }, [clearStorage]);
 
-  const validateField = useCallback((field: string): ValidationError[] => {
-    const errors: ValidationError[] = [];
-    const value = getData(field);
+  const validateField = useCallback(
+    (field: string): ValidationError[] => {
+      const errors: ValidationError[] = [];
+      const value = getData(field);
 
-    // Add validation logic based on field type and requirements
-    if (field === 'personalInfo.ssn') {
-      if (!value) {
-        errors.push({
-          field,
-          message: 'Social Security Number is required',
-          severity: 'error'
-        });
-      } else if (typeof value === 'string' && !/^\d{3}-\d{2}-\d{4}$/.test(value)) {
-        errors.push({
-          field,
-          message: 'SSN must be in format XXX-XX-XXXX',
-          severity: 'error'
-        });
-      }
-    }
-
-    if (field === 'personalInfo.dateOfBirth') {
-      if (!value) {
-        errors.push({
-          field,
-          message: 'Date of birth is required',
-          severity: 'error'
-        });
-      } else if (typeof value === 'string' || typeof value === 'number') {
-        const birthDate = new Date(value);
-        const today = new Date();
-        const age = today.getFullYear() - birthDate.getFullYear();
-
-        if (age < 0 || age > 150) {
+      // Add validation logic based on field type and requirements
+      if (field === 'personalInfo.ssn') {
+        if (!value) {
           errors.push({
             field,
-            message: 'Please enter a valid date of birth',
-            severity: 'error'
+            message: 'Social Security Number is required',
+            severity: 'error',
+          });
+        } else if (typeof value === 'string' && !/^\d{3}-\d{2}-\d{4}$/.test(value)) {
+          errors.push({
+            field,
+            message: 'SSN must be in format XXX-XX-XXXX',
+            severity: 'error',
           });
         }
       }
-    }
 
-    // Income validation
-    if (field.includes('income') && value !== undefined) {
-      const numValue = Number(value);
-      if (isNaN(numValue) || numValue < 0) {
-        errors.push({
-          field,
-          message: 'Income must be a positive number',
-          severity: 'error'
-        });
+      if (field === 'personalInfo.dateOfBirth') {
+        if (!value) {
+          errors.push({
+            field,
+            message: 'Date of birth is required',
+            severity: 'error',
+          });
+        } else if (typeof value === 'string' || typeof value === 'number') {
+          const birthDate = new Date(value);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+
+          if (age < 0 || age > 150) {
+            errors.push({
+              field,
+              message: 'Please enter a valid date of birth',
+              severity: 'error',
+            });
+          }
+        }
       }
-    }
 
-    return errors;
-  }, [getData]);
+      // Income validation
+      if (field.includes('income') && value !== undefined) {
+        const numValue = Number(value);
+        if (isNaN(numValue) || numValue < 0) {
+          errors.push({
+            field,
+            message: 'Income must be a positive number',
+            severity: 'error',
+          });
+        }
+      }
+
+      return errors;
+    },
+    [getData]
+  );
 
   const validateAll = useCallback((): ValidationError[] => {
     const allErrors: ValidationError[] = [];
@@ -368,7 +378,7 @@ export const useEnhancedTaxWizard = (
     const personalInfo = getData('personalInfo') as Partial<PersonalInformation>;
 
     if (personalInfo) {
-      ['firstName', 'lastName', 'ssn', 'dateOfBirth'].forEach(field => {
+      ['firstName', 'lastName', 'ssn', 'dateOfBirth'].forEach((field) => {
         const fieldErrors = validateField(`personalInfo.${field}`);
         allErrors.push(...fieldErrors);
       });
@@ -377,29 +387,29 @@ export const useEnhancedTaxWizard = (
     // Validate filing status dependent fields
     const filingStatus = getData('personalInfo.filingStatus');
     if (filingStatus === 'marriedJointly' || filingStatus === 'marriedSeparately') {
-      ['spouseInfo.firstName', 'spouseInfo.lastName', 'spouseInfo.ssn'].forEach(field => {
+      ['spouseInfo.firstName', 'spouseInfo.lastName', 'spouseInfo.ssn'].forEach((field) => {
         const fieldErrors = validateField(field);
         allErrors.push(...fieldErrors);
       });
     }
 
     // Update validation state
-    setWizardState(prev => ({
+    setWizardState((prev) => ({
       ...prev,
       validation: {
         ...prev.validation,
-        errors: allErrors
-      }
+        errors: allErrors,
+      },
     }));
 
     return allErrors;
   }, [getData, validateField]);
 
   const updateProgress = useCallback((section: string, completed: boolean) => {
-    setWizardState(prev => {
+    setWizardState((prev) => {
       const completedSections = completed
         ? Array.from(new Set([...prev.progress.completedSections, section]))
-        : prev.progress.completedSections.filter(s => s !== section);
+        : prev.progress.completedSections.filter((s) => s !== section);
 
       const totalSections = 8; // Total number of sections
       const overallProgress = (completedSections.length / totalSections) * 100;
@@ -411,8 +421,8 @@ export const useEnhancedTaxWizard = (
           completedSections,
           currentSection: section,
           overallProgress,
-          estimatedTimeRemaining: Math.max(0, (totalSections - completedSections.length) * 5) // 5 min per section
-        }
+          estimatedTimeRemaining: Math.max(0, (totalSections - completedSections.length) * 5), // 5 min per section
+        },
       };
     });
   }, []);
@@ -425,49 +435,52 @@ export const useEnhancedTaxWizard = (
       if (source.source === 'previous-year' && source.importedData) {
         // Map previous year data to current year format
         const mappedData = mapPreviousYearData(source.importedData);
-        setWizardState(prev => ({
+        setWizardState((prev) => ({
           ...prev,
           data: { ...prev.data, ...mappedData },
-          isDirty: true
+          isDirty: true,
         }));
       } else if (source.source === 'csv' || source.source === 'json') {
         // Handle structured data import
         if (source.importedData) {
-          setWizardState(prev => ({
+          setWizardState((prev) => ({
             ...prev,
             data: { ...prev.data, ...source.importedData },
-            isDirty: true
+            isDirty: true,
           }));
         }
       }
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Import error', error instanceof Error ? error : undefined);
       throw new Error('Failed to import data');
     }
   }, []);
 
-  const exportData = useCallback(async (format: 'json' | 'csv' | 'pdf'): Promise<Blob> => {
-    switch (format) {
-      case 'json':
-        const jsonData = {
-          data: wizardState.data,
-          calculations: wizardState.calculations,
-          timestamp: new Date().toISOString()
-        };
-        return new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+  const exportData = useCallback(
+    async (format: 'json' | 'csv' | 'pdf'): Promise<Blob> => {
+      switch (format) {
+        case 'json':
+          const jsonData = {
+            data: wizardState.data,
+            calculations: wizardState.calculations,
+            timestamp: new Date().toISOString(),
+          };
+          return new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
 
-      case 'csv':
-        const csvData = convertToCSV(wizardState.data);
-        return new Blob([csvData], { type: 'text/csv' });
+        case 'csv':
+          const csvData = convertToCSV(wizardState.data);
+          return new Blob([csvData], { type: 'text/csv' });
 
-      case 'pdf':
-        // Generate PDF would require a PDF library
-        throw new Error('PDF export not yet implemented');
+        case 'pdf':
+          // Generate PDF would require a PDF library
+          throw new Error('PDF export not yet implemented');
 
-      default:
-        throw new Error('Unsupported export format');
-    }
-  }, [wizardState]);
+        default:
+          throw new Error('Unsupported export format');
+      }
+    },
+    [wizardState]
+  );
 
   const createBackup = useCallback((): string => {
     const backup = {
@@ -475,7 +488,7 @@ export const useEnhancedTaxWizard = (
       progress: wizardState.progress,
       calculations: wizardState.calculations,
       timestamp: new Date().toISOString(),
-      version: '1.0'
+      version: '1.0',
     };
     return JSON.stringify(backup);
   }, [wizardState]);
@@ -483,25 +496,25 @@ export const useEnhancedTaxWizard = (
   const restoreFromBackup = useCallback((backup: string) => {
     try {
       const parsedBackup = JSON.parse(backup);
-      setWizardState(prev => ({
+      setWizardState((prev) => ({
         ...prev,
         data: parsedBackup.data || {},
         progress: parsedBackup.progress || prev.progress,
         calculations: parsedBackup.calculations || null,
-        isDirty: true
+        isDirty: true,
       }));
     } catch (error) {
-      console.error('Failed to restore from backup:', error);
+      logger.error('Failed to restore from backup', error instanceof Error ? error : undefined);
       throw new Error('Invalid backup data');
     }
   }, []);
 
   const importPriorYear = useCallback((priorYearData: Partial<EnhancedTaxReturn>) => {
     const mappedData = mapPreviousYearData(priorYearData);
-    setWizardState(prev => ({
+    setWizardState((prev) => ({
       ...prev,
       data: { ...prev.data, ...mappedData },
-      isDirty: true
+      isDirty: true,
     }));
   }, []);
 
@@ -510,54 +523,62 @@ export const useEnhancedTaxWizard = (
       'personalInfo.filingStatus': [
         'Choose Single if you are unmarried or legally separated',
         'Choose Married Filing Jointly if married and want to file together',
-        'Choose Head of Household if unmarried and support dependents'
+        'Choose Head of Household if unmarried and support dependents',
       ],
       'personalInfo.ssn': [
         'Enter your Social Security Number in XXX-XX-XXXX format',
-        'This number must match your Social Security card exactly'
+        'This number must match your Social Security card exactly',
       ],
-      'incomeSourcesEach': [
+      incomeSourcesEach: [
         'Include all income from W-2s, 1099s, and other sources',
-        'Don\'t forget about interest, dividends, and side income'
-      ]
+        "Don't forget about interest, dividends, and side income",
+      ],
     };
 
     return guidance[field] || [];
   }, []);
 
-  const getSuggestions = useCallback((_context: Partial<EnhancedTaxReturn>): string[] => {
-    const suggestions: string[] = [];
+  const getSuggestions = useCallback(
+    (_context: Partial<EnhancedTaxReturn>): string[] => {
+      const suggestions: string[] = [];
 
-    // Income-based suggestions
-    const totalIncome = (getData('totalIncome') as number) || 0;
-    if (totalIncome > 100000) {
-      suggestions.push('Consider maximizing retirement contributions for tax savings');
-    }
+      // Income-based suggestions
+      const totalIncome = (getData('totalIncome') as number) || 0;
+      if (totalIncome > 100000) {
+        suggestions.push('Consider maximizing retirement contributions for tax savings');
+      }
 
-    // Deduction suggestions
-    const itemizedDeductions = getData('itemizedDeductions') as Array<{ category: string }> | undefined;
-    const hasCharitableGiving = itemizedDeductions?.some(d => d.category === 'charity');
-    if (!hasCharitableGiving && totalIncome > 50000) {
-      suggestions.push('Consider charitable contributions for additional deductions');
-    }
+      // Deduction suggestions
+      const itemizedDeductions = getData('itemizedDeductions') as
+        | Array<{ category: string }>
+        | undefined;
+      const hasCharitableGiving = itemizedDeductions?.some((d) => d.category === 'charity');
+      if (!hasCharitableGiving && totalIncome > 50000) {
+        suggestions.push('Consider charitable contributions for additional deductions');
+      }
 
-    return suggestions;
-  }, [getData]);
+      return suggestions;
+    },
+    [getData]
+  );
 
-  const canProceed = useCallback((section: string): boolean => {
-    const sectionRequirements: Record<string, string[]> = {
-      'basic-info': ['personalInfo.firstName', 'personalInfo.lastName', 'personalInfo.ssn'],
-      'income': ['incomeSourcesEach'],
-      'deductions': ['useStandardDeduction'],
-      'review': []
-    };
+  const canProceed = useCallback(
+    (section: string): boolean => {
+      const sectionRequirements: Record<string, string[]> = {
+        'basic-info': ['personalInfo.firstName', 'personalInfo.lastName', 'personalInfo.ssn'],
+        income: ['incomeSourcesEach'],
+        deductions: ['useStandardDeduction'],
+        review: [],
+      };
 
-    const requiredFields = sectionRequirements[section] || [];
-    return requiredFields.every(field => {
-      const value = getData(field);
-      return value !== undefined && value !== '' && value !== null;
-    });
-  }, [getData]);
+      const requiredFields = sectionRequirements[section] || [];
+      return requiredFields.every((field) => {
+        const value = getData(field);
+        return value !== undefined && value !== '' && value !== null;
+      });
+    },
+    [getData]
+  );
 
   return {
     wizardState,
@@ -581,7 +602,7 @@ export const useEnhancedTaxWizard = (
     getSuggestions,
     isDirty: wizardState.isDirty,
     isValid: wizardState.validation.errors.length === 0,
-    canProceed
+    canProceed,
   };
 };
 
@@ -621,7 +642,7 @@ const getStandardDeduction = (filingStatus?: string): number => {
     marriedJointly: 31500,
     marriedSeparately: 15750,
     headOfHousehold: 23350,
-    qualifyingSurvivingSpouse: 31500
+    qualifyingSurvivingSpouse: 31500,
   };
 
   return standardDeductions[filingStatus as keyof typeof standardDeductions] || 15750;
@@ -631,14 +652,14 @@ const calculateFederalTax = (taxableIncome: number, _filingStatus?: string): num
   // Simplified tax calculation for 2025
   const brackets = {
     single: [
-      { min: 0, max: 11925, rate: 0.10 },
+      { min: 0, max: 11925, rate: 0.1 },
       { min: 11925, max: 48375, rate: 0.12 },
       { min: 48375, max: 103350, rate: 0.22 },
       { min: 103350, max: 197950, rate: 0.24 },
       { min: 197950, max: 487450, rate: 0.32 },
       { min: 487450, max: 731200, rate: 0.35 },
-      { min: 731200, max: Infinity, rate: 0.37 }
-    ]
+      { min: 731200, max: Infinity, rate: 0.37 },
+    ],
   };
 
   const applicableBrackets = brackets.single; // Simplified
@@ -665,7 +686,9 @@ const getMarginalTaxRate = (taxableIncome: number, _filingStatus?: string): numb
   return 37;
 };
 
-const mapPreviousYearData = (priorYearData: Partial<EnhancedTaxReturn>): Partial<EnhancedTaxReturn> => {
+const mapPreviousYearData = (
+  priorYearData: Partial<EnhancedTaxReturn>
+): Partial<EnhancedTaxReturn> => {
   // Map previous year data to current year structure
   return {
     personalInfo: {
@@ -675,7 +698,7 @@ const mapPreviousYearData = (priorYearData: Partial<EnhancedTaxReturn>): Partial
         street: '',
         city: '',
         state: '',
-        zipCode: ''
+        zipCode: '',
       },
       // SSN should not be auto-filled for security
       ssn: '',
@@ -688,8 +711,8 @@ const mapPreviousYearData = (priorYearData: Partial<EnhancedTaxReturn>): Partial
       hasFBARRequirement: false,
       presidentialElectionFund: false,
       stateResident: '',
-      hasMultiStateIncome: false
-    } as PersonalInformation
+      hasMultiStateIncome: false,
+    } as PersonalInformation,
   };
 };
 
@@ -699,7 +722,7 @@ const convertToCSV = (data: Record<string, unknown>): string => {
   const rows = [headers.join(',')];
 
   const flattenObject = (obj: Record<string, unknown>, prefix = ''): void => {
-    Object.keys(obj).forEach(key => {
+    Object.keys(obj).forEach((key) => {
       const value = obj[key];
       const fullKey = prefix ? `${prefix}.${key}` : key;
 

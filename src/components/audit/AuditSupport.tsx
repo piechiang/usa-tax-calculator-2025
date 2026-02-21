@@ -29,11 +29,7 @@ interface AuditSupportProps {
   t: (key: string) => string;
 }
 
-export const AuditSupport: React.FC<AuditSupportProps> = ({
-  formData,
-  taxResult,
-  t
-}) => {
+export const AuditSupport: React.FC<AuditSupportProps> = ({ formData, taxResult, t }) => {
   const [activeTab, setActiveTab] = useState<AuditSupportTab>('documentation');
   const [documentStatus, setDocumentStatus] = useState<Record<string, DocumentStatus>>({});
 
@@ -51,7 +47,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'income',
         required: true,
         description: 'All W-2 forms from employers',
-        status: documentStatus['w2-forms'] || 'missing'
+        status: documentStatus['w2-forms'] || 'missing',
       });
     }
 
@@ -62,7 +58,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'income',
         required: true,
         description: 'Interest income statements',
-        status: documentStatus['1099-int'] || 'missing'
+        status: documentStatus['1099-int'] || 'missing',
       });
     }
 
@@ -73,7 +69,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'income',
         required: true,
         description: 'Dividend income statements',
-        status: documentStatus['1099-div'] || 'missing'
+        status: documentStatus['1099-div'] || 'missing',
       });
     }
 
@@ -84,7 +80,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'income',
         required: true,
         description: 'Brokerage statements for capital gains/losses',
-        status: documentStatus['1099-b'] || 'missing'
+        status: documentStatus['1099-b'] || 'missing',
       });
     }
 
@@ -95,53 +91,53 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'income',
         required: true,
         description: 'Business income and expense records',
-        status: documentStatus['business-records'] || 'missing'
+        status: documentStatus['business-records'] || 'missing',
       });
     }
 
     // Deduction documentation
     if (!deductions.useStandardDeduction) {
-      if (parseFloat(deductions.mortgageInterest || '0') > 0) {
+      if (parseFloat(String(deductions.mortgageInterest ?? '0')) > 0) {
         documents.push({
           id: '1098-mortgage',
           title: '1098 Mortgage Interest',
           category: 'deductions',
           required: true,
           description: 'Mortgage interest statements',
-          status: documentStatus['1098-mortgage'] || 'missing'
+          status: documentStatus['1098-mortgage'] || 'missing',
         });
       }
 
-      if (parseFloat(deductions.charitableContributions || '0') > 250) {
+      if (parseFloat(String(deductions.charitableContributions ?? '0')) > 250) {
         documents.push({
           id: 'charity-receipts',
           title: 'Charitable Contribution Receipts',
           category: 'deductions',
           required: true,
           description: 'Receipts for charitable donations over $250',
-          status: documentStatus['charity-receipts'] || 'missing'
+          status: documentStatus['charity-receipts'] || 'missing',
         });
       }
 
-      if (parseFloat(deductions.medicalExpenses || '0') > 0) {
+      if (parseFloat(String(deductions.medicalExpenses ?? '0')) > 0) {
         documents.push({
           id: 'medical-receipts',
           title: 'Medical Expense Receipts',
           category: 'deductions',
           required: true,
           description: 'Medical and dental expense receipts',
-          status: documentStatus['medical-receipts'] || 'missing'
+          status: documentStatus['medical-receipts'] || 'missing',
         });
       }
 
-      if (parseFloat(deductions.stateLocalTaxes || '0') > 0) {
+      if (parseFloat(String(deductions.stateLocalTaxes ?? '0')) > 0) {
         documents.push({
           id: 'property-tax',
           title: 'Property Tax Statements',
           category: 'deductions',
           required: true,
           description: 'Property tax and state income tax records',
-          status: documentStatus['property-tax'] || 'missing'
+          status: documentStatus['property-tax'] || 'missing',
         });
       }
     }
@@ -154,7 +150,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'payments',
         required: true,
         description: 'Federal and state tax withholding records',
-        status: documentStatus['withholding-statements'] || 'missing'
+        status: documentStatus['withholding-statements'] || 'missing',
       });
     }
 
@@ -165,7 +161,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'payments',
         required: true,
         description: 'Quarterly estimated tax payment confirmations',
-        status: documentStatus['estimated-payments'] || 'missing'
+        status: documentStatus['estimated-payments'] || 'missing',
       });
     }
 
@@ -177,7 +173,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'other',
         required: true,
         description: 'Social Security card for taxpayer and dependents',
-        status: documentStatus['social-security-card'] || 'missing'
+        status: documentStatus['social-security-card'] || 'missing',
       },
       {
         id: 'birth-certificates',
@@ -185,7 +181,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'other',
         required: formData.personalInfo?.dependents > 0,
         description: 'Birth certificates for dependents',
-        status: documentStatus['birth-certificates'] || 'missing'
+        status: documentStatus['birth-certificates'] || 'missing',
       },
       {
         id: 'prior-year-return',
@@ -193,7 +189,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         category: 'other',
         required: false,
         description: 'Previous year tax return for reference',
-        status: documentStatus['prior-year-return'] || 'missing'
+        status: documentStatus['prior-year-return'] || 'missing',
       }
     );
 
@@ -201,7 +197,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
   };
 
   const updateDocumentStatus = (id: string, status: DocumentStatus) => {
-    setDocumentStatus(prev => ({ ...prev, [id]: status }));
+    setDocumentStatus((prev) => ({ ...prev, [id]: status }));
   };
 
   const generateAuditReport = () => {
@@ -210,14 +206,14 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         name: `${formData.personalInfo?.firstName} ${formData.personalInfo?.lastName}`,
         ssn: formData.personalInfo?.ssn,
         filingStatus: formData.personalInfo?.filingStatus,
-        address: formData.personalInfo?.address
+        address: formData.personalInfo?.address,
       },
       taxSummary: {
         adjustedGrossIncome: taxResult.adjustedGrossIncome,
         taxableIncome: taxResult.taxableIncome,
         totalTax: taxResult.totalTax,
         totalPayments: taxResult.totalPayments,
-        balance: taxResult.balance
+        balance: taxResult.balance,
       },
       incomeBreakdown: {
         wages: parseFloat(formData.incomeData?.wages || '0'),
@@ -225,11 +221,11 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         dividends: parseFloat(formData.incomeData?.dividends || '0'),
         capitalGains: parseFloat(formData.incomeData?.capitalGains || '0'),
         businessIncome: parseFloat(formData.incomeData?.businessIncome || '0'),
-        otherIncome: parseFloat(formData.incomeData?.otherIncome || '0')
+        otherIncome: parseFloat(formData.incomeData?.otherIncome || '0'),
       },
       deductions: formData.deductions,
       payments: formData.paymentsData,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     return JSON.stringify(report, null, 2);
@@ -251,24 +247,30 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
   const auditChecklist = [
     {
       item: 'Verify all income sources are reported',
-      completed: Object.values(formData.incomeData || {}).some(value => parseFloat(String(value) || '0') > 0)
+      completed: Object.values(formData.incomeData || {}).some(
+        (value) => parseFloat(String(value) || '0') > 0
+      ),
     },
     {
       item: 'Ensure all deductions are properly documented',
-      completed: getRequiredDocuments().filter(d => d.category === 'deductions').every(d => d.status === 'verified')
+      completed: getRequiredDocuments()
+        .filter((d) => d.category === 'deductions')
+        .every((d) => d.status === 'verified'),
     },
     {
       item: 'Confirm tax payments and withholdings',
-      completed: Object.values(formData.paymentsData || {}).some(value => parseFloat(String(value) || '0') > 0)
+      completed: Object.values(formData.paymentsData || {}).some(
+        (value) => parseFloat(String(value) || '0') > 0
+      ),
     },
     {
       item: 'Review filing status and dependents',
-      completed: formData.personalInfo?.filingStatus && formData.personalInfo?.firstName
+      completed: formData.personalInfo?.filingStatus && formData.personalInfo?.firstName,
     },
     {
       item: 'Double-check all calculations',
-      completed: taxResult.totalTax > 0
-    }
+      completed: taxResult.totalTax > 0,
+    },
   ];
 
   const tabItems: Array<{
@@ -278,7 +280,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
   }> = [
     { id: 'documentation', label: t('audit.documentation'), icon: FileCheck },
     { id: 'report', label: t('audit.report'), icon: Download },
-    { id: 'checklist', label: t('audit.checklist'), icon: CheckCircle }
+    { id: 'checklist', label: t('audit.checklist'), icon: CheckCircle },
   ];
 
   const renderDocumentationTab = () => (
@@ -286,20 +288,24 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h4 className="font-medium text-gray-900">{t('audit.requiredDocuments')}</h4>
         <div className="text-sm text-gray-600">
-          {getRequiredDocuments().filter(d => d.status === 'verified').length} / {getRequiredDocuments().length} verified
+          {getRequiredDocuments().filter((d) => d.status === 'verified').length} /{' '}
+          {getRequiredDocuments().length} verified
         </div>
       </div>
 
-      {['income', 'deductions', 'payments', 'other'].map(category => {
-        const categoryDocs = getRequiredDocuments().filter(d => d.category === category);
+      {['income', 'deductions', 'payments', 'other'].map((category) => {
+        const categoryDocs = getRequiredDocuments().filter((d) => d.category === category);
         if (categoryDocs.length === 0) return null;
 
         return (
           <div key={category} className="border rounded-lg p-4">
             <h5 className="font-medium text-gray-900 mb-3 capitalize">{category}</h5>
             <div className="space-y-2">
-              {categoryDocs.map(doc => (
-                <div key={doc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+              {categoryDocs.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded"
+                >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{doc.title}</span>
@@ -311,7 +317,9 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
                   <div className="flex items-center gap-2">
                     <select
                       value={doc.status}
-                      onChange={e => updateDocumentStatus(doc.id, e.target.value as DocumentStatus)}
+                      onChange={(e) =>
+                        updateDocumentStatus(doc.id, e.target.value as DocumentStatus)
+                      }
                       className="text-sm border rounded px-2 py-1"
                     >
                       <option value="missing">Missing</option>
@@ -321,7 +329,9 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
 
                     {doc.status === 'missing' && <AlertTriangle className="w-4 h-4 text-red-500" />}
                     {doc.status === 'uploaded' && <Eye className="w-4 h-4 text-yellow-500" />}
-                    {doc.status === 'verified' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                    {doc.status === 'verified' && (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    )}
                   </div>
                 </div>
               ))}
@@ -349,20 +359,42 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
         <div className="border rounded-lg p-4">
           <h5 className="font-medium text-gray-900 mb-3">Taxpayer Information</h5>
           <div className="space-y-2 text-sm">
-            <div><span className="text-gray-600">Name:</span> {formData.personalInfo?.firstName} {formData.personalInfo?.lastName}</div>
-            <div><span className="text-gray-600">SSN:</span> {formData.personalInfo?.ssn}</div>
-            <div><span className="text-gray-600">Filing Status:</span> {formData.personalInfo?.filingStatus}</div>
-            <div><span className="text-gray-600">Address:</span> {formData.personalInfo?.address}</div>
+            <div>
+              <span className="text-gray-600">Name:</span> {formData.personalInfo?.firstName}{' '}
+              {formData.personalInfo?.lastName}
+            </div>
+            <div>
+              <span className="text-gray-600">SSN:</span> {formData.personalInfo?.ssn}
+            </div>
+            <div>
+              <span className="text-gray-600">Filing Status:</span>{' '}
+              {formData.personalInfo?.filingStatus}
+            </div>
+            <div>
+              <span className="text-gray-600">Address:</span> {formData.personalInfo?.address}
+            </div>
           </div>
         </div>
 
         <div className="border rounded-lg p-4">
           <h5 className="font-medium text-gray-900 mb-3">Tax Summary</h5>
           <div className="space-y-2 text-sm">
-            <div><span className="text-gray-600">AGI:</span> ${taxResult.adjustedGrossIncome?.toLocaleString()}</div>
-            <div><span className="text-gray-600">Taxable Income:</span> ${taxResult.taxableIncome?.toLocaleString()}</div>
-            <div><span className="text-gray-600">Total Tax:</span> ${taxResult.totalTax?.toLocaleString()}</div>
-            <div><span className="text-gray-600">Payments:</span> ${taxResult.totalPayments?.toLocaleString()}</div>
+            <div>
+              <span className="text-gray-600">AGI:</span> $
+              {taxResult.adjustedGrossIncome?.toLocaleString()}
+            </div>
+            <div>
+              <span className="text-gray-600">Taxable Income:</span> $
+              {taxResult.taxableIncome?.toLocaleString()}
+            </div>
+            <div>
+              <span className="text-gray-600">Total Tax:</span> $
+              {taxResult.totalTax?.toLocaleString()}
+            </div>
+            <div>
+              <span className="text-gray-600">Payments:</span> $
+              {taxResult.totalPayments?.toLocaleString()}
+            </div>
           </div>
         </div>
       </div>
@@ -370,12 +402,30 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
       <div className="border rounded-lg p-4">
         <h5 className="font-medium text-gray-900 mb-3">Income Breakdown</h5>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-          <div><span className="text-gray-600">Wages:</span> ${parseFloat(formData.incomeData?.wages || '0').toLocaleString()}</div>
-          <div><span className="text-gray-600">Interest:</span> ${parseFloat(formData.incomeData?.interestIncome || '0').toLocaleString()}</div>
-          <div><span className="text-gray-600">Dividends:</span> ${parseFloat(formData.incomeData?.dividends || '0').toLocaleString()}</div>
-          <div><span className="text-gray-600">Capital Gains:</span> ${parseFloat(formData.incomeData?.capitalGains || '0').toLocaleString()}</div>
-          <div><span className="text-gray-600">Business:</span> ${parseFloat(formData.incomeData?.businessIncome || '0').toLocaleString()}</div>
-          <div><span className="text-gray-600">Other:</span> ${parseFloat(formData.incomeData?.otherIncome || '0').toLocaleString()}</div>
+          <div>
+            <span className="text-gray-600">Wages:</span> $
+            {parseFloat(formData.incomeData?.wages || '0').toLocaleString()}
+          </div>
+          <div>
+            <span className="text-gray-600">Interest:</span> $
+            {parseFloat(formData.incomeData?.interestIncome || '0').toLocaleString()}
+          </div>
+          <div>
+            <span className="text-gray-600">Dividends:</span> $
+            {parseFloat(formData.incomeData?.dividends || '0').toLocaleString()}
+          </div>
+          <div>
+            <span className="text-gray-600">Capital Gains:</span> $
+            {parseFloat(formData.incomeData?.capitalGains || '0').toLocaleString()}
+          </div>
+          <div>
+            <span className="text-gray-600">Business:</span> $
+            {parseFloat(formData.incomeData?.businessIncome || '0').toLocaleString()}
+          </div>
+          <div>
+            <span className="text-gray-600">Other:</span> $
+            {parseFloat(formData.incomeData?.otherIncome || '0').toLocaleString()}
+          </div>
         </div>
       </div>
     </div>
@@ -387,7 +437,10 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
 
       <div className="space-y-3">
         {auditChecklist.map((item, index) => (
-          <div key={index} className={`flex items-center gap-3 p-3 rounded ${item.completed ? 'bg-green-50' : 'bg-red-50'}`}>
+          <div
+            key={index}
+            className={`flex items-center gap-3 p-3 rounded ${item.completed ? 'bg-green-50' : 'bg-red-50'}`}
+          >
             {item.completed ? (
               <CheckCircle className="w-5 h-5 text-green-500" />
             ) : (
@@ -421,7 +474,7 @@ export const AuditSupport: React.FC<AuditSupportProps> = ({
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex space-x-8">
-          {tabItems.map(tab => (
+          {tabItems.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}

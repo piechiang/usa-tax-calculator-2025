@@ -1,20 +1,21 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
-import { federalTaxBrackets, marylandCountyRates, standardDeductions } from '../../constants/taxBrackets';
+import {
+  federalTaxBrackets,
+  marylandCountyRates,
+  standardDeductions,
+} from '../../constants/taxBrackets';
 import { formatCurrency, formatPercentage } from '../../utils/formatters';
 import type { PersonalInfo } from '../../types/CommonTypes';
 
 interface TaxInfoPanelsProps {
   personalInfo: PersonalInfo;
-  taxResult: Record<string, number>;
+  taxResult: Record<string, unknown>;
   language: string;
   t: (key: string) => string;
 }
 
-export const TaxInfoPanels: React.FC<TaxInfoPanelsProps> = ({
-  personalInfo,
-  t,
-}) => {
+export const TaxInfoPanels: React.FC<TaxInfoPanelsProps> = ({ personalInfo, t }) => {
   return (
     <>
       {/* Federal Tax Bracket Reference */}
@@ -25,14 +26,17 @@ export const TaxInfoPanels: React.FC<TaxInfoPanelsProps> = ({
             <span>{t('taxBrackets.taxableIncome')}</span>
             <span>{t('taxBrackets.rate')}</span>
           </div>
-          {federalTaxBrackets[personalInfo.filingStatus as keyof typeof federalTaxBrackets]?.map((bracket, index) => (
-            <div key={index} className="grid grid-cols-2 gap-2 text-gray-600 min-w-max">
-              <span className="text-xs">
-                {formatCurrency(bracket.min)} - {bracket.max === Infinity ? '∞' : formatCurrency(bracket.max)}
-              </span>
-              <span>{formatPercentage(bracket.rate)}</span>
-            </div>
-          ))}
+          {federalTaxBrackets[personalInfo.filingStatus as keyof typeof federalTaxBrackets]?.map(
+            (bracket, index) => (
+              <div key={index} className="grid grid-cols-2 gap-2 text-gray-600 min-w-max">
+                <span className="text-xs">
+                  {formatCurrency(bracket.min)} -{' '}
+                  {bracket.max === Infinity ? '∞' : formatCurrency(bracket.max)}
+                </span>
+                <span>{formatPercentage(bracket.rate)}</span>
+              </div>
+            )
+          )}
         </div>
       </div>
 
@@ -49,12 +53,21 @@ export const TaxInfoPanels: React.FC<TaxInfoPanelsProps> = ({
               <span>2% - 5.75%</span>
             </div>
             <div className="flex justify-between">
-              <span>{t('marylandInfo.localTaxRate')} ({personalInfo.county}):</span>
-              <span>{formatPercentage(marylandCountyRates[personalInfo.county] || 0.032)}</span>
+              <span>
+                {t('marylandInfo.localTaxRate')} ({personalInfo.county}):
+              </span>
+              <span>
+                {formatPercentage(
+                  (personalInfo.county ? marylandCountyRates[personalInfo.county] : undefined) ||
+                    0.032
+                )}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>{t('marylandInfo.standardDeduction')}</span>
-              <span>{formatCurrency(personalInfo.filingStatus === 'marriedJointly' ? 4850 : 2400)}</span>
+              <span>
+                {formatCurrency(personalInfo.filingStatus === 'marriedJointly' ? 4850 : 2400)}
+              </span>
             </div>
           </div>
         </div>
@@ -62,7 +75,9 @@ export const TaxInfoPanels: React.FC<TaxInfoPanelsProps> = ({
 
       {/* Standard Deductions Info */}
       <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('standardDeductions.title')}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          {t('standardDeductions.title')}
+        </h3>
         <div className="text-sm space-y-2">
           <div className="flex justify-between">
             <span>{t('standardDeductions.single')}</span>

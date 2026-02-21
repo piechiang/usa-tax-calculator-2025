@@ -62,100 +62,190 @@ export interface FederalSpouse2025 extends FederalPrimaryPerson2025 {
   lastName?: string;
 }
 
+/**
+ * Other income items for Schedule 1.
+ * @remarks All monetary values are in CENTS (integer).
+ * Example: $1,234.56 is represented as 123456.
+ */
 export interface FederalIncomeOther2025 {
+  /** Other taxable income in cents */
   otherIncome: number;
+  /** Royalty income in cents */
   royalties: number;
+  /** Guaranteed payments from partnerships in cents */
   guaranteedPayments: number;
 }
 
+/**
+ * Schedule K-1 pass-through income from partnerships, S-corps, and trusts.
+ * @remarks All monetary values are in CENTS (integer).
+ */
 export interface FederalIncomeK12025 {
+  /** Ordinary business income (Box 1) in cents */
   ordinaryBusinessIncome: number;
+  /** Passive rental/activity income in cents */
   passiveIncome: number;
+  /** Portfolio income (interest, dividends) in cents */
   portfolioIncome: number;
 }
 
+/**
+ * Federal income data for tax year 2025.
+ *
+ * @remarks
+ * **IMPORTANT: All monetary values are in CENTS (integer).**
+ *
+ * This is the internal representation used by the tax engine.
+ * UI inputs in dollars should be converted using `safeCurrencyToCents()`
+ * before passing to the engine.
+ *
+ * Example conversions:
+ * - $50,000.00 → 5000000 cents
+ * - $1,234.56 → 123456 cents
+ * - -$500.00 → -50000 cents (for losses)
+ */
 export interface FederalIncome2025 {
+  /** Wages, salaries, tips (W-2 income) in cents */
   wages: number;
+  /** Taxable interest income in cents */
   interest: number;
+  /** Dividend income */
   dividends: {
+    /** Ordinary dividends in cents */
     ordinary: number;
+    /** Qualified dividends (lower tax rate) in cents */
     qualified: number;
   };
-  capGainsNet: number; // Net capital gains (long-term less losses)
+  /** Net capital gains (long-term less losses) in cents. Can be negative. */
+  capGainsNet: number;
+  /** Detailed capital gains breakdown */
   capitalGainsDetail: {
+    /** Short-term capital gains/losses in cents. Can be negative. */
     shortTerm: number;
+    /** Long-term capital gains/losses in cents. Can be negative. */
     longTerm: number;
   };
+  /** Schedule C net profit/loss in cents. Can be negative. */
   scheduleCNet: number;
-  businessIncome: number;
+  /** Schedule K-1 pass-through income */
   k1: FederalIncomeK12025;
+  /** Other income items */
   other: FederalIncomeOther2025;
 }
 
+/**
+ * Schedule 1 Part II - Adjustments to Income (above-the-line deductions).
+ *
+ * @remarks
+ * **All monetary values are in CENTS (integer).**
+ * These adjustments reduce gross income to arrive at Adjusted Gross Income (AGI).
+ */
 export interface FederalAdjustments2025 {
-  // Schedule 1 Part II - Adjustments to Income (above-the-line deductions)
-
-  // Line 11: Educator expenses (max $300 per educator, $600 if both spouses)
+  /** Line 11: Educator expenses in cents (max $300 per educator, $600 if both spouses) */
   educatorExpenses?: number;
 
-  // Line 12: Certain business expenses (reservists, performing artists, fee-basis govt officials)
+  /** Line 12: Certain business expenses in cents (reservists, performing artists, fee-basis govt officials) */
   businessExpenses: number;
 
-  // Line 13: HSA deduction
+  /** Line 13: HSA deduction in cents */
   hsaDeduction: number;
 
-  // Line 14: Moving expenses for Armed Forces
+  /** Line 14: Moving expenses for Armed Forces in cents */
   movingExpensesMilitary?: number;
 
-  // Line 15: Deductible part of self-employment tax (calculated automatically)
+  /** Line 15: Deductible part of self-employment tax in cents (calculated automatically) */
   seTaxDeduction: number;
 
-  // Line 16: Self-employed SEP, SIMPLE, and qualified plans
+  /** Line 16: Self-employed SEP, SIMPLE, and qualified plans in cents */
   selfEmployedRetirement?: number;
 
-  // Line 17: Self-employed health insurance deduction
+  /** Line 17: Self-employed health insurance deduction in cents */
   selfEmployedHealthInsurance?: number;
 
-  // Line 18a: Alimony paid (only for pre-2019 divorce decrees)
+  /** Line 18a: Alimony paid in cents (only for pre-2019 divorce decrees) */
   alimonyPaid?: number;
-  alimonyRecipientSSN?: string; // Required if claiming alimony
-  divorceYear?: number; // Must be before 2019 for deductibility
+  /** Required if claiming alimony */
+  alimonyRecipientSSN?: string;
+  /** Must be before 2019 for deductibility */
+  divorceYear?: number;
 
-  // Line 19: Penalty on early withdrawal of savings
+  /** Line 19: Penalty on early withdrawal of savings in cents */
   earlyWithdrawalPenalty?: number;
 
-  // Line 20: IRA deduction
+  /** Line 20: IRA deduction in cents */
   iraDeduction: number;
-  // Additional IRA fields for phaseout calculation
+  /** Additional IRA fields for phaseout calculation */
   iraContributorCoveredByPlan?: boolean;
   iraSpouseCoveredByPlan?: boolean;
 
-  // Line 21: Student loan interest deduction (max $2,500, subject to phaseout)
+  /** Line 21: Student loan interest deduction in cents (max $2,500, subject to phaseout) */
   studentLoanInterest: number;
 
   // Line 22: Reserved for future use (was tuition and fees, expired)
 
-  // Line 23: Archer MSA deduction (grandfathered accounts only)
+  /** Line 23: Archer MSA deduction in cents (grandfathered accounts only) */
   archerMsaDeduction?: number;
 
-  // Line 24: Other adjustments (jury duty pay given to employer, etc.)
+  /** Line 24: Other adjustments in cents (jury duty pay given to employer, etc.) */
   otherAdjustments?: number;
 }
 
+/**
+ * Schedule A - Itemized Deductions for tax year 2025.
+ *
+ * @remarks
+ * **All monetary values are in CENTS (integer).**
+ *
+ * The engine compares total itemized deductions against the standard deduction
+ * and uses the higher value, unless `forceItemized` is set.
+ *
+ * SALT cap: $10,000 ($5,000 if MFS) for 2025.
+ * Medical expenses: Only amount exceeding 7.5% of AGI is deductible.
+ */
 export interface FederalItemizedDeductions2025 {
+  /** State and local taxes (SALT) in cents. Subject to $10,000 cap. */
   stateLocalTaxes: number;
+  /** Mortgage interest in cents (home acquisition debt up to $750,000) */
   mortgageInterest: number;
+  /** Charitable contributions in cents (subject to AGI limits) */
   charitable: number;
+  /** Medical expenses in cents (before 7.5% AGI floor) */
   medical: number;
+  /** Other itemized deductions in cents */
   other: number;
 }
 
+/**
+ * Tax payments made during the year.
+ *
+ * @remarks
+ * **All monetary values are in CENTS (integer).**
+ * State withholding is NOT included here - it belongs to state tax calculation.
+ */
 export interface FederalPayments2025 {
+  /** Federal income tax withheld (from W-2, 1099, etc.) in cents */
   federalWithheld: number;
+  /** Estimated tax payments made in cents */
   estPayments: number;
+  /** EITC advance payments in cents (rare) */
   eitcAdvance: number;
-  // Note: stateWithheld removed - belongs in state tax calculation, not federal
 }
+
+/**
+ * Calculation phase for structured diagnostic grouping
+ */
+export type CalculationPhase =
+  | 'input-validation' // Initial input validation
+  | 'self-employment' // SE Tax calculation (Schedule SE)
+  | 'agi' // AGI and Schedule 1 adjustments
+  | 'deductions' // Standard vs Itemized deductions
+  | 'qbi' // Qualified Business Income deduction
+  | 'nol' // Net Operating Loss deduction
+  | 'income-tax' // Regular tax + preferential rates
+  | 'additional-taxes' // AMT, NIIT, Additional Medicare
+  | 'credits' // Tax credits (CTC, EITC, AOTC, etc.)
+  | 'payments' // Withholding and estimated payments
+  | 'final'; // Final tax liability calculation
 
 export interface FederalDiagnosticsMessage2025 {
   code: string;
@@ -163,11 +253,14 @@ export interface FederalDiagnosticsMessage2025 {
   field?: string;
   severity?: 'warning' | 'error';
   context?: Record<string, unknown>;
+  phase?: CalculationPhase; // NEW: calculation phase for categorization
 }
 
 export interface FederalDiagnostics2025 {
   warnings: FederalDiagnosticsMessage2025[];
   errors: FederalDiagnosticsMessage2025[];
+  /** NEW: Diagnostics grouped by calculation phase */
+  byPhase?: Partial<Record<CalculationPhase, FederalDiagnosticsMessage2025[]>>;
 }
 
 export interface FederalAMTItems2025 {
@@ -351,39 +444,161 @@ export interface AMTCalculationDetails {
   creditCarryforward: number; // AMT credit for future years (cents)
 }
 
+/**
+ * Detailed breakdown of tax payments made during the year.
+ * Corresponds to Form 1040 Lines 25-27.
+ *
+ * @remarks
+ * **All monetary values are in CENTS (integer).**
+ */
+export interface PaymentBreakdown {
+  /** Federal income tax withheld (Form 1040 Line 25) in cents */
+  federalWithheld: number;
+  /** Estimated tax payments (Form 1040 Line 26) in cents */
+  estimatedPayments: number;
+  /** EITC advance payments (Form 1040 Line 27, rare) in cents */
+  eitcAdvancePayments: number;
+  /** Total payments (sum of above) in cents */
+  totalPayments: number;
+}
+
+/**
+ * Detailed breakdown of refundable credits.
+ * These credits can result in a refund even if no tax is owed.
+ * Corresponds to Form 1040 Lines 27-31.
+ *
+ * @remarks
+ * **All monetary values are in CENTS (integer).**
+ */
+export interface RefundableCreditsBreakdown {
+  /** Earned Income Tax Credit (Schedule EIC) in cents */
+  eitc: number;
+  /** Additional Child Tax Credit (Schedule 8812) in cents */
+  additionalChildTaxCredit: number;
+  /** American Opportunity Tax Credit - refundable portion (Form 8863) in cents */
+  aotcRefundable: number;
+  /** Adoption Credit - refundable portion (Form 8839) in cents */
+  adoptionCreditRefundable: number;
+  /** Premium Tax Credit (Form 8962) in cents */
+  ptc: number;
+  /** Other refundable credits in cents */
+  otherRefundable: number;
+  /** Total refundable credits (sum of above) in cents */
+  totalRefundableCredits: number;
+}
+
+/**
+ * Detailed calculation breakdown for refund or amount owed.
+ * Shows the complete payment reconciliation trail.
+ * Corresponds to Form 1040 Lines 24-37.
+ *
+ * @remarks
+ * **All monetary values are in CENTS (integer).**
+ */
+export interface RefundOrOweBreakdown {
+  /** Total tax liability (Form 1040 Line 24) in cents */
+  totalTax: number;
+  /** Total non-refundable credits applied in cents */
+  totalNonRefundableCredits: number;
+  /** Tax after non-refundable credits in cents */
+  taxAfterNonRefundableCredits: number;
+  /** Additional taxes (SE, NIIT, AMT, Medicare) in cents */
+  totalAdditionalTaxes: number;
+  /** Total payments made (Form 1040 Line 33) in cents */
+  totalPayments: number;
+  /** Total refundable credits (Form 1040 Lines 27-31) in cents */
+  totalRefundableCredits: number;
+  /** Total payments plus refundable credits in cents */
+  paymentsAndCredits: number;
+  /** Refund (positive) or amount owed (negative) (Form 1040 Line 34/37) in cents */
+  refundOrOwe: number;
+}
+
+/**
+ * Complete federal tax calculation result for tax year 2025.
+ *
+ * @remarks
+ * **All monetary values are in CENTS (integer).**
+ *
+ * To display values to users, divide by 100 using `centsToDollars()`.
+ *
+ * @example
+ * ```typescript
+ * const result = computeFederal2025(input);
+ * console.log(`AGI: $${centsToDollars(result.agi).toFixed(2)}`);
+ * console.log(`Refund: $${centsToDollars(result.refundOrOwe).toFixed(2)}`);
+ * ```
+ */
 export interface FederalResult2025 {
-  agi: number; // cents
-  taxableIncome: number; // cents
-  deductionType: 'standard' | 'itemized'; // which deduction was actually used
-  standardDeduction: number; // cents
-  itemizedDeduction?: number; // cents
-  qbiDeduction?: number; // cents
-  qbiDetails?: QBICalculationDetails; // Detailed QBI calculation
-  nolDeduction?: number; // Net Operating Loss deduction (cents)
-  taxBeforeCredits: number; // cents
+  /** Adjusted Gross Income in cents */
+  agi: number;
+  /** Taxable income (AGI minus deductions) in cents */
+  taxableIncome: number;
+  /** Which deduction type was actually used */
+  deductionType: 'standard' | 'itemized';
+  /** Standard deduction amount in cents */
+  standardDeduction: number;
+  /** Itemized deduction amount in cents (if calculated) */
+  itemizedDeduction?: number;
+  /** Qualified Business Income (QBI) deduction in cents (Section 199A) */
+  qbiDeduction?: number;
+  /** Detailed QBI calculation breakdown */
+  qbiDetails?: QBICalculationDetails;
+  /** Net Operating Loss deduction in cents */
+  nolDeduction?: number;
+  /** Tax before credits in cents */
+  taxBeforeCredits: number;
+  /** Tax credits (all values in cents) */
   credits: {
-    ctc?: number; // Child Tax Credit (cents)
-    aotc?: number; // American Opportunity Tax Credit (cents)
-    llc?: number; // Lifetime Learning Credit (cents)
-    eitc?: number; // Earned Income Tax Credit (cents)
-    ftc?: number; // Foreign Tax Credit (cents)
-    adoptionCreditNonRefundable?: number; // Adoption Credit non-refundable portion (cents)
-    adoptionCreditRefundable?: number; // Adoption Credit refundable portion (cents) - new for 2025
-    ptc?: number; // Premium Tax Credit (Form 8962) - refundable (cents)
-    ptcRepayment?: number; // Excess APTC repayment (increases tax liability, cents)
+    /** Child Tax Credit in cents */
+    ctc?: number;
+    /** American Opportunity Tax Credit in cents */
+    aotc?: number;
+    /** Lifetime Learning Credit in cents */
+    llc?: number;
+    /** Earned Income Tax Credit in cents */
+    eitc?: number;
+    /** Foreign Tax Credit in cents */
+    ftc?: number;
+    /** Adoption Credit non-refundable portion in cents */
+    adoptionCreditNonRefundable?: number;
+    /** Adoption Credit refundable portion in cents (new for 2025) */
+    adoptionCreditRefundable?: number;
+    /** Premium Tax Credit (Form 8962) - refundable in cents */
+    ptc?: number;
+    /** Excess APTC repayment (increases tax liability) in cents */
+    ptcRepayment?: number;
+    /** Other non-refundable credits in cents */
     otherNonRefundable?: number;
+    /** Other refundable credits in cents */
     otherRefundable?: number;
   };
+  /** Additional taxes beyond regular income tax (all values in cents) */
   additionalTaxes?: {
-    seTax?: number; // Self-employment tax
-    niit?: number; // Net Investment Income Tax
-    medicareSurtax?: number; // Additional Medicare Tax
-    amt?: number; // Alternative Minimum Tax
+    /** Self-employment tax in cents */
+    seTax?: number;
+    /** Net Investment Income Tax in cents */
+    niit?: number;
+    /** Additional Medicare Tax (0.9% surtax) in cents */
+    medicareSurtax?: number;
+    /** Alternative Minimum Tax in cents */
+    amt?: number;
   };
-  amtDetails?: AMTCalculationDetails; // Detailed AMT calculation
-  totalTax: number; // cents
-  totalPayments: number; // cents
-  refundOrOwe: number; // cents (+ refund, - owe)
+  /** Detailed AMT calculation breakdown */
+  amtDetails?: AMTCalculationDetails;
+  /** Total tax liability in cents */
+  totalTax: number;
+  /** Total payments (withholding + estimated + advance) in cents */
+  totalPayments: number;
+  /** Refund (positive) or amount owed (negative) in cents */
+  refundOrOwe: number;
+  /** Detailed payment breakdown (Form 1040 Lines 25-27) */
+  paymentBreakdown?: PaymentBreakdown;
+  /** Detailed refundable credits breakdown (Form 1040 Lines 27-31) */
+  refundableCreditsBreakdown?: RefundableCreditsBreakdown;
+  /** Detailed refund/owe calculation breakdown (Form 1040 Lines 24-37) */
+  refundOrOweBreakdown?: RefundOrOweBreakdown;
+  /** Diagnostic messages (warnings, errors) from calculation */
   diagnostics: FederalDiagnostics2025;
   /** Optional calculation trace for audit/review (set enableTrace in options) */
   trace?: import('./trace/types').TraceSection[];
@@ -413,7 +628,7 @@ export interface StateResult {
   taxableIncomeState?: number;
 }
 
-export interface TaxBracket { 
+export interface TaxBracket {
   min: number; // cents
   max: number; // cents (Infinity for top bracket)
   rate: number; // decimal (e.g., 0.10 for 10%)
@@ -447,7 +662,7 @@ export type {
   ForeignIncomeCategory,
   ForeignIncomeSource,
   ForeignTaxCreditInput,
-  ForeignTaxCreditResult
+  ForeignTaxCreditResult,
 } from './credits/foreignTaxCredit';
 
 // Re-export Adoption Credit types from credits module
@@ -457,7 +672,7 @@ export type {
   AdoptedChild,
   AdoptionCreditInput,
   AdoptionCreditResult,
-  ChildAdoptionCreditDetail
+  ChildAdoptionCreditDetail,
 } from './credits/adoptionCredit';
 
 // Re-export State Tax types
@@ -466,5 +681,5 @@ export type {
   StateCalculator,
   StateConfig,
   StateRegistry,
-  StateCredits
+  StateCredits,
 } from './types/stateTax';

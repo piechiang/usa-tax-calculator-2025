@@ -4,6 +4,7 @@ import { useLanguageContext } from '../contexts/LanguageContext';
 import { useTaxContext } from '../contexts/TaxContext';
 import { exportToJSON, exportToPDF } from '../utils/exportUtils';
 import { importDataSchema, backupDataSchema, type BackupData } from '../utils/schemas';
+import { logger } from '../utils/logger';
 
 export interface UseTaxDataHandlersResult {
   exportPDF: () => void;
@@ -31,7 +32,7 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
     handleBusinessDetailsChange,
     handlePaymentsChange,
     handleDeductionChange,
-    recalculate
+    recalculate,
   } = useTaxContext();
 
   const exportPDF = useCallback(() => {
@@ -91,7 +92,7 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
         if (validatedData.formData?.businessDetails) {
           Object.entries(validatedData.formData.businessDetails).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
-              handleBusinessDetailsChange(key as keyof typeof businessDetails, String(value));
+              handleBusinessDetailsChange(key as string, String(value));
             }
           });
         }
@@ -114,9 +115,10 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
 
         recalculate();
       } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Error restoring backup data (validation failed):', error);
-        }
+        logger.error(
+          'Error restoring backup data (validation failed)',
+          error instanceof Error ? error : undefined
+        );
         throw new Error('Invalid backup data format. Please check the backup file.');
       }
     },
@@ -128,7 +130,7 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
       handlePaymentsChange,
       handlePersonalInfoChange,
       handleSpouseInfoChange,
-      recalculate
+      recalculate,
     ]
   );
 
@@ -139,67 +141,63 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
         const validatedData = importDataSchema.parse(data);
         const payload = validatedData;
 
-      if (payload.personalInfo) {
-        Object.entries(payload.personalInfo).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            handlePersonalInfoChange(key as keyof typeof personalInfo, String(value));
-          }
-        });
-      }
-
-      if (payload.spouseInfo) {
-        Object.entries(payload.spouseInfo).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            handleSpouseInfoChange(key as keyof typeof spouseInfo, String(value));
-          }
-        });
-      }
-
-      if (payload.incomeData) {
-        Object.entries(payload.incomeData).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            handleIncomeChange(key, String(value));
-          }
-        });
-      }
-
-      if (payload.k1Data) {
-        Object.entries(payload.k1Data).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            handleK1Change(key, String(value));
-          }
-        });
-      }
-
-      if (payload.businessDetails) {
-        Object.entries(payload.businessDetails).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            handleBusinessDetailsChange(key as keyof typeof businessDetails, String(value));
-          }
-        });
-      }
-
-      if (payload.paymentsData) {
-        Object.entries(payload.paymentsData).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            handlePaymentsChange(key, String(value));
-          }
-        });
-      }
-
-      if (payload.deductions) {
-        Object.entries(payload.deductions).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            handleDeductionChange(key as keyof typeof deductions, String(value));
-          }
-        });
-      }
-      } catch (error) {
-        // Log validation error in development
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Invalid import data format:', error);
+        if (payload.personalInfo) {
+          Object.entries(payload.personalInfo).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              handlePersonalInfoChange(key as keyof typeof personalInfo, String(value));
+            }
+          });
         }
-        // Optionally show user-friendly error message
+
+        if (payload.spouseInfo) {
+          Object.entries(payload.spouseInfo).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              handleSpouseInfoChange(key as keyof typeof spouseInfo, String(value));
+            }
+          });
+        }
+
+        if (payload.incomeData) {
+          Object.entries(payload.incomeData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              handleIncomeChange(key, String(value));
+            }
+          });
+        }
+
+        if (payload.k1Data) {
+          Object.entries(payload.k1Data).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              handleK1Change(key, String(value));
+            }
+          });
+        }
+
+        if (payload.businessDetails) {
+          Object.entries(payload.businessDetails).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              handleBusinessDetailsChange(key as string, String(value));
+            }
+          });
+        }
+
+        if (payload.paymentsData) {
+          Object.entries(payload.paymentsData).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              handlePaymentsChange(key, String(value));
+            }
+          });
+        }
+
+        if (payload.deductions) {
+          Object.entries(payload.deductions).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              handleDeductionChange(key as keyof typeof deductions, String(value));
+            }
+          });
+        }
+      } catch (error) {
+        logger.error('Invalid import data format', error instanceof Error ? error : undefined);
         throw new Error('Invalid data format. Please check the imported file.');
       }
     },
@@ -210,7 +208,7 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
       handleK1Change,
       handlePaymentsChange,
       handlePersonalInfoChange,
-      handleSpouseInfoChange
+      handleSpouseInfoChange,
     ]
   );
 
@@ -225,12 +223,12 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
         paymentsData,
         deductions,
         taxResult,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       if (format === 'json') {
         const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
-          type: 'application/json'
+          type: 'application/json',
         });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
@@ -242,7 +240,16 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
         URL.revokeObjectURL(url);
       }
     },
-    [businessDetails, deductions, incomeData, k1Data, paymentsData, personalInfo, spouseInfo, taxResult]
+    [
+      businessDetails,
+      deductions,
+      incomeData,
+      k1Data,
+      paymentsData,
+      personalInfo,
+      spouseInfo,
+      taxResult,
+    ]
   );
 
   return {
@@ -250,6 +257,6 @@ export function useTaxDataHandlers(): UseTaxDataHandlersResult {
     exportJSON,
     restoreBackup,
     importData,
-    exportData
+    exportData,
   };
 }

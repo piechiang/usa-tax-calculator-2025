@@ -1,42 +1,15 @@
 import { lazy, Suspense } from 'react';
 
-import type { TaxContextValue } from '../../contexts/TaxContext';
-
-const TaxWizard = lazy(() =>
-  import('../wizard/TaxWizard').then(m => ({ default: m.TaxWizard }))
-);
+const TaxWizard = lazy(() => import('../wizard/TaxWizard').then((m) => ({ default: m.TaxWizard })));
 
 interface WizardModalProps {
   isOpen: boolean;
-  onComplete: (data: Record<string, string | number | boolean>) => void;
+  onComplete: (data: Record<string, unknown>) => void;
   onCancel: () => void;
-  onExportPDF: () => void;
-  onExportJSON: () => void;
-  personalInfo: TaxContextValue['personalInfo'];
-  incomeData: TaxContextValue['incomeData'];
-  deductions: TaxContextValue['deductions'];
-  paymentsData: TaxContextValue['paymentsData'];
-  taxResult: TaxContextValue['taxResult'];
-  filingComparison: TaxContextValue['filingComparison'];
-  taxOptimizations: TaxContextValue['taxOptimizations'];
   t: (key: string) => string;
 }
 
-export function WizardModal({
-  isOpen,
-  onComplete,
-  onCancel,
-  onExportPDF,
-  onExportJSON,
-  personalInfo,
-  incomeData,
-  deductions,
-  paymentsData,
-  taxResult,
-  filingComparison,
-  taxOptimizations,
-  t
-}: WizardModalProps) {
+export function WizardModal({ isOpen, onComplete, onCancel, t }: WizardModalProps) {
   if (!isOpen) {
     return null;
   }
@@ -49,20 +22,7 @@ export function WizardModal({
         </div>
       }
     >
-      <TaxWizard
-        onComplete={onComplete}
-        onCancel={onCancel}
-        onExportPDF={onExportPDF}
-        onExportJSON={onExportJSON}
-        personalInfo={personalInfo}
-        incomeData={incomeData}
-        deductions={deductions}
-        paymentsData={paymentsData}
-        taxResult={taxResult}
-        filingComparison={filingComparison}
-        taxOptimizations={taxOptimizations}
-        t={t}
-      />
+      <TaxWizard onComplete={onComplete} onCancel={onCancel} t={t} />
     </Suspense>
   );
 }

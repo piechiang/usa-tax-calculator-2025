@@ -30,10 +30,7 @@ describe('createFederalTrace', () => {
       refundOrOwe: 115000, // $1,150 refund
     };
 
-    const trace = createFederalTrace(
-      input as FederalInput2025,
-      result as FederalResult2025
-    );
+    const trace = createFederalTrace(input as FederalInput2025, result as FederalResult2025);
 
     // Should have multiple sections
     expect(trace.length).toBeGreaterThan(5);
@@ -98,10 +95,7 @@ describe('createFederalTrace', () => {
       refundOrOwe: 225000,
     };
 
-    const trace = createFederalTrace(
-      input as FederalInput2025,
-      result as FederalResult2025
-    );
+    const trace = createFederalTrace(input as FederalInput2025, result as FederalResult2025);
 
     // Should have adjustments section
     const adjustmentsSection = trace.find((s) => s.id === 'adjustments');
@@ -147,10 +141,7 @@ describe('createFederalTrace', () => {
       refundOrOwe: 150000,
     };
 
-    const trace = createFederalTrace(
-      input as FederalInput2025,
-      result as FederalResult2025
-    );
+    const trace = createFederalTrace(input as FederalInput2025, result as FederalResult2025);
 
     // Income section should include capital gains entry
     const incomeSection = trace.find((s) => s.id === 'income');
@@ -175,7 +166,16 @@ describe('createFederalTrace', () => {
   it('should include self-employment tax in trace', () => {
     const input: Partial<FederalInput2025> = {
       filingStatus: 'single',
-      businessIncome: 5000000, // $50,000 SE income
+      income: {
+        wages: 0,
+        interest: 0,
+        dividends: { ordinary: 0, qualified: 0 },
+        capGainsNet: 0,
+        capitalGainsDetail: { shortTerm: 0, longTerm: 0 },
+        scheduleCNet: 5000000, // $50,000 SE income
+        k1: { ordinaryBusinessIncome: 0, passiveIncome: 0, portfolioIncome: 0 },
+        other: { otherIncome: 0, royalties: 0, guaranteedPayments: 0 },
+      },
       federalWithholding: 0,
       qualifyingChildren: [],
       qualifyingRelatives: [],
@@ -195,10 +195,7 @@ describe('createFederalTrace', () => {
       refundOrOwe: -1036000,
     };
 
-    const trace = createFederalTrace(
-      input as FederalInput2025,
-      result as FederalResult2025
-    );
+    const trace = createFederalTrace(input as FederalInput2025, result as FederalResult2025);
 
     // Should have other_taxes section for SE tax
     const otherTaxesSection = trace.find((s) => s.id === 'other_taxes');
@@ -250,10 +247,7 @@ describe('createFederalTrace', () => {
       refundOrOwe: 850000,
     };
 
-    const trace = createFederalTrace(
-      input as FederalInput2025,
-      result as FederalResult2025
-    );
+    const trace = createFederalTrace(input as FederalInput2025, result as FederalResult2025);
 
     // Should have credits section
     const creditsSection = trace.find((s) => s.id === 'credits');
@@ -289,10 +283,7 @@ describe('createFederalTrace', () => {
       refundOrOwe: 115000,
     };
 
-    const trace = createFederalTrace(
-      input as FederalInput2025,
-      result as FederalResult2025
-    );
+    const trace = createFederalTrace(input as FederalInput2025, result as FederalResult2025);
 
     // Check that all entries have form references
     const allEntries = trace.flatMap((section) => section.entries);
@@ -301,9 +292,7 @@ describe('createFederalTrace', () => {
     expect(entriesWithFormRefs.length).toBeGreaterThan(0);
 
     // Spot check some key form references
-    const hasForm1040Line1 = allEntries.some((e) =>
-      e.formReference?.includes('Form 1040, Line 1')
-    );
+    const hasForm1040Line1 = allEntries.some((e) => e.formReference?.includes('Form 1040, Line 1'));
     const hasForm1040Line11 = allEntries.some((e) =>
       e.formReference?.includes('Form 1040, Line 11')
     );

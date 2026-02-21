@@ -12,10 +12,12 @@ import type { StateResult } from '../engine/types/stateTax';
  * Used by multiple UI components for displaying tax results
  */
 export interface TaxResult {
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown;
   adjustedGrossIncome: number;
   taxableIncome: number;
   federalTax: number;
-  stateTax: number;          // Generic state tax (replaces marylandTax)
+  stateTax: number; // Generic state tax (replaces marylandTax)
   localTax: number;
   totalTax: number;
   totalPayments: number;
@@ -29,20 +31,43 @@ export interface TaxResult {
   deductionType?: 'standard' | 'itemized';
 
   // Tax rates
-  marginalRate: number;      // Marginal tax rate (bracket rate)
+  marginalRate: number; // Marginal tax rate (bracket rate)
 
-  // Credits breakdown
+  // Credits breakdown (legacy individual fields)
   childTaxCredit?: number;
   earnedIncomeCredit?: number;
   educationCredits?: number;
 
-  // Additional taxes
+  // Credits object (detailed breakdown from engine)
+  credits?: {
+    ctc?: number; // Child Tax Credit
+    aotc?: number; // American Opportunity Tax Credit
+    llc?: number; // Lifetime Learning Credit
+    eitc?: number; // Earned Income Tax Credit
+    ftc?: number; // Foreign Tax Credit
+    adoptionCreditNonRefundable?: number; // Adoption Credit (non-refundable)
+    adoptionCreditRefundable?: number; // Adoption Credit (refundable)
+    ptc?: number; // Premium Tax Credit
+    ptcRepayment?: number; // Excess APTC repayment
+    otherNonRefundable?: number;
+    otherRefundable?: number;
+  };
+
+  // Additional taxes (legacy individual fields)
   selfEmploymentTax?: number;
   netInvestmentIncomeTax?: number;
   additionalMedicareTax?: number;
 
+  // Additional taxes object (detailed breakdown from engine)
+  additionalTaxes?: {
+    seTax?: number; // Self-employment tax
+    niit?: number; // Net Investment Income Tax
+    medicareSurtax?: number; // Additional Medicare Tax
+    amt?: number; // Alternative Minimum Tax
+  };
+
   // Legacy field for backward compatibility
-  marylandTax: number;       // @deprecated Use stateTax instead
+  marylandTax: number; // @deprecated Use stateTax instead
 }
 
 /**
@@ -68,6 +93,8 @@ export interface SpouseInfo extends UISpouseInfo {
  * State-agnostic design - works with any US state via STATE_CONFIGS
  */
 export interface PersonalInfo extends Omit<UIPersonalInfo, 'dependents'> {
+  // Index signature for compatibility with Record<string, unknown>
+  [key: string]: unknown;
   firstName: string;
   lastName: string;
   ssn: string;
@@ -77,9 +104,9 @@ export interface PersonalInfo extends Omit<UIPersonalInfo, 'dependents'> {
   dependents: number;
 
   // State and locality information (integrated with STATE_CONFIGS)
-  state: string;         // State code (e.g., 'MD', 'NY', 'CA') - REQUIRED
-  county?: string;       // County name (for states with county-based local tax like MD)
-  city?: string;         // City name (for states with city-based local tax like NY)
+  state: string; // State code (e.g., 'MD', 'NY', 'CA') - REQUIRED
+  county?: string; // County name (for states with county-based local tax like MD)
+  city?: string; // City name (for states with city-based local tax like NY)
 
   // Deprecated field - kept for backward compatibility only
   // Use 'state' field instead. Auto-synced: isMaryland = (state === 'MD')
@@ -122,6 +149,7 @@ export interface TaxDataSnapshot {
     dependents: number;
     age?: number;
     isBlind?: boolean;
+    ssn?: string;
   };
   income: {
     wages: number;
@@ -135,6 +163,12 @@ export interface TaxDataSnapshot {
     type: 'standard' | 'itemized';
     amount: number;
     breakdown?: Record<string, number>;
+    // Extended fields for accuracy checking
+    useStandardDeduction?: boolean;
+    mortgageInterestAmount?: number;
+    saltAmount?: number;
+    charitableAmount?: number;
+    medicalExpenses?: number;
   };
   credits: {
     childTaxCredit: number;
@@ -153,6 +187,24 @@ export interface TaxDataSnapshot {
     totalTax: number;
     refundOrOwe: number;
   };
+  // Extended fields for advanced accuracy checking
+  incomeSourcesEach?: Array<{
+    type?: string;
+    amount: number;
+    description?: string;
+  }>;
+  hasRetirementContributions?: boolean;
+  qualifyingChildren?: Array<{
+    name?: string;
+    dateOfBirth: string;
+    relationship?: string;
+  }>;
+  claimedChildTaxCredit?: boolean;
+  educationExpenses?: number;
+  claimedEducationCredits?: boolean;
+  hasMultiStateIncome?: boolean;
+  optimizedStateTaxes?: boolean;
+  madeEstimatedPayments?: boolean;
 }
 
 /**
@@ -239,6 +291,15 @@ export interface TaxCalculationOutput {
   accuracy?: AccuracyCheck[];
   warnings?: string[];
   timestamp: number;
+  // Extended fields for filing optimization
+  filingComparison?: {
+    joint: { totalTax: number; refundOrOwe: number };
+    separate: { totalTax: number; refundOrOwe: number };
+  };
+  estimatedTaxDue?: number;
+  // Convenience properties (computed from federalResult)
+  totalTax?: number;
+  refund?: number;
 }
 
 /**

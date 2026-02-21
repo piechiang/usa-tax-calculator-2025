@@ -25,7 +25,6 @@ describe('Form 8962 PTC Integration', () => {
       capGainsNet: 0,
       capitalGainsDetail: { shortTerm: 0, longTerm: 0 },
       scheduleCNet: 0,
-      businessIncome: 0,
       k1: {
         ordinaryBusinessIncome: 0,
         passiveIncome: 0,

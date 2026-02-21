@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 
 const InterviewFlow = lazy(() =>
-  import('../interview/InterviewFlow').then(m => ({ default: m.InterviewFlow }))
+  import('../interview/InterviewFlow').then((m) => ({ default: m.InterviewFlow }))
 );
 
 interface InterviewQuestion {
@@ -28,7 +28,7 @@ interface InterviewQuestion {
 interface InterviewFlowModalProps {
   isOpen: boolean;
   questions: InterviewQuestion[];
-  onComplete: (data: Record<string, string>) => void;
+  onComplete: (data: Record<string, unknown>) => void;
   onCancel: () => void;
   t: (key: string) => string;
 }
@@ -38,7 +38,7 @@ export function InterviewFlowModal({
   questions,
   onComplete,
   onCancel,
-  t
+  t,
 }: InterviewFlowModalProps) {
   if (!isOpen) {
     return null;

@@ -1,11 +1,6 @@
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
 import { IL_RULES_2025 } from '../../../rules/2025/states/il';
-import {
-  addCents,
-  max0,
-  multiplyCents,
-  subtractCents
-} from '../../../util/money';
+import { addCents, max0, multiplyCents, subtractCents } from '../../../util/money';
 
 /**
  * Compute Illinois state tax for 2025
@@ -54,16 +49,17 @@ export function computeIL2025(input: StateTaxInput): StateResult {
 
   return {
     state: 'IL',
-    year: 2025,
-    agiState: ilAGI,
-    taxableIncomeState: ilTaxableIncome,
+    taxYear: 2025,
+    stateAGI: ilAGI,
+    stateTaxableIncome: ilTaxableIncome,
     stateTax: taxAfterCredits,
+    localTax: 0,
     totalStateLiability: taxAfterCredits,
-    stateWithheld: stateSpecific?.stateWithheld,
-    stateRefundOrOwe: stateSpecific?.stateWithheld
-      ? stateSpecific.stateWithheld - taxAfterCredits
-      : undefined,
-    credits,
+    stateDeduction: exemptions,
+    stateWithheld: stateSpecific?.stateWithheld ?? 0,
+    stateEstPayments: stateSpecific?.stateEstPayments ?? 0,
+    stateRefundOrOwe: (stateSpecific?.stateWithheld ?? 0) - taxAfterCredits,
+    stateCredits: credits,
   };
 }
 
@@ -169,8 +165,5 @@ function calculatePropertyTaxCredit(input: StateTaxInput, ilAGI: number): number
   }
 
   // Credit is 5% of property taxes paid
-  return multiplyCents(
-    stateSpecific.propertyTaxPaid,
-    IL_RULES_2025.propertyTaxCreditRate
-  );
+  return multiplyCents(stateSpecific.propertyTaxPaid, IL_RULES_2025.propertyTaxCreditRate);
 }

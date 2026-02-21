@@ -2,7 +2,7 @@ import React from 'react';
 import type { PersonalInfo } from '../../types/CommonTypes';
 
 interface PaymentsFormProps {
-  paymentsData: Record<string, string | number>;
+  paymentsData: Record<string, string | number | undefined>;
   personalInfo: PersonalInfo;
   onChange: (field: string, value: string) => void;
   t: (key: string) => string;
@@ -22,7 +22,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
   personalInfo,
   onChange,
   t,
-  ValidatedInput
+  ValidatedInput,
 }) => {
   return (
     <div className="space-y-4">
@@ -44,7 +44,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
             help={t('payments.descriptions.federalWithholding')}
           />
         </div>
-        
+
         {personalInfo.isMaryland && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -63,7 +63,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
             />
           </div>
         )}
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('payments.estimatedTaxPayments')}
@@ -80,7 +80,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
             help={t('payments.descriptions.estimatedTaxPayments')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('payments.priorYearOverpayment')}
@@ -97,7 +97,7 @@ const PaymentsForm: React.FC<PaymentsFormProps> = ({
             help={t('payments.descriptions.priorYearOverpayment')}
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('payments.otherPayments')}

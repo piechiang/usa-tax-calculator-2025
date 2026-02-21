@@ -17,7 +17,6 @@
 
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
 import {
-  CO_RULES_2025,
   calculateColoradoTax,
   calculateStateIncomeAddback,
   type ColoradoSpecificInput,

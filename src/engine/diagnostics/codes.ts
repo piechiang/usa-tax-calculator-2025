@@ -41,6 +41,15 @@ export type DiagnosticCode =
   | 'CALC-W-005' // Qualified Business Income (QBI) deduction limited
   | 'CALC-W-006' // SALT deduction capped at $10,000
   | 'CALC-W-007' // Itemized deductions less than standard deduction
+  | 'CALC-W-008' // Forced itemized overrides higher standard deduction
+
+  // Payment Warnings
+  | 'PAYMENT-W-001' // Payments significantly exceed tax liability
+  | 'PAYMENT-W-002' // Large refund — possible overwithholding
+  | 'PAYMENT-W-003' // Significant balance owed — possible underpayment penalty
+
+  // NOL Warnings
+  | 'NOL-W-001' // Excess NOL carried forward to future years
 
   // Schedule 1 Adjustment Warnings
   | 'CALC-W-010' // Educator expenses capped at maximum
@@ -87,7 +96,7 @@ export type DiagnosticCode =
   // Filing Info
   | 'FORM-I-001' // Standard Form 1040 sufficient
   | 'FORM-I-002' // Filing deadline April 15, 2026
-  | 'FORM-I-003' // Extension available until October 15, 2026;
+  | 'FORM-I-003'; // Extension available until October 15, 2026;
 
 /**
  * Diagnostic message templates
@@ -115,12 +124,25 @@ export const DIAGNOSTIC_MESSAGES: Record<DiagnosticCode, string> = {
   'CALC-W-005': 'Qualified Business Income deduction limited to {amount}',
   'CALC-W-006': 'State and local tax (SALT) deduction capped at $10,000',
   'CALC-W-007': 'Standard deduction ({stdAmount}) exceeds itemized deductions ({itemAmount})',
+  'CALC-W-008':
+    'Forced itemized deduction ({itemAmount}) is less than standard deduction ({stdAmount})',
+
+  // Payment Warnings
+  'PAYMENT-W-001':
+    'Payments ({payments}) significantly exceed tax liability ({tax}) — verify withholding accuracy',
+  'PAYMENT-W-002': 'Large refund detected ({refund}) — consider adjusting withholding',
+  'PAYMENT-W-003':
+    'Significant balance owed ({owed}) — may be subject to underpayment penalty (Form 2210)',
+
+  // NOL Warnings
+  'NOL-W-001': '{carryforward} NOL will carry forward to future years',
 
   // Schedule 1 Adjustment Warnings
   'CALC-W-010': 'Educator expenses capped at {max} (requested {requested})',
   'CALC-W-011': 'IRA deduction reduced from {requested} to {allowed} due to income phaseout',
   'CALC-W-012': 'IRA deduction fully phased out - income exceeds {threshold}',
-  'CALC-W-013': 'Student loan interest deduction reduced from {requested} to {allowed} due to income phaseout',
+  'CALC-W-013':
+    'Student loan interest deduction reduced from {requested} to {allowed} due to income phaseout',
   'CALC-W-014': 'Student loan interest deduction not allowed for Married Filing Separately',
   'CALC-W-015': 'SEP/SIMPLE/401(k) contribution limited to {allowed} (25% of net SE income)',
   'CALC-W-016': 'Self-employed health insurance deduction limited to {allowed} (net profit)',

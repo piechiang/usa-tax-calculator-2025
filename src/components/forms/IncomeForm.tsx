@@ -4,9 +4,9 @@ import { formatCurrency } from '../../utils/formatters';
 import { ValidatedInput } from '../ui/InputField';
 
 interface IncomeFormProps {
-  incomeData: Record<string, string | number>;
-  k1Data: Record<string, string | number>;
-  businessDetails: Record<string, string | number>;
+  incomeData: Record<string, string | number | undefined>;
+  k1Data: Record<string, string | number | undefined>;
+  businessDetails: Record<string, string | number | undefined>;
   onIncomeChange: (field: string, value: string) => void;
   onK1Change: (field: string, value: string) => void;
   onBusinessDetailsChange: (field: string, value: string) => void;
@@ -20,13 +20,14 @@ const IncomeForm: React.FC<IncomeFormProps> = ({
   onIncomeChange,
   onK1Change,
   onBusinessDetailsChange,
-  t
+  t,
 }) => {
-
   const calculateNetBusinessIncome = () => {
-    return (Number(businessDetails.grossReceipts) || 0) -
-           (Number(businessDetails.costOfGoodsSold) || 0) -
-           (Number(businessDetails.businessExpenses) || 0);
+    return (
+      (Number(businessDetails.grossReceipts) || 0) -
+      (Number(businessDetails.costOfGoodsSold) || 0) -
+      (Number(businessDetails.businessExpenses) || 0)
+    );
   };
 
   return (

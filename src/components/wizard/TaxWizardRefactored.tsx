@@ -19,12 +19,10 @@ import {
   User,
   DollarSign,
   Calculator,
-  Shield,
   Home,
   Heart,
-  Building2,
   HelpCircle,
-  LucideIcon
+  LucideIcon,
 } from 'lucide-react';
 import { useEnhancedTaxWizard } from '../../hooks/useEnhancedTaxWizard';
 
@@ -85,7 +83,7 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
   onComplete,
   onCancel,
   initialData = {},
-  t = (key: string) => key
+  t = (key: string) => key,
 }) => {
   // Use the enhanced tax wizard hook for state management
   const {
@@ -97,11 +95,11 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
     isDirty,
     isValid,
     updateProgress,
-    getProgress
+    getProgress,
   } = useEnhancedTaxWizard({
     autoSave: true,
     autoSaveInterval: 30000, // 30 seconds
-    autoCalculate: true
+    autoCalculate: true,
   });
 
   // Navigation state (kept local as it's UI-specific)
@@ -110,191 +108,192 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
 
   // Define wizard steps (same as original, but cleaner structure)
-  const wizardSteps: WizardStep[] = useMemo(() => [
-    {
-      id: 'basic-info',
-      title: 'Basic Information',
-      description: 'Let\'s start with your basic personal information',
-      icon: User,
-      category: 'personal',
-      required: true,
-      subsections: [
-        {
-          id: 'filing-status',
-          title: 'Filing Status',
-          description: 'Your filing status determines your tax rates and deductions',
-          questions: [
-            {
-              id: 'filingStatus',
-              title: 'What is your filing status?',
-              description: 'Choose the status that best describes your situation',
-              helpText: 'Your filing status affects your tax rates and standard deduction.',
-              type: 'radio',
-              required: true,
-              options: [
-                {
-                  value: 'single',
-                  label: 'Single',
-                  description: 'Unmarried or legally separated',
-                  icon: User
-                },
-                {
-                  value: 'marriedJointly',
-                  label: 'Married Filing Jointly',
-                  description: 'Married couples filing together',
-                  icon: Heart
-                },
-                {
-                  value: 'marriedSeparately',
-                  label: 'Married Filing Separately',
-                  description: 'Married but filing separate returns',
-                  icon: User
-                },
-                {
-                  value: 'headOfHousehold',
-                  label: 'Head of Household',
-                  description: 'Unmarried and pay more than half the home costs',
-                  icon: Home
-                }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'personal-details',
-          title: 'Personal Details',
-          questions: [
-            {
-              id: 'personalInfo',
-              title: 'Your Personal Information',
-              type: 'group',
-              required: true,
-              inputs: [
-                {
-                  field: 'firstName',
-                  label: 'First Name',
-                  type: 'text',
-                  required: true
-                },
-                {
-                  field: 'lastName',
-                  label: 'Last Name',
-                  type: 'text',
-                  required: true
-                },
-                {
-                  field: 'ssn',
-                  label: 'Social Security Number',
-                  type: 'ssn',
-                  placeholder: 'XXX-XX-XXXX',
-                  required: true,
-                  validation: (value: string) => {
-                    const ssnPattern = /^\d{3}-\d{2}-\d{4}$/;
-                    return ssnPattern.test(value) ? null : 'Invalid SSN format';
-                  }
-                },
-                {
-                  field: 'dateOfBirth',
-                  label: 'Date of Birth',
-                  type: 'date',
-                  required: true
-                }
-              ]
-            }
-          ]
-        }
-        // ... Add more subsections as needed
-      ]
-    },
-    {
-      id: 'income',
-      title: 'Income',
-      description: 'Report your income from all sources',
-      icon: DollarSign,
-      category: 'income',
-      required: true,
-      subsections: [
-        {
-          id: 'w2-income',
-          title: 'W-2 Wage Income',
-          questions: [
-            {
-              id: 'hasW2Income',
-              title: 'Did you receive W-2 income in 2025?',
-              type: 'radio',
-              options: [
-                { value: 'yes', label: 'Yes' },
-                { value: 'no', label: 'No' }
-              ],
-              followUp: [
-                {
-                  id: 'totalWages',
-                  title: 'Total wages from all W-2s',
-                  type: 'currency',
-                  required: true,
-                  condition: (data) => data.hasW2Income === 'yes'
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'deductions',
-      title: 'Deductions',
-      description: 'Claim your deductions',
-      icon: Calculator,
-      category: 'deductions',
-      required: true,
-      subsections: [
-        {
-          id: 'deduction-choice',
-          title: 'Standard vs Itemized',
-          questions: [
-            {
-              id: 'deductionChoice',
-              title: 'Which deduction would you like to take?',
-              type: 'radio',
-              options: [
-                { value: 'standard', label: 'Standard Deduction (Recommended)' },
-                { value: 'itemize', label: 'Itemize Deductions' }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'review',
-      title: 'Review',
-      description: 'Review and submit',
-      icon: CheckCircle,
-      category: 'review',
-      required: true,
-      subsections: [
-        {
-          id: 'final-review',
-          title: 'Final Review',
-          questions: [
-            {
-              id: 'reviewComplete',
-              title: 'I have reviewed my information',
-              type: 'checkbox',
-              options: [
-                { value: 'confirmed', label: 'All information is accurate' }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ], []);
+  const wizardSteps: WizardStep[] = useMemo(
+    () => [
+      {
+        id: 'basic-info',
+        title: 'Basic Information',
+        description: "Let's start with your basic personal information",
+        icon: User,
+        category: 'personal',
+        required: true,
+        subsections: [
+          {
+            id: 'filing-status',
+            title: 'Filing Status',
+            description: 'Your filing status determines your tax rates and deductions',
+            questions: [
+              {
+                id: 'filingStatus',
+                title: 'What is your filing status?',
+                description: 'Choose the status that best describes your situation',
+                helpText: 'Your filing status affects your tax rates and standard deduction.',
+                type: 'radio',
+                required: true,
+                options: [
+                  {
+                    value: 'single',
+                    label: 'Single',
+                    description: 'Unmarried or legally separated',
+                    icon: User,
+                  },
+                  {
+                    value: 'marriedJointly',
+                    label: 'Married Filing Jointly',
+                    description: 'Married couples filing together',
+                    icon: Heart,
+                  },
+                  {
+                    value: 'marriedSeparately',
+                    label: 'Married Filing Separately',
+                    description: 'Married but filing separate returns',
+                    icon: User,
+                  },
+                  {
+                    value: 'headOfHousehold',
+                    label: 'Head of Household',
+                    description: 'Unmarried and pay more than half the home costs',
+                    icon: Home,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: 'personal-details',
+            title: 'Personal Details',
+            questions: [
+              {
+                id: 'personalInfo',
+                title: 'Your Personal Information',
+                type: 'group',
+                required: true,
+                inputs: [
+                  {
+                    field: 'firstName',
+                    label: 'First Name',
+                    type: 'text',
+                    required: true,
+                  },
+                  {
+                    field: 'lastName',
+                    label: 'Last Name',
+                    type: 'text',
+                    required: true,
+                  },
+                  {
+                    field: 'ssn',
+                    label: 'Social Security Number',
+                    type: 'ssn',
+                    placeholder: 'XXX-XX-XXXX',
+                    required: true,
+                    validation: (value: string) => {
+                      const ssnPattern = /^\d{3}-\d{2}-\d{4}$/;
+                      return ssnPattern.test(value) ? null : 'Invalid SSN format';
+                    },
+                  },
+                  {
+                    field: 'dateOfBirth',
+                    label: 'Date of Birth',
+                    type: 'date',
+                    required: true,
+                  },
+                ],
+              },
+            ],
+          },
+          // ... Add more subsections as needed
+        ],
+      },
+      {
+        id: 'income',
+        title: 'Income',
+        description: 'Report your income from all sources',
+        icon: DollarSign,
+        category: 'income',
+        required: true,
+        subsections: [
+          {
+            id: 'w2-income',
+            title: 'W-2 Wage Income',
+            questions: [
+              {
+                id: 'hasW2Income',
+                title: 'Did you receive W-2 income in 2025?',
+                type: 'radio',
+                options: [
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                ],
+                followUp: [
+                  {
+                    id: 'totalWages',
+                    title: 'Total wages from all W-2s',
+                    type: 'currency',
+                    required: true,
+                    condition: (data) => data.hasW2Income === 'yes',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'deductions',
+        title: 'Deductions',
+        description: 'Claim your deductions',
+        icon: Calculator,
+        category: 'deductions',
+        required: true,
+        subsections: [
+          {
+            id: 'deduction-choice',
+            title: 'Standard vs Itemized',
+            questions: [
+              {
+                id: 'deductionChoice',
+                title: 'Which deduction would you like to take?',
+                type: 'radio',
+                options: [
+                  { value: 'standard', label: 'Standard Deduction (Recommended)' },
+                  { value: 'itemize', label: 'Itemize Deductions' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'review',
+        title: 'Review',
+        description: 'Review and submit',
+        icon: CheckCircle,
+        category: 'review',
+        required: true,
+        subsections: [
+          {
+            id: 'final-review',
+            title: 'Final Review',
+            questions: [
+              {
+                id: 'reviewComplete',
+                title: 'I have reviewed my information',
+                type: 'checkbox',
+                options: [{ value: 'confirmed', label: 'All information is accurate' }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    []
+  );
 
   // Get visible steps based on conditions
   const getVisibleSteps = useCallback(() => {
     const data = getData() as Record<string, unknown>;
-    return wizardSteps.filter(step => !step.condition || step.condition(data));
+    return wizardSteps.filter((step) => !step.condition || step.condition(data));
   }, [wizardSteps, getData]);
 
   const visibleSteps = getVisibleSteps();
@@ -305,7 +304,7 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
     if (!currentStep?.subsections) return null;
     const data = getData() as Record<string, unknown>;
     const visibleSubsections = currentStep.subsections.filter(
-      sub => !sub.condition || sub.condition(data)
+      (sub) => !sub.condition || sub.condition(data)
     );
     return visibleSubsections[currentSubsectionIndex];
   }, [currentStep, currentSubsectionIndex, getData]);
@@ -317,7 +316,7 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
     if (!currentSubsection?.questions) return null;
     const data = getData() as Record<string, unknown>;
     const visibleQuestions = currentSubsection.questions.filter(
-      q => !q.condition || q.condition(data)
+      (q) => !q.condition || q.condition(data)
     );
     return visibleQuestions[currentQuestionIndex];
   }, [currentSubsection, currentQuestionIndex, getData]);
@@ -325,17 +324,21 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
   const currentQuestion = getCurrentQuestion();
 
   // Handle answer change
-  const handleAnswerChange = useCallback((field: string, value: unknown) => {
-    updateData(field, value);
-  }, [updateData]);
+  const handleAnswerChange = useCallback(
+    (field: string, value: unknown) => {
+      updateData(field, value);
+    },
+    [updateData]
+  );
 
   // Validate and move to next
   const handleNext = useCallback(() => {
     if (currentQuestion && currentQuestion.required) {
       const data = getData();
-      const value = typeof data === 'object' && data !== null
-        ? (data as Record<string, unknown>)[currentQuestion.id]
-        : undefined;
+      const value =
+        typeof data === 'object' && data !== null
+          ? (data as Record<string, unknown>)[currentQuestion.id]
+          : undefined;
 
       if (!value) {
         // Show validation error
@@ -344,22 +347,20 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
     }
 
     const data = getData() as Record<string, unknown>;
-    const visibleSubsections = currentStep?.subsections?.filter(
-      sub => !sub.condition || sub.condition(data)
-    ) || [];
-    const visibleQuestions = currentSubsection?.questions.filter(
-      q => !q.condition || q.condition(data)
-    ) || [];
+    const visibleSubsections =
+      currentStep?.subsections?.filter((sub) => !sub.condition || sub.condition(data)) || [];
+    const visibleQuestions =
+      currentSubsection?.questions.filter((q) => !q.condition || q.condition(data)) || [];
 
     // Move to next question
     if (currentQuestionIndex < visibleQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentQuestionIndex((prev) => prev + 1);
       return;
     }
 
     // Move to next subsection
     if (currentSubsectionIndex < visibleSubsections.length - 1) {
-      setCurrentSubsectionIndex(prev => prev + 1);
+      setCurrentSubsectionIndex((prev) => prev + 1);
       setCurrentQuestionIndex(0);
       return;
     }
@@ -370,7 +371,7 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
     }
 
     if (currentStepIndex < visibleSteps.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
+      setCurrentStepIndex((prev) => prev + 1);
       setCurrentSubsectionIndex(0);
       setCurrentQuestionIndex(0);
     } else {
@@ -378,42 +379,58 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
       saveToStorage();
       onComplete(getData() as Record<string, unknown>);
     }
-  }, [currentQuestion, currentQuestionIndex, currentSubsectionIndex, currentStepIndex, currentStep, currentSubsection, visibleSteps, getData, updateProgress, saveToStorage, onComplete]);
+  }, [
+    currentQuestion,
+    currentQuestionIndex,
+    currentSubsectionIndex,
+    currentStepIndex,
+    currentStep,
+    currentSubsection,
+    visibleSteps,
+    getData,
+    updateProgress,
+    saveToStorage,
+    onComplete,
+  ]);
 
   // Handle previous
   const handlePrevious = useCallback(() => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+      setCurrentQuestionIndex((prev) => prev - 1);
       return;
     }
 
     if (currentSubsectionIndex > 0) {
-      setCurrentSubsectionIndex(prev => prev - 1);
+      setCurrentSubsectionIndex((prev) => prev - 1);
       const data = getData() as Record<string, unknown>;
       const prevSubsection = currentStep?.subsections?.[currentSubsectionIndex - 1];
-      const prevQuestions = prevSubsection?.questions.filter(
-        q => !q.condition || q.condition(data)
-      ) || [];
+      const prevQuestions =
+        prevSubsection?.questions.filter((q) => !q.condition || q.condition(data)) || [];
       setCurrentQuestionIndex(Math.max(0, prevQuestions.length - 1));
       return;
     }
 
     if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
+      setCurrentStepIndex((prev) => prev - 1);
       const data = getData() as Record<string, unknown>;
       const prevStep = visibleSteps[currentStepIndex - 1];
-      const prevSubsections = prevStep?.subsections?.filter(
-        sub => !sub.condition || sub.condition(data)
-      ) || [];
+      const prevSubsections =
+        prevStep?.subsections?.filter((sub) => !sub.condition || sub.condition(data)) || [];
       setCurrentSubsectionIndex(Math.max(0, prevSubsections.length - 1));
 
       const lastSubsection = prevSubsections[prevSubsections.length - 1];
-      const lastQuestions = lastSubsection?.questions.filter(
-        q => !q.condition || q.condition(data)
-      ) || [];
+      const lastQuestions =
+        lastSubsection?.questions.filter((q) => !q.condition || q.condition(data)) || [];
       setCurrentQuestionIndex(Math.max(0, lastQuestions.length - 1));
     }
-  }, [currentQuestionIndex, currentSubsectionIndex, currentStepIndex, currentStep, visibleSteps, getData]);
+  }, [
+    currentQuestionIndex,
+    currentSubsectionIndex,
+    currentStepIndex,
+    currentStep,
+    visibleSteps,
+    getData,
+  ]);
 
   // Render question based on type
   const renderQuestion = useCallback(() => {
@@ -422,14 +439,14 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
     const data = getData() as Record<string, unknown>;
     const value = data[currentQuestion.id];
     const validationErrors = wizardState.validation.errors.filter(
-      e => e.field === currentQuestion.id
+      (e) => e.field === currentQuestion.id
     );
 
     switch (currentQuestion.type) {
       case 'radio':
         return (
           <div className="space-y-3">
-            {currentQuestion.options?.map(option => (
+            {currentQuestion.options?.map((option) => (
               <label
                 key={option.value}
                 className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
@@ -460,7 +477,7 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
             {validationErrors.length > 0 && (
               <div className="flex items-center gap-1 text-red-600 text-sm">
                 <AlertCircle className="w-4 h-4" />
-                {validationErrors[0].message}
+                {validationErrors[0]?.message}
               </div>
             )}
           </div>
@@ -469,7 +486,7 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
       case 'group':
         return (
           <div className="space-y-4">
-            {currentQuestion.inputs?.map(input => (
+            {currentQuestion.inputs?.map((input) => (
               <div key={input.field}>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {input.label}
@@ -512,7 +529,8 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
   }, [currentQuestion, wizardState.validation.errors, getData, handleAnswerChange]);
 
   const progress = getProgress();
-  const isFirstQuestion = currentStepIndex === 0 && currentSubsectionIndex === 0 && currentQuestionIndex === 0;
+  const isFirstQuestion =
+    currentStepIndex === 0 && currentSubsectionIndex === 0 && currentQuestionIndex === 0;
   const isLastStep = currentStepIndex === visibleSteps.length - 1;
 
   return (
@@ -558,8 +576,8 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
                   index === currentStepIndex
                     ? 'bg-blue-600 text-white'
                     : progress.completedSections.includes(step.id)
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-600'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-600'
                 }`}
               >
                 <step.icon className="w-3 h-3" />
@@ -576,9 +594,7 @@ export const TaxWizardRefactored: React.FC<TaxWizardRefactoredProps> = ({
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {currentSubsection && (
             <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {currentSubsection.title}
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{currentSubsection.title}</h3>
               {currentSubsection.description && (
                 <p className="text-gray-600 text-sm mb-4">{currentSubsection.description}</p>
               )}

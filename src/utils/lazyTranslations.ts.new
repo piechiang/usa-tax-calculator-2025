@@ -1,0 +1,148 @@
+/**
+ * Lazy Translation System
+ *
+ * This module provides lazy loading for translation files to reduce
+ * initial bundle size. Translations are loaded on-demand when a
+ * language is selected.
+ *
+ * Features:
+ * - Lazy loading of non-default languages
+ * - Caching of loaded translations
+ * - Fallback to English for missing keys
+ * - Type-safe translation access
+ */
+import { logger } from './logger';
+import { translations as allTranslations } from '../constants/translations';
+
+export type TranslationData = Record<string, unknown>;
+export type TranslationsMap = Record<string, TranslationData>;
+
+// Cache for loaded translations
+const translationCache: TranslationsMap = {};
+
+// Default language is loaded synchronously
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let defaultTranslations: TranslationData | null = null;
+
+// Language loader functions - now using inline translations instead of separate files
+const languageLoaders: Record<string, () => Promise<{ default: TranslationData }>> = {
+  en: () => Promise.resolve({ default: allTranslations.en as TranslationData }),
+  zh: () => Promise.resolve({ default: allTranslations.zh as TranslationData }),
+  'zh-TW': () => Promise.resolve({ default: (allTranslations['zh-TW'] || allTranslations.zh) as TranslationData }),
+  es: () => Promise.resolve({ default: allTranslations.es as TranslationData }),
+};
+
+/**
+ * Load translations for a specific language
+ */
+export async function loadTranslations(language: string): Promise<TranslationData> {
+  // Check cache first
+  if (translationCache[language]) {
+    return translationCache[language];
+  }
+
+  const loader = languageLoaders[language];
+  if (!loader) {
+    logger.warn(`No translations found for language: ${language}, falling back to English`);
+    return loadTranslations('en');
+  }
+
+  try {
+    const module = await loader();
+    translationCache[language] = module.default;
+    logger.debug(`Loaded translations for: ${language}`);
+    return module.default;
+  } catch (error) {
+    logger.error(`Failed to load translations for: ${language}`, error instanceof Error ? error : new Error(String(error)));
+    // Fallback to English
+    if (language !== 'en') {
+      return loadTranslations('en');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Preload default language (English) synchronously for initial render
+ */
+export function initializeDefaultTranslations(translations: TranslationData): void {
+  defaultTranslations = translations;
+  translationCache['en'] = translations;
+}
+
+/**
+ * Get translation value by path
+ */
+export function getTranslationValue(
+  translations: TranslationData,
+  path: string
+): string {
+  const keys = path.split('.');
+  let result: unknown = translations;
+
+  for (const key of keys) {
+    if (result && typeof result === 'object' && key in result) {
+      result = (result as Record<string, unknown>)[key];
+    } else {
+      return path; // Return path as fallback
+    }
+  }
+
+  return typeof result === 'string' ? result : path;
+}
+
+/**
+ * Get translation with fallback to default language
+ */
+export function getTranslationWithFallback(
+  path: string,
+  language: string
+): string {
+  const translations = translationCache[language];
+
+  if (translations) {
+    const value = getTranslationValue(translations, path);
+    if (value !== path) {
+      return value;
+    }
+  }
+
+  // Fallback to default (English)
+  if (defaultTranslations && language !== 'en') {
+    return getTranslationValue(defaultTranslations, path);
+  }
+
+  return path;
+}
+
+/**
+ * Check if translations are loaded for a language
+ */
+export function isLanguageLoaded(language: string): boolean {
+  return language in translationCache;
+}
+
+/**
+ * Get all supported languages
+ */
+export function getSupportedLanguages(): string[] {
+  return Object.keys(languageLoaders);
+}
+
+/**
+ * Preload translations for specified languages
+ */
+export async function preloadLanguages(languages: string[]): Promise<void> {
+  await Promise.all(
+    languages.map(lang => loadTranslations(lang).catch(() => {}))
+  );
+}
+
+/**
+ * Clear translation cache (useful for testing)
+ */
+export function clearTranslationCache(): void {
+  Object.keys(translationCache).forEach(key => {
+    delete translationCache[key];
+  });
+}

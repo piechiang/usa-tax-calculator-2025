@@ -34,7 +34,7 @@ const sizeClasses = {
  * - Body scroll lock: Prevents background scrolling
  * - ARIA attributes: role="dialog", aria-modal, aria-labelledby
  */
-export const Modal: React.FC<ModalProps> = ({
+const ModalComponent: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
@@ -68,10 +68,7 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2
-            id={`${modalId}-title`}
-            className="text-xl font-semibold text-gray-900"
-          >
+          <h2 id={`${modalId}-title`} className="text-xl font-semibold text-gray-900">
             {title}
           </h2>
           {showCloseButton && (
@@ -86,10 +83,11 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          {children}
-        </div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
 };
+
+// Memoize to prevent unnecessary re-renders
+export const Modal = React.memo(ModalComponent);

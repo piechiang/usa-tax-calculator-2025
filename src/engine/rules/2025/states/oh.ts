@@ -19,14 +19,14 @@
  * - Will transition to flat 2.75% rate in 2026
  */
 
-import { addCents, multiplyCents, subtractCents, max0 } from '../../../util/money';
+import { addCents, multiplyCents } from '../../../util/money';
 
 /**
  * Ohio Tax Brackets for 2025
  * Same thresholds for all filing statuses
  */
 export const OH_BRACKETS_2025 = [
-  { threshold: 0, rate: 0.00 },      // 0% on first $26,050
+  { threshold: 0, rate: 0.0 }, // 0% on first $26,050
   { threshold: 2605000, rate: 0.0275 }, // 2.75% on $26,051-$100,000
   { threshold: 10000000, rate: 0.03125 }, // 3.125% on $100,001+ (reduced from 3.5% in 2024)
 ] as const;
@@ -85,10 +85,7 @@ export const OH_RULES_2025 = {
 /**
  * Calculate Ohio personal exemption amount based on MAGI
  */
-export function calculateOhioPersonalExemption(
-  magi: number,
-  numberOfExemptions: number
-): number {
+export function calculateOhioPersonalExemption(magi: number, numberOfExemptions: number): number {
   const { personalExemption } = OH_RULES_2025;
 
   // Check MAGI cap - no exemptions if over $750,000
@@ -120,6 +117,8 @@ export function calculateOhioTax(taxableIncome: number): number {
 
   for (let i = 0; i < OH_BRACKETS_2025.length; i++) {
     const bracket = OH_BRACKETS_2025[i];
+    if (!bracket) continue;
+
     const nextBracket = OH_BRACKETS_2025[i + 1];
 
     if (taxableIncome <= bracket.threshold) {
@@ -163,7 +162,6 @@ export function calculatePersonalExemptionCredit(
 export interface OhioSpecificInput {
   // Ohio uses federal AGI with minimal modifications
   // No special Ohio-specific income types needed for basic calculation
-
   // For future expansion:
   // - Ohio retirement income exclusions
   // - Military pay exclusions

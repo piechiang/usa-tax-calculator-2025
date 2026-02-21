@@ -20,28 +20,28 @@ import { multiplyCents } from '../../../util/money';
  */
 export const MN_BRACKETS_2025 = {
   single: [
-    { threshold: 0, rate: 0.0535 },          // 5.35% on $0 - $32,570
-    { threshold: 3257000, rate: 0.0680 },    // 6.80% on $32,571 - $106,990
-    { threshold: 10699000, rate: 0.0785 },   // 7.85% on $106,991 - $198,630
-    { threshold: 19863000, rate: 0.0985 },   // 9.85% on $198,631+
+    { threshold: 0, rate: 0.0535 }, // 5.35% on $0 - $32,570
+    { threshold: 3257000, rate: 0.068 }, // 6.80% on $32,571 - $106,990
+    { threshold: 10699000, rate: 0.0785 }, // 7.85% on $106,991 - $198,630
+    { threshold: 19863000, rate: 0.0985 }, // 9.85% on $198,631+
   ],
   marriedJointly: [
-    { threshold: 0, rate: 0.0535 },          // 5.35% on $0 - $47,620
-    { threshold: 4762000, rate: 0.0680 },    // 6.80% on $47,621 - $189,180
-    { threshold: 18918000, rate: 0.0785 },   // 7.85% on $189,181 - $330,410
-    { threshold: 33041000, rate: 0.0985 },   // 9.85% on $330,411+
+    { threshold: 0, rate: 0.0535 }, // 5.35% on $0 - $47,620
+    { threshold: 4762000, rate: 0.068 }, // 6.80% on $47,621 - $189,180
+    { threshold: 18918000, rate: 0.0785 }, // 7.85% on $189,181 - $330,410
+    { threshold: 33041000, rate: 0.0985 }, // 9.85% on $330,411+
   ],
   marriedSeparately: [
-    { threshold: 0, rate: 0.0535 },          // 5.35% on $0 - $23,810
-    { threshold: 2381000, rate: 0.0680 },    // 6.80% on $23,811 - $94,590
-    { threshold: 9459000, rate: 0.0785 },    // 7.85% on $94,591 - $165,205
-    { threshold: 16520500, rate: 0.0985 },   // 9.85% on $165,206+
+    { threshold: 0, rate: 0.0535 }, // 5.35% on $0 - $23,810
+    { threshold: 2381000, rate: 0.068 }, // 6.80% on $23,811 - $94,590
+    { threshold: 9459000, rate: 0.0785 }, // 7.85% on $94,591 - $165,205
+    { threshold: 16520500, rate: 0.0985 }, // 9.85% on $165,206+
   ],
   headOfHousehold: [
-    { threshold: 0, rate: 0.0535 },          // 5.35% on $0 - $40,100
-    { threshold: 4010000, rate: 0.0680 },    // 6.80% on $40,101 - $161,130
-    { threshold: 16113000, rate: 0.0785 },   // 7.85% on $161,131 - $264,050
-    { threshold: 26405000, rate: 0.0985 },   // 9.85% on $264,051+
+    { threshold: 0, rate: 0.0535 }, // 5.35% on $0 - $40,100
+    { threshold: 4010000, rate: 0.068 }, // 6.80% on $40,101 - $161,130
+    { threshold: 16113000, rate: 0.0785 }, // 7.85% on $161,131 - $264,050
+    { threshold: 26405000, rate: 0.0985 }, // 9.85% on $264,051+
   ],
 };
 
@@ -53,10 +53,10 @@ export const MN_RULES_2025 = {
    * Standard Deduction amounts (in cents)
    */
   standardDeduction: {
-    single: 1495000,           // $14,950
-    marriedJointly: 2990000,   // $29,900
+    single: 1495000, // $14,950
+    marriedJointly: 2990000, // $29,900
     marriedSeparately: 1495000, // $14,950
-    headOfHousehold: 2200000,  // $22,000 (estimated)
+    headOfHousehold: 2200000, // $22,000 (estimated)
   },
 
   /**
@@ -75,10 +75,7 @@ export const MN_RULES_2025 = {
  * @param filingStatus - Filing status
  * @returns Tax amount in cents
  */
-export function calculateMinnesotaTax(
-  taxableIncome: number,
-  filingStatus: string
-): number {
+export function calculateMinnesotaTax(taxableIncome: number, filingStatus: string): number {
   if (taxableIncome <= 0) return 0;
 
   let brackets;
@@ -103,6 +100,8 @@ export function calculateMinnesotaTax(
 
   for (let i = 0; i < brackets.length; i++) {
     const bracket = brackets[i];
+    if (!bracket) continue;
+
     const nextBracket = i < brackets.length - 1 ? brackets[i + 1] : null;
 
     if (taxableIncome <= bracket.threshold) {

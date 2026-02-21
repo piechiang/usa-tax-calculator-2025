@@ -5,7 +5,6 @@ import {
   AMT_RATE_THRESHOLD_2025,
   AMT_RATES,
 } from '../rules/2025/federal/amt';
-import { SALT_CAP_2025 } from '../rules/2025/federal/deductions';
 import { addCents, max0, multiplyCents } from '../util/money';
 
 /**
@@ -69,19 +68,13 @@ export function computeAMT2025(input: AMTInput): AMTCalculationDetails {
   const amtiResult = calculateAMTI(input);
 
   // Step 2: Calculate AMT exemption with phase-out
-  const exemptionResult = calculateAMTExemption(
-    input.filingStatus,
-    amtiResult.amti
-  );
+  const exemptionResult = calculateAMTExemption(input.filingStatus, amtiResult.amti);
 
   // Step 3: Calculate AMT taxable income (AMTI minus exemption)
   const amtTaxableIncome = max0(amtiResult.amti - exemptionResult.exemptionAllowed);
 
   // Step 4: Calculate Tentative Minimum Tax (TMT)
-  const tentativeMinimumTax = calculateTentativeMinimumTax(
-    input.filingStatus,
-    amtTaxableIncome
-  );
+  const tentativeMinimumTax = calculateTentativeMinimumTax(input.filingStatus, amtTaxableIncome);
 
   // Step 5: Calculate AMT before credits
   // AMT is the excess of TMT over regular tax
@@ -193,10 +186,7 @@ function calculateAMTI(input: AMTInput): {
   if (input.amtItems) {
     // Line 26: Private activity bond interest
     if (input.amtItems.privateActivityBondInterest) {
-      preferences = addCents(
-        preferences,
-        input.amtItems.privateActivityBondInterest
-      );
+      preferences = addCents(preferences, input.amtItems.privateActivityBondInterest);
     }
 
     // Line 27: Excess percentage depletion
@@ -327,10 +317,5 @@ export function isLikelySubjectToAMT(input: FederalInput2025): boolean {
   const hasPrivateActivityBonds = (amtItems.privateActivityBondInterest || 0) > 0;
   const hasPassiveLosses = (amtItems.passiveActivityLosses || 0) > 0;
 
-  return (
-    hasISOSpread ||
-    hasLargeDepreciation ||
-    hasPrivateActivityBonds ||
-    hasPassiveLosses
-  );
+  return hasISOSpread || hasLargeDepreciation || hasPrivateActivityBonds || hasPassiveLosses;
 }

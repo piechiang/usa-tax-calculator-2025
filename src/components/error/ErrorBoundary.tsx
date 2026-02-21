@@ -7,6 +7,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -25,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
-    errorInfo: null
+    errorInfo: null,
   };
 
   public static getDerivedStateFromError(error: Error): Partial<State> {
@@ -33,11 +34,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    logger.error('Error caught by boundary', error, { errorInfo });
 
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
 
     // Call custom error handler if provided
@@ -61,7 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     });
   };
 
@@ -99,9 +100,7 @@ export class ErrorBoundary extends Component<Props, State> {
             {/* Error details (only in development) */}
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <div className="bg-gray-100 rounded p-4 mb-6 max-h-64 overflow-auto">
-                <p className="text-sm font-mono text-red-600 mb-2">
-                  {this.state.error.toString()}
-                </p>
+                <p className="text-sm font-mono text-red-600 mb-2">{this.state.error.toString()}</p>
                 {this.state.errorInfo && (
                   <pre className="text-xs text-gray-700 whitespace-pre-wrap">
                     {this.state.errorInfo.componentStack}

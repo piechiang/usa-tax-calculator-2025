@@ -14,12 +14,19 @@ import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/t
  * Compute Maine state tax for 2025
  */
 export function computeME2025(input: StateTaxInput): StateResult {
-  const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
+  const {
+    federalResult,
+    filingStatus,
+    stateWithheld = 0,
+    stateEstPayments = 0,
+    stateDependents = 0,
+  } = input;
 
   const meAGI = federalResult.agi;
   const standardDeduction = ME_RULES_2025.standardDeduction[filingStatus];
 
-  const numberOfExemptions = filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
+  const numberOfExemptions =
+    filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
   const personalExemptions = ME_RULES_2025.personalExemption * numberOfExemptions;
 
   const totalDeductions = addCents(standardDeduction, personalExemptions);
@@ -28,7 +35,7 @@ export function computeME2025(input: StateTaxInput): StateResult {
   const fullBrackets = convertToFullBrackets(ME_RULES_2025.brackets[filingStatus]);
   const taxBeforeCredits = calculateTaxFromBrackets(meTaxableIncome, fullBrackets);
 
-  const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
+  const federalEITC = federalResult.credits?.eitc || 0;
   const meEITC = Math.round(federalEITC * ME_RULES_2025.eitcPercentage);
   const taxAfterCredits = max0(taxBeforeCredits - meEITC);
 

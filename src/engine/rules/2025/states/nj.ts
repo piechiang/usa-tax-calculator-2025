@@ -140,10 +140,7 @@ export interface NJStateSpecific {
  * @param filingStatus Filing status to determine which brackets to use
  * @returns Tax liability in cents
  */
-export function calculateNewJerseyTax(
-  taxableIncome: number,
-  filingStatus: string
-): number {
+export function calculateNewJerseyTax(taxableIncome: number, filingStatus: string): number {
   if (taxableIncome <= 0) return 0;
 
   // Select appropriate bracket table
@@ -162,15 +159,15 @@ export function calculateNewJerseyTax(
 
   for (let i = 0; i < brackets.length; i++) {
     const bracket = brackets[i];
+    if (!bracket) break;
     const nextThreshold =
-      i < brackets.length - 1 ? brackets[i + 1].threshold : Infinity;
+      i < brackets.length - 1 ? (brackets[i + 1]?.threshold ?? Infinity) : Infinity;
 
     if (taxableIncome <= previousThreshold) {
       break;
     }
 
-    const taxableInThisBracket =
-      Math.min(taxableIncome, nextThreshold) - previousThreshold;
+    const taxableInThisBracket = Math.min(taxableIncome, nextThreshold) - previousThreshold;
     tax += Math.round(taxableInThisBracket * bracket.rate);
 
     previousThreshold = nextThreshold;

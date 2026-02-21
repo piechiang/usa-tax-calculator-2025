@@ -1,20 +1,13 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import TaxReviewAccuracy from '../review/TaxReviewAccuracy';
-
-interface TaxData {
-  [key: string]: unknown;
-}
-
-interface TaxResult {
-  [key: string]: unknown;
-}
+import type { TaxDataSnapshot, TaxCalculationOutput } from '../../types/CommonTypes';
 
 interface ReviewAccuracyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  taxData: TaxData;
-  taxResult: TaxResult;
+  taxData: Record<string, unknown>;
+  taxResult: Record<string, unknown>;
   onFixIssue: (issueId: string, fieldPath: string) => void;
   onAcceptSuggestion: (suggestionId: string) => void;
   t: (key: string) => string;
@@ -31,7 +24,7 @@ export const ReviewAccuracyModal: React.FC<ReviewAccuracyModalProps> = ({
   taxResult,
   onFixIssue,
   onAcceptSuggestion,
-  t
+  t,
 }) => {
   if (!isOpen) return null;
 
@@ -53,8 +46,8 @@ export const ReviewAccuracyModal: React.FC<ReviewAccuracyModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <TaxReviewAccuracy
-            taxData={taxData}
-            calculations={taxResult}
+            taxData={taxData as unknown as TaxDataSnapshot}
+            calculations={taxResult as unknown as TaxCalculationOutput}
             onFixIssue={onFixIssue}
             onAcceptSuggestion={onAcceptSuggestion}
             t={t}

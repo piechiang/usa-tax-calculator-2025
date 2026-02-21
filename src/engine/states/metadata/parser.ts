@@ -12,8 +12,7 @@ import type {
   ConfigValidationResult,
   ConfigValidationError,
   ConfigValidationWarning,
-  TaxBracket,
-  FilingStatus
+  FilingStatus,
 } from './schema';
 import { dollarsToCents } from '../../util/money';
 
@@ -37,7 +36,7 @@ export function parseStateTaxConfig(
       code: 'MISSING_METADATA',
       message: 'Configuration must include metadata section',
       path: 'metadata',
-      expected: 'object with stateCode, stateName, taxYear, etc.'
+      expected: 'object with stateCode, stateName, taxYear, etc.',
     });
   }
 
@@ -46,7 +45,7 @@ export function parseStateTaxConfig(
       code: 'MISSING_STRUCTURE',
       message: 'Configuration must specify tax structure',
       path: 'structure',
-      expected: "'flat', 'progressive', or 'hybrid'"
+      expected: "'flat', 'progressive', or 'hybrid'",
     });
   }
 
@@ -54,7 +53,7 @@ export function parseStateTaxConfig(
   if (errors.length > 0) {
     return {
       config: null,
-      validation: { valid: false, errors, warnings }
+      validation: { valid: false, errors, warnings },
     };
   }
 
@@ -98,7 +97,7 @@ export function parseStateTaxConfig(
       errors.push({
         code: 'CONVERSION_ERROR',
         message: `Error converting amounts to cents: ${error}`,
-        path: 'root'
+        path: 'root',
       });
     }
   }
@@ -108,8 +107,8 @@ export function parseStateTaxConfig(
     validation: {
       valid: errors.length === 0,
       errors,
-      warnings
-    }
+      warnings,
+    },
   };
 }
 
@@ -119,7 +118,7 @@ export function parseStateTaxConfig(
 function validateMetadata(
   metadata: any,
   expectedStateCode: string | undefined,
-  errors: ConfigValidationError[],
+  errors: ConfigValidationError[]
   // warnings: ConfigValidationWarning[]
 ): void {
   // Required fields
@@ -131,7 +130,7 @@ function validateMetadata(
         code: 'MISSING_METADATA_FIELD',
         message: `Metadata missing required field: ${field}`,
         path: `metadata.${field}`,
-        expected: 'non-empty value'
+        expected: 'non-empty value',
       });
     }
   }
@@ -143,7 +142,7 @@ function validateMetadata(
       message: 'State code must be two uppercase letters',
       path: 'metadata.stateCode',
       expected: 'Two uppercase letters (e.g., "CA", "NY")',
-      actual: metadata.stateCode
+      actual: metadata.stateCode,
     });
   }
 
@@ -154,7 +153,7 @@ function validateMetadata(
       message: `Expected state code ${expectedStateCode}, got ${metadata.stateCode}`,
       path: 'metadata.stateCode',
       expected: expectedStateCode,
-      actual: metadata.stateCode
+      actual: metadata.stateCode,
     });
   }
 
@@ -167,7 +166,7 @@ function validateMetadata(
         message: 'Tax year must be between 2020 and 2030',
         path: 'metadata.taxYear',
         expected: 'Year between 2020 and 2030',
-        actual: metadata.taxYear
+        actual: metadata.taxYear,
       });
     }
   }
@@ -179,7 +178,7 @@ function validateMetadata(
       message: 'Sources must be an array of strings',
       path: 'metadata.sources',
       expected: 'Array of strings',
-      actual: typeof metadata.sources
+      actual: typeof metadata.sources,
     });
   }
 }
@@ -189,7 +188,7 @@ function validateMetadata(
  */
 function validateStructure(
   config: any,
-  errors: ConfigValidationError[],
+  errors: ConfigValidationError[]
   // warnings: ConfigValidationWarning[]
 ): void {
   const validStructures = ['flat', 'progressive', 'hybrid'];
@@ -200,7 +199,7 @@ function validateStructure(
       message: `Invalid tax structure: ${config.structure}`,
       path: 'structure',
       expected: validStructures.join(', '),
-      actual: config.structure
+      actual: config.structure,
     });
   }
 
@@ -211,15 +210,19 @@ function validateStructure(
         code: 'MISSING_FLAT_RATE',
         message: 'Flat tax structure requires flatRate field',
         path: 'flatRate',
-        expected: 'Decimal rate (e.g., 0.0307 for 3.07%)'
+        expected: 'Decimal rate (e.g., 0.0307 for 3.07%)',
       });
-    } else if (typeof config.flatRate !== 'number' || config.flatRate <= 0 || config.flatRate >= 1) {
+    } else if (
+      typeof config.flatRate !== 'number' ||
+      config.flatRate <= 0 ||
+      config.flatRate >= 1
+    ) {
       errors.push({
         code: 'INVALID_FLAT_RATE',
         message: 'Flat rate must be between 0 and 1',
         path: 'flatRate',
         expected: 'Decimal between 0 and 1',
-        actual: config.flatRate
+        actual: config.flatRate,
       });
     }
   }
@@ -230,7 +233,7 @@ function validateStructure(
       code: 'MISSING_BRACKETS',
       message: 'Progressive/hybrid structure requires brackets',
       path: 'brackets',
-      expected: 'Bracket schedule with rates by filing status'
+      expected: 'Bracket schedule with rates by filing status',
     });
   }
 }
@@ -240,7 +243,7 @@ function validateStructure(
  */
 function validateBrackets(
   brackets: any,
-  errors: ConfigValidationError[],
+  errors: ConfigValidationError[]
   // warnings: ConfigValidationWarning[]
 ): void {
   if (!brackets) return;
@@ -251,12 +254,17 @@ function validateBrackets(
       code: 'MISSING_FILING_STATUS_BRACKETS',
       message: 'Brackets must include byFilingStatus field',
       path: 'brackets.byFilingStatus',
-      expected: 'Object with brackets for each filing status'
+      expected: 'Object with brackets for each filing status',
     });
     return;
   }
 
-  const requiredFilingStatuses: FilingStatus[] = ['single', 'marriedJointly', 'marriedSeparately', 'headOfHousehold'];
+  const requiredFilingStatuses: FilingStatus[] = [
+    'single',
+    'marriedJointly',
+    'marriedSeparately',
+    'headOfHousehold',
+  ];
 
   // Validate each filing status has brackets
   for (const status of requiredFilingStatuses) {
@@ -265,7 +273,7 @@ function validateBrackets(
         code: 'MISSING_BRACKETS_FOR_STATUS',
         message: `Missing brackets for filing status: ${status}`,
         path: `brackets.byFilingStatus.${status}`,
-        expected: 'Array of tax brackets'
+        expected: 'Array of tax brackets',
       });
       continue;
     }
@@ -277,7 +285,7 @@ function validateBrackets(
         code: 'INVALID_BRACKETS_FORMAT',
         message: `Brackets for ${status} must be an array`,
         path: `brackets.byFilingStatus.${status}`,
-        expected: 'Array of bracket objects'
+        expected: 'Array of bracket objects',
       });
       continue;
     }
@@ -292,7 +300,7 @@ function validateBrackets(
         errors.push({
           code: 'MISSING_BRACKET_MIN',
           message: `Bracket missing min field`,
-          path: `${bracketPath}.min`
+          path: `${bracketPath}.min`,
         });
       }
 
@@ -300,7 +308,7 @@ function validateBrackets(
         errors.push({
           code: 'MISSING_BRACKET_MAX',
           message: `Bracket missing max field`,
-          path: `${bracketPath}.max`
+          path: `${bracketPath}.max`,
         });
       }
 
@@ -308,7 +316,7 @@ function validateBrackets(
         errors.push({
           code: 'MISSING_BRACKET_RATE',
           message: `Bracket missing rate field`,
-          path: `${bracketPath}.rate`
+          path: `${bracketPath}.rate`,
         });
       }
 
@@ -318,7 +326,7 @@ function validateBrackets(
           code: 'INVALID_BRACKET_MIN',
           message: `Bracket min cannot be negative`,
           path: `${bracketPath}.min`,
-          actual: bracket.min
+          actual: bracket.min,
         });
       }
 
@@ -328,7 +336,7 @@ function validateBrackets(
           message: `Bracket rate must be between 0 and 1`,
           path: `${bracketPath}.rate`,
           expected: 'Decimal between 0 and 1',
-          actual: bracket.rate
+          actual: bracket.rate,
         });
       }
 
@@ -340,7 +348,7 @@ function validateBrackets(
             code: 'BRACKET_GAP',
             message: `Bracket ${i} min (${bracket.min}) doesn't match previous bracket max (${prevBracket.max})`,
             path: `${bracketPath}.min`,
-            suggestion: `Ensure brackets are continuous without gaps`
+            suggestion: `Ensure brackets are continuous without gaps`,
           });
         }
       }
@@ -354,7 +362,7 @@ function validateBrackets(
         code: 'INVALID_TOP_RATE',
         message: 'Top rate must be between 0 and 1',
         path: 'brackets.topRate',
-        actual: brackets.topRate
+        actual: brackets.topRate,
       });
     }
   }
@@ -365,26 +373,31 @@ function validateBrackets(
  */
 function validateDeductions(
   deduction: any,
-  errors: ConfigValidationError[],
+  errors: ConfigValidationError[]
   // warnings: ConfigValidationWarning[]
 ): void {
   if (!deduction.amounts) {
     errors.push({
       code: 'MISSING_DEDUCTION_AMOUNTS',
       message: 'Standard deduction must include amounts by filing status',
-      path: 'standardDeduction.amounts'
+      path: 'standardDeduction.amounts',
     });
     return;
   }
 
-  const requiredStatuses: FilingStatus[] = ['single', 'marriedJointly', 'marriedSeparately', 'headOfHousehold'];
+  const requiredStatuses: FilingStatus[] = [
+    'single',
+    'marriedJointly',
+    'marriedSeparately',
+    'headOfHousehold',
+  ];
 
   for (const status of requiredStatuses) {
     if (deduction.amounts[status] === undefined) {
       errors.push({
         code: 'MISSING_DEDUCTION_AMOUNT',
         message: `Missing standard deduction for ${status}`,
-        path: `standardDeduction.amounts.${status}`
+        path: `standardDeduction.amounts.${status}`,
       });
     } else if (typeof deduction.amounts[status] !== 'number' || deduction.amounts[status] < 0) {
       errors.push({
@@ -392,7 +405,7 @@ function validateDeductions(
         message: `Invalid deduction amount for ${status}`,
         path: `standardDeduction.amounts.${status}`,
         expected: 'Non-negative number',
-        actual: deduction.amounts[status]
+        actual: deduction.amounts[status],
       });
     }
   }
@@ -403,7 +416,7 @@ function validateDeductions(
  */
 function validateAGIModifications(
   modifications: any,
-  errors: ConfigValidationError[],
+  errors: ConfigValidationError[]
   // warnings: ConfigValidationWarning[]
 ): void {
   // Validate additions
@@ -423,7 +436,7 @@ function validateAGIModifications(
 function validateModificationRules(
   rules: any[],
   type: string,
-  errors: ConfigValidationError[],
+  errors: ConfigValidationError[]
   // warnings: ConfigValidationWarning[]
 ): void {
   for (let i = 0; i < rules.length; i++) {
@@ -435,7 +448,7 @@ function validateModificationRules(
       errors.push({
         code: 'MISSING_MODIFICATION_ID',
         message: `AGI modification missing id`,
-        path: `${rulePath}.id`
+        path: `${rulePath}.id`,
       });
     }
 
@@ -443,7 +456,7 @@ function validateModificationRules(
       errors.push({
         code: 'MISSING_MODIFICATION_NAME',
         message: `AGI modification missing name`,
-        path: `${rulePath}.name`
+        path: `${rulePath}.name`,
       });
     }
 
@@ -451,7 +464,7 @@ function validateModificationRules(
       errors.push({
         code: 'MISSING_MODIFICATION_CATEGORY',
         message: `AGI modification missing category`,
-        path: `${rulePath}.category`
+        path: `${rulePath}.category`,
       });
     }
 
@@ -461,7 +474,7 @@ function validateModificationRules(
         code: 'CONFLICTING_EXEMPTION_TYPES',
         message: `Modification has both fullExemption and exemptionPercentage`,
         path: rulePath,
-        suggestion: 'Use either fullExemption OR exemptionPercentage, not both'
+        suggestion: 'Use either fullExemption OR exemptionPercentage, not both',
       });
     }
   }
@@ -472,7 +485,7 @@ function validateModificationRules(
  */
 function validateCredits(
   credits: any[],
-  errors: ConfigValidationError[],
+  errors: ConfigValidationError[]
   // warnings: ConfigValidationWarning[]
 ): void {
   if (!Array.isArray(credits)) {
@@ -480,7 +493,7 @@ function validateCredits(
       code: 'INVALID_CREDITS_FORMAT',
       message: 'Credits must be an array',
       path: 'credits',
-      expected: 'Array of credit objects'
+      expected: 'Array of credit objects',
     });
     return;
   }
@@ -494,7 +507,7 @@ function validateCredits(
       errors.push({
         code: 'MISSING_CREDIT_ID',
         message: 'Credit missing id',
-        path: `${creditPath}.id`
+        path: `${creditPath}.id`,
       });
     }
 
@@ -502,7 +515,7 @@ function validateCredits(
       errors.push({
         code: 'MISSING_CREDIT_NAME',
         message: 'Credit missing name',
-        path: `${creditPath}.name`
+        path: `${creditPath}.name`,
       });
     }
 
@@ -510,14 +523,14 @@ function validateCredits(
       errors.push({
         code: 'MISSING_CREDIT_TYPE',
         message: 'Credit missing type',
-        path: `${creditPath}.type`
+        path: `${creditPath}.type`,
       });
     } else if (!['nonRefundable', 'refundable', 'partiallyRefundable'].includes(credit.type)) {
       errors.push({
         code: 'INVALID_CREDIT_TYPE',
         message: `Invalid credit type: ${credit.type}`,
         path: `${creditPath}.type`,
-        expected: 'nonRefundable, refundable, or partiallyRefundable'
+        expected: 'nonRefundable, refundable, or partiallyRefundable',
       });
     }
 
@@ -525,7 +538,7 @@ function validateCredits(
       errors.push({
         code: 'MISSING_CREDIT_CALCULATION',
         message: 'Credit missing calculation',
-        path: `${creditPath}.calculation`
+        path: `${creditPath}.calculation`,
       });
     }
   }
@@ -536,14 +549,14 @@ function validateCredits(
  */
 function validateDocumentation(
   documentation: any,
-  errors: ConfigValidationError[],
+  errors: ConfigValidationError[]
   // warnings: ConfigValidationWarning[]
 ): void {
   if (!documentation.primaryForm) {
     errors.push({
       code: 'MISSING_PRIMARY_FORM',
       message: 'Documentation missing primaryForm',
-      path: 'documentation.primaryForm'
+      path: 'documentation.primaryForm',
     });
   }
 
@@ -552,7 +565,7 @@ function validateDocumentation(
       code: 'MISSING_AUTHORITY_URL',
       message: 'Documentation missing authorityUrl',
       path: 'documentation.authorityUrl',
-      suggestion: 'Add URL to state tax authority website'
+      suggestion: 'Add URL to state tax authority website',
     });
   }
 }
@@ -603,7 +616,10 @@ function convertAmountsToCents(config: any): StateTaxConfig {
 
   // Convert AGI modification limits
   if (converted.agiModifications) {
-    for (const modifications of [converted.agiModifications.additions, converted.agiModifications.subtractions]) {
+    for (const modifications of [
+      converted.agiModifications.additions,
+      converted.agiModifications.subtractions,
+    ]) {
       if (Array.isArray(modifications)) {
         for (const mod of modifications) {
           if (mod.limit) {

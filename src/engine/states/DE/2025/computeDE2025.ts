@@ -17,7 +17,13 @@ import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/t
  * @returns Delaware state tax result
  */
 export function computeDE2025(input: StateTaxInput): StateResult {
-  const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
+  const {
+    federalResult,
+    filingStatus,
+    stateWithheld = 0,
+    stateEstPayments = 0,
+    stateDependents = 0,
+  } = input;
 
   // Step 1: Delaware AGI = Federal AGI (no modifications for basic case)
   const deAGI = federalResult.agi;
@@ -27,7 +33,8 @@ export function computeDE2025(input: StateTaxInput): StateResult {
 
   // Step 3: Calculate personal exemptions
   // $110 per exemption (taxpayer, spouse if MFJ, dependents)
-  const numberOfExemptions = filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
+  const numberOfExemptions =
+    filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
   const personalExemptions = DE_RULES_2025.personalExemption * numberOfExemptions;
 
   // Step 4: Calculate Delaware taxable income
@@ -39,7 +46,7 @@ export function computeDE2025(input: StateTaxInput): StateResult {
   const taxBeforeCredits = calculateTaxFromBrackets(deTaxableIncome, fullBrackets);
 
   // Step 6: Apply Delaware EITC (4.5% of federal EITC, non-refundable)
-  const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
+  const federalEITC = federalResult.credits?.eitc || 0;
   const deEITC = Math.round(federalEITC * DE_RULES_2025.eitcPercentage);
   const finalTax = max0(taxBeforeCredits - deEITC);
 

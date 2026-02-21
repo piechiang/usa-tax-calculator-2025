@@ -17,7 +17,13 @@ import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/t
  * @returns Kansas state tax result
  */
 export function computeKS2025(input: StateTaxInput): StateResult {
-  const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateDependents = 0 } = input;
+  const {
+    federalResult,
+    filingStatus,
+    stateWithheld = 0,
+    stateEstPayments = 0,
+    stateDependents = 0,
+  } = input;
 
   // Step 1: Kansas AGI = Federal AGI (no modifications for basic case)
   const ksAGI = federalResult.agi;
@@ -27,7 +33,8 @@ export function computeKS2025(input: StateTaxInput): StateResult {
 
   // Step 3: Calculate personal exemptions
   // $2,250 per exemption (taxpayer, spouse if MFJ, dependents)
-  const numberOfExemptions = filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
+  const numberOfExemptions =
+    filingStatus === 'marriedJointly' ? 2 + stateDependents : 1 + stateDependents;
   const personalExemptions = KS_RULES_2025.personalExemption * numberOfExemptions;
 
   // Step 4: Calculate Kansas taxable income
@@ -39,7 +46,7 @@ export function computeKS2025(input: StateTaxInput): StateResult {
   const taxBeforeCredits = calculateTaxFromBrackets(ksTaxableIncome, fullBrackets);
 
   // Step 6: Apply Kansas EITC (17% of federal EITC, refundable)
-  const federalEITC = federalResult.credits?.earnedIncomeCredit || 0;
+  const federalEITC = federalResult.credits?.eitc || 0;
   const ksEITC = Math.round(federalEITC * KS_RULES_2025.eitcPercentage);
   const taxAfterCredits = max0(taxBeforeCredits - ksEITC);
 

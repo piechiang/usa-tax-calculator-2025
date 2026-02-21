@@ -4,6 +4,7 @@
  */
 import type { FederalInput2025, FilingStatus } from '../../engine/types';
 import { safeCurrencyToCents } from '../../engine/util/money';
+import { logger } from '../logger';
 
 /**
  * Personal information from UI forms
@@ -139,17 +140,7 @@ const VALID_FILING_STATUSES: FilingStatus[] = [
   'headOfHousehold',
 ];
 
-/**
- * Logger utility - only logs in development mode
- */
-const logger = {
-  warn: (message: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.warn(message);
-    }
-  },
-};
+// Using centralized logger from utils/logger
 
 /**
  * Normalize filing status from UI to engine format
@@ -214,7 +205,7 @@ function createSpouseIncome(spouseInfo: UISpouseInfo): PersonIncome {
 function buildJointIncome(
   primaryIncome: PersonIncome,
   spouseIncome: PersonIncome | null,
-  k1Data: UIK1Data,
+  k1Data: UIK1Data
 ): FederalInput2025['income'] {
   const k1Ordinary = safeCurrencyToCents(k1Data.ordinaryIncome);
   const k1Passive = safeCurrencyToCents(k1Data.netRentalRealEstate);
@@ -224,7 +215,8 @@ function buildJointIncome(
 
   const wages = primaryIncome.wages + (spouseIncome?.wages ?? 0);
   const interest = primaryIncome.interest + (spouseIncome?.interest ?? 0);
-  const dividendsOrdinary = primaryIncome.dividendsOrdinary + (spouseIncome?.dividendsOrdinary ?? 0);
+  const dividendsOrdinary =
+    primaryIncome.dividendsOrdinary + (spouseIncome?.dividendsOrdinary ?? 0);
   const dividendsQualified =
     primaryIncome.dividendsQualified + (spouseIncome?.dividendsQualified ?? 0);
   const scheduleCNet = primaryIncome.scheduleCNet + (spouseIncome?.scheduleCNet ?? 0);
@@ -246,7 +238,6 @@ function buildJointIncome(
       longTerm: capitalGainsLong,
     },
     scheduleCNet,
-    businessIncome: 0,
     k1: {
       ordinaryBusinessIncome: k1Ordinary,
       passiveIncome: k1Passive,
@@ -266,7 +257,7 @@ function buildJointIncome(
 export function buildSeparateIncome(
   personIncome: PersonIncome,
   includeHouseholdK1: boolean,
-  jointIncome: FederalInput2025['income'],
+  jointIncome: FederalInput2025['income']
 ): FederalInput2025['income'] {
   return {
     wages: personIncome.wages,
@@ -281,7 +272,6 @@ export function buildSeparateIncome(
       longTerm: personIncome.capitalGainsLong,
     },
     scheduleCNet: personIncome.scheduleCNet,
-    businessIncome: 0,
     k1: includeHouseholdK1
       ? {
           ordinaryBusinessIncome: jointIncome.k1.ordinaryBusinessIncome,
@@ -313,7 +303,7 @@ export function buildSeparateIncome(
 function buildJointPayments(
   paymentsData: UIPaymentsData,
   spouseInfo: UISpouseInfo,
-  filingStatus: FilingStatus,
+  filingStatus: FilingStatus
 ): FederalInput2025['payments'] {
   const includeSpouse = filingStatus === 'marriedJointly';
 
@@ -333,7 +323,7 @@ function buildJointPayments(
 export function calculateStateWithheld(
   paymentsData: UIPaymentsData,
   spouseInfo: UISpouseInfo,
-  filingStatus: FilingStatus,
+  filingStatus: FilingStatus
 ): number {
   const includeSpouse = filingStatus === 'marriedJointly';
   return (
@@ -377,7 +367,7 @@ export function convertUIToEngineInput(
   businessDetails: UIBusinessDetails,
   paymentsData: UIPaymentsData,
   deductions: UIDeductions,
-  spouseInfo: UISpouseInfo,
+  spouseInfo: UISpouseInfo
 ): EngineConversionResult {
   const filingStatus = normalizeFilingStatus(personalInfo.filingStatus);
   const dependents = parseDependents(personalInfo.dependents);

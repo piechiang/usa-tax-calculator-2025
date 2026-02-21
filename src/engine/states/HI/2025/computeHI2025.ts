@@ -1,10 +1,6 @@
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
 import { HI_RULES_2025 } from '../../../rules/2025/states/hi';
-import {
-  addCents,
-  max0,
-  multiplyCents
-} from '../../../util/money';
+import { addCents, max0, multiplyCents } from '../../../util/money';
 import { calculateTaxFromBrackets, convertToFullBrackets } from '../../../util/taxCalculations';
 
 /**
@@ -40,7 +36,7 @@ export function computeHI2025(input: StateTaxInput): StateResult {
   const credits: StateCredits = {
     earned_income: 0,
     nonRefundableCredits: 0,
-    refundableCredits: 0
+    refundableCredits: 0,
   };
 
   // Step 6: Calculate net HI tax
@@ -69,8 +65,8 @@ export function computeHI2025(input: StateTaxInput): StateResult {
     formReferences: ['N-11', 'N-15'],
     calculationNotes: [
       'Hawaii standard deduction and personal exemptions applied',
-      'Progressive 12-bracket tax structure (1.4%-11%)'
-    ]
+      'Progressive 12-bracket tax structure (1.4%-11%)',
+    ],
   };
 }
 
@@ -78,11 +74,20 @@ function calculateHIAGI(input: StateTaxInput): number {
   let hiAGI = input.federalResult.agi;
 
   if (input.stateAdditions) {
-    hiAGI = addCents(hiAGI, input.stateAdditions);
+    const additions =
+      (input.stateAdditions.federalTaxRefund ?? 0) +
+      (input.stateAdditions.municipalBondInterest ?? 0) +
+      (input.stateAdditions.otherAdditions ?? 0);
+    hiAGI = addCents(hiAGI, additions);
   }
 
   if (input.stateSubtractions) {
-    hiAGI = max0(hiAGI - input.stateSubtractions);
+    const subtractions =
+      (input.stateSubtractions.socialSecurityBenefits ?? 0) +
+      (input.stateSubtractions.retirementIncome ?? 0) +
+      (input.stateSubtractions.militaryPay ?? 0) +
+      (input.stateSubtractions.otherSubtractions ?? 0);
+    hiAGI = max0(hiAGI - subtractions);
   }
 
   return hiAGI;

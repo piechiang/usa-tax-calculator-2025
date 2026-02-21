@@ -30,12 +30,7 @@ export interface KentuckyInput2025 {
  * 5. Calculate refund/owe
  */
 export function computeKY2025(input: KentuckyInput2025): StateResult {
-  const {
-    filingStatus,
-    federalAGI,
-    federalChildCareCredit = 0,
-    stateWithholding,
-  } = input;
+  const { filingStatus, federalAGI, federalChildCareCredit = 0, stateWithholding } = input;
 
   // Step 1: Kentucky AGI starts with federal AGI
   const kentuckyAGI = federalAGI;
@@ -61,7 +56,7 @@ export function computeKY2025(input: KentuckyInput2025): StateResult {
 
   // Build state credits object
   const stateCredits: StateCredits = {
-    child_care: childCareCredit,
+    child_dependent: childCareCredit,
     nonRefundableCredits,
     refundableCredits: 0,
   };

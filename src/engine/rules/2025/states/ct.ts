@@ -18,32 +18,32 @@
  * - EITC continues at 40% of federal
  */
 
-import { multiplyCents, subtractCents, addCents, max0 } from '../../../util/money';
+import { multiplyCents } from '../../../util/money';
 
 /**
  * Connecticut Tax Brackets for 2025
  */
 export const CT_BRACKETS_2025 = {
   single: [
-    { threshold: 0, rate: 0.02 },           // 2% on $0 - $10,000
-    { threshold: 1000000, rate: 0.045 },    // 4.5% on $10,001 - $50,000
-    { threshold: 5000000, rate: 0.055 },    // 5.5% on $50,001 - $100,000
-    { threshold: 10000000, rate: 0.06 },    // 6% on $100,001 - $200,000
-    { threshold: 20000000, rate: 0.065 },   // 6.5% on $200,001 - $250,000
-    { threshold: 25000000, rate: 0.069 },   // 6.9% on $250,001 - $500,000
-    { threshold: 50000000, rate: 0.0699 },  // 6.99% on $500,001+
+    { threshold: 0, rate: 0.02 }, // 2% on $0 - $10,000
+    { threshold: 1000000, rate: 0.045 }, // 4.5% on $10,001 - $50,000
+    { threshold: 5000000, rate: 0.055 }, // 5.5% on $50,001 - $100,000
+    { threshold: 10000000, rate: 0.06 }, // 6% on $100,001 - $200,000
+    { threshold: 20000000, rate: 0.065 }, // 6.5% on $200,001 - $250,000
+    { threshold: 25000000, rate: 0.069 }, // 6.9% on $250,001 - $500,000
+    { threshold: 50000000, rate: 0.0699 }, // 6.99% on $500,001+
   ],
   marriedJointly: [
-    { threshold: 0, rate: 0.02 },           // 2% on $0 - $20,000
-    { threshold: 2000000, rate: 0.045 },    // 4.5% on $20,001 - $100,000
-    { threshold: 10000000, rate: 0.055 },   // 5.5% on $100,001 - $200,000
-    { threshold: 20000000, rate: 0.06 },    // 6% on $200,001 - $400,000
-    { threshold: 40000000, rate: 0.065 },   // 6.5% on $400,001 - $500,000
-    { threshold: 50000000, rate: 0.069 },   // 6.9% on $500,001 - $1,000,000
+    { threshold: 0, rate: 0.02 }, // 2% on $0 - $20,000
+    { threshold: 2000000, rate: 0.045 }, // 4.5% on $20,001 - $100,000
+    { threshold: 10000000, rate: 0.055 }, // 5.5% on $100,001 - $200,000
+    { threshold: 20000000, rate: 0.06 }, // 6% on $200,001 - $400,000
+    { threshold: 40000000, rate: 0.065 }, // 6.5% on $400,001 - $500,000
+    { threshold: 50000000, rate: 0.069 }, // 6.9% on $500,001 - $1,000,000
     { threshold: 100000000, rate: 0.0699 }, // 6.99% on $1,000,001+
   ],
   marriedSeparately: [
-    { threshold: 0, rate: 0.02 },           // Same as single
+    { threshold: 0, rate: 0.02 }, // Same as single
     { threshold: 1000000, rate: 0.045 },
     { threshold: 5000000, rate: 0.055 },
     { threshold: 10000000, rate: 0.06 },
@@ -52,13 +52,13 @@ export const CT_BRACKETS_2025 = {
     { threshold: 50000000, rate: 0.0699 },
   ],
   headOfHousehold: [
-    { threshold: 0, rate: 0.02 },           // 2% on $0 - $16,000
-    { threshold: 1600000, rate: 0.045 },    // 4.5% on $16,001 - $80,000
-    { threshold: 8000000, rate: 0.055 },    // 5.5% on $80,001 - $160,000
-    { threshold: 16000000, rate: 0.06 },    // 6% on $160,001 - $320,000
-    { threshold: 32000000, rate: 0.065 },   // 6.5% on $320,001 - $400,000
-    { threshold: 40000000, rate: 0.069 },   // 6.9% on $400,001 - $800,000
-    { threshold: 80000000, rate: 0.0699 },  // 6.99% on $800,001+
+    { threshold: 0, rate: 0.02 }, // 2% on $0 - $16,000
+    { threshold: 1600000, rate: 0.045 }, // 4.5% on $16,001 - $80,000
+    { threshold: 8000000, rate: 0.055 }, // 5.5% on $80,001 - $160,000
+    { threshold: 16000000, rate: 0.06 }, // 6% on $160,001 - $320,000
+    { threshold: 32000000, rate: 0.065 }, // 6.5% on $320,001 - $400,000
+    { threshold: 40000000, rate: 0.069 }, // 6.9% on $400,001 - $800,000
+    { threshold: 80000000, rate: 0.0699 }, // 6.99% on $800,001+
   ],
 } as const;
 
@@ -85,10 +85,10 @@ export const CT_RULES_2025 = {
    * CT's personal exemption credit is relatively small.
    */
   personalExemptionCredit: {
-    single: 75000,           // $750 in cents
-    marriedJointly: 100000,  // $1,000 in cents
+    single: 75000, // $750 in cents
+    marriedJointly: 100000, // $1,000 in cents
     marriedSeparately: 50000, // $500 in cents
-    headOfHousehold: 75000,  // $750 in cents
+    headOfHousehold: 75000, // $750 in cents
   },
 
   /**
@@ -101,19 +101,19 @@ export const CT_RULES_2025 = {
    */
   personalTaxCredit: {
     enabled: true,
-    maxRate: 0.75,  // 75% maximum (only at very low incomes)
-    minRate: 0.01,  // 1% at higher incomes
+    maxRate: 0.75, // 75% maximum (only at very low incomes)
+    minRate: 0.01, // 1% at higher incomes
     // Phaseout parameters (simplified for basic implementation)
     // Credit phases out much faster than initially thought
-    phaseoutStart: 2400000,  // $24,000 in cents (approximate)
-    phaseoutEnd: 7500000,    // $75,000 in cents (approximate)
+    phaseoutStart: 2400000, // $24,000 in cents (approximate)
+    phaseoutEnd: 7500000, // $75,000 in cents (approximate)
   },
 
   /**
    * Earned Income Tax Credit
    * 40% of federal EITC (refundable)
    */
-  eitcRate: 0.40, // 40% of federal EITC
+  eitcRate: 0.4, // 40% of federal EITC
 };
 
 /**
@@ -123,10 +123,7 @@ export const CT_RULES_2025 = {
  * @param filingStatus - Filing status
  * @returns Tax amount in cents
  */
-export function calculateConnecticutTax(
-  taxableIncome: number,
-  filingStatus: string
-): number {
+export function calculateConnecticutTax(taxableIncome: number, filingStatus: string): number {
   if (taxableIncome <= 0) return 0;
 
   // Get appropriate brackets
@@ -152,6 +149,8 @@ export function calculateConnecticutTax(
 
   for (let i = 0; i < brackets.length; i++) {
     const bracket = brackets[i];
+    if (!bracket) continue;
+
     const nextBracket = i < brackets.length - 1 ? brackets[i + 1] : null;
 
     if (taxableIncome <= bracket.threshold) {
@@ -217,7 +216,7 @@ export function calculatePersonalTaxCredit(tax: number, agi: number): number {
     const phaseoutAmount = agi - personalTaxCredit.phaseoutStart;
     const phaseoutPct = phaseoutAmount / phaseoutRange;
     const rateRange = personalTaxCredit.maxRate - personalTaxCredit.minRate;
-    creditRate = personalTaxCredit.maxRate - (rateRange * phaseoutPct);
+    creditRate = personalTaxCredit.maxRate - rateRange * phaseoutPct;
   }
 
   return Math.round(multiplyCents(tax, creditRate));

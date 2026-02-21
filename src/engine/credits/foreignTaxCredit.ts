@@ -25,17 +25,17 @@
  */
 
 import { FilingStatus } from '../types';
-import { addCents, multiplyCents, max0, subtractCents } from '../util/money';
+import { multiplyCents, max0 } from '../util/money';
 
 /**
  * Foreign income category for Form 1116
  * Each category requires a separate Form 1116
  */
 export type ForeignIncomeCategory =
-  | 'general'          // Active income: wages, business, etc.
-  | 'passive'          // Passive income: interest, dividends, rents, royalties
-  | 'foreignBranch'    // Income from foreign branch of U.S. business
-  | 'section951A';     // GILTI (Global Intangible Low-Taxed Income)
+  | 'general' // Active income: wages, business, etc.
+  | 'passive' // Passive income: interest, dividends, rents, royalties
+  | 'foreignBranch' // Income from foreign branch of U.S. business
+  | 'section951A'; // GILTI (Global Intangible Low-Taxed Income)
 
 /**
  * Input for a single foreign income source/country
@@ -122,7 +122,7 @@ export interface ForeignTaxCreditResult {
  * Simplified election thresholds (2025)
  */
 const SIMPLIFIED_ELECTION_THRESHOLD_SINGLE = 30000; // $300
-const SIMPLIFIED_ELECTION_THRESHOLD_MFJ = 60000;    // $600
+const SIMPLIFIED_ELECTION_THRESHOLD_MFJ = 60000; // $600
 
 /**
  * Compute Foreign Tax Credit (Form 1116)
@@ -130,9 +130,7 @@ const SIMPLIFIED_ELECTION_THRESHOLD_MFJ = 60000;    // $600
  * @param input Foreign tax credit input data
  * @returns Foreign tax credit calculation result
  */
-export function computeForeignTaxCredit2025(
-  input: ForeignTaxCreditInput
-): ForeignTaxCreditResult {
+export function computeForeignTaxCredit2025(input: ForeignTaxCreditInput): ForeignTaxCreditResult {
   const notes: string[] = [];
 
   // Check if taxpayer qualifies for simplified election
@@ -155,9 +153,10 @@ export function computeForeignTaxCredit2025(
 
   // If using simplified election, credit = min(taxes paid, threshold)
   if (useSimplified) {
-    const threshold = input.filingStatus === 'marriedJointly'
-      ? SIMPLIFIED_ELECTION_THRESHOLD_MFJ
-      : SIMPLIFIED_ELECTION_THRESHOLD_SINGLE;
+    const threshold =
+      input.filingStatus === 'marriedJointly'
+        ? SIMPLIFIED_ELECTION_THRESHOLD_MFJ
+        : SIMPLIFIED_ELECTION_THRESHOLD_SINGLE;
 
     const creditAllowed = Math.min(totalForeignTaxesPaid, threshold);
 
@@ -213,7 +212,7 @@ export function computeForeignTaxCredit2025(
     const remainingLimitation = totalCreditLimitation - totalCreditAllowed;
     const carryoverUsed = Math.min(input.priorYearCarryover, remainingLimitation);
     creditWithCarryover += carryoverUsed;
-    totalUnusedCredit += (input.priorYearCarryover - carryoverUsed);
+    totalUnusedCredit += input.priorYearCarryover - carryoverUsed;
 
     if (carryoverUsed > 0) {
       notes.push(`Applied $${carryoverUsed / 100} from prior year carryover`);
@@ -224,8 +223,7 @@ export function computeForeignTaxCredit2025(
   const finalCredit = Math.min(creditWithCarryover, input.usTaxBeforeCredits);
 
   // Calculate carryforward (unused credits)
-  const unusedCreditCarryforward = totalUnusedCredit +
-    (creditWithCarryover - finalCredit);
+  const unusedCreditCarryforward = totalUnusedCredit + (creditWithCarryover - finalCredit);
 
   if (unusedCreditCarryforward > 0) {
     notes.push(
@@ -233,7 +231,9 @@ export function computeForeignTaxCredit2025(
     );
   }
 
-  notes.push(`Credit calculated using Form 1116 for ${categoryBreakdown.length} income categor${categoryBreakdown.length === 1 ? 'y' : 'ies'}`);
+  notes.push(
+    `Credit calculated using Form 1116 for ${categoryBreakdown.length} income categor${categoryBreakdown.length === 1 ? 'y' : 'ies'}`
+  );
 
   return {
     foreignTaxCredit: finalCredit,
@@ -257,9 +257,10 @@ export function computeForeignTaxCredit2025(
  */
 function checkSimplifiedElection(input: ForeignTaxCreditInput): boolean {
   // Check tax threshold
-  const threshold = input.filingStatus === 'marriedJointly'
-    ? SIMPLIFIED_ELECTION_THRESHOLD_MFJ
-    : SIMPLIFIED_ELECTION_THRESHOLD_SINGLE;
+  const threshold =
+    input.filingStatus === 'marriedJointly'
+      ? SIMPLIFIED_ELECTION_THRESHOLD_MFJ
+      : SIMPLIFIED_ELECTION_THRESHOLD_SINGLE;
 
   let totalForeignTaxes = 0;
   let allPassive = true;

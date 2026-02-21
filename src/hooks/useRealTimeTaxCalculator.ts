@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import useDeepCompareEffect from 'use-deep-compare-effect';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useTaxCalculator } from './useTaxCalculator';
+import { createStableHash } from './useDependencyHash';
 
 import type { TaxResult } from '../types/CommonTypes';
 
@@ -24,7 +24,7 @@ export const useRealTimeTaxCalculator = () => {
     calculationCount: 0,
     averageCalculationTime: 0,
     realTimeEnabled: true,
-    debounceDelay: 500 // 500ms debounce by default
+    debounceDelay: 500, // 500ms debounce by default
   });
 
   const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -40,15 +40,15 @@ export const useRealTimeTaxCalculator = () => {
     }
 
     // Set calculating state
-    setRealTimeState(prev => ({ ...prev, isCalculating: true }));
+    setRealTimeState((prev) => ({ ...prev, isCalculating: true }));
     calculationStartTime.current = Date.now();
 
     // Start debounced calculation
     debounceRef.current = setTimeout(() => {
       // Store previous result before calculating
-      setRealTimeState(prev => ({
+      setRealTimeState((prev) => ({
         ...prev,
-        previousTaxResult: taxCalculator.taxResult
+        previousTaxResult: taxCalculator.taxResult,
       }));
 
       // Perform calculation
@@ -56,26 +56,34 @@ export const useRealTimeTaxCalculator = () => {
 
       // Update calculation metrics
       const calculationTime = Date.now() - (calculationStartTime.current || 0);
-      setRealTimeState(prev => {
+      setRealTimeState((prev) => {
         const newCount = prev.calculationCount + 1;
-        const newAverageTime = (prev.averageCalculationTime * prev.calculationCount + calculationTime) / newCount;
+        const newAverageTime =
+          (prev.averageCalculationTime * prev.calculationCount + calculationTime) / newCount;
 
         return {
           ...prev,
           isCalculating: false,
           lastCalculated: new Date(),
           calculationCount: newCount,
-          averageCalculationTime: newAverageTime
+          averageCalculationTime: newAverageTime,
         };
       });
     }, realTimeState.debounceDelay);
   }, [taxCalculator, realTimeState.realTimeEnabled, realTimeState.debounceDelay]);
 
-  // Monitor data changes for real-time calculation using deep comparison
-  useDeepCompareEffect(() => {
-    if (realTimeState.realTimeEnabled) {
-      debouncedCalculate();
-    }
+  // Create a stable hash of all data for efficient change detection
+  const dataHash = useMemo(() => {
+    const allData = {
+      personal: createStableHash(taxCalculator.personalInfo as Record<string, unknown>),
+      income: createStableHash(taxCalculator.incomeData as Record<string, unknown>),
+      deductions: createStableHash(taxCalculator.deductions as Record<string, unknown>),
+      payments: createStableHash(taxCalculator.paymentsData as Record<string, unknown>),
+      k1: createStableHash(taxCalculator.k1Data as Record<string, unknown>),
+      business: createStableHash(taxCalculator.businessDetails as Record<string, unknown>),
+      spouse: createStableHash(taxCalculator.spouseInfo as Record<string, unknown>),
+    };
+    return Object.values(allData).join('§');
   }, [
     taxCalculator.personalInfo,
     taxCalculator.incomeData,
@@ -84,8 +92,15 @@ export const useRealTimeTaxCalculator = () => {
     taxCalculator.k1Data,
     taxCalculator.businessDetails,
     taxCalculator.spouseInfo,
-    realTimeState.realTimeEnabled
   ]);
+
+  // Monitor data changes for real-time calculation using hash-based comparison
+  useEffect(() => {
+    if (realTimeState.realTimeEnabled) {
+      debouncedCalculate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataHash, realTimeState.realTimeEnabled]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -119,7 +134,7 @@ export const useRealTimeTaxCalculator = () => {
     },
 
     handleSpouseInfoChange: (field: string, value: string | boolean | number) => {
-      taxCalculator.handleSpouseInfoChange(field as never, value);
+      taxCalculator.handleSpouseInfoChange(field as never, value as string | boolean);
       // Real-time calculation will be triggered by useEffect
     },
 
@@ -131,16 +146,16 @@ export const useRealTimeTaxCalculator = () => {
     handleBusinessDetailsChange: (field: string, value: string) => {
       taxCalculator.handleBusinessDetailsChange(field, value);
       // Real-time calculation will be triggered by useEffect
-    }
+    },
   };
 
   // Real-time control functions
   const toggleRealTime = () => {
-    setRealTimeState(prev => ({ ...prev, realTimeEnabled: !prev.realTimeEnabled }));
+    setRealTimeState((prev) => ({ ...prev, realTimeEnabled: !prev.realTimeEnabled }));
   };
 
   const setDebounceDelay = (delay: number) => {
-    setRealTimeState(prev => ({ ...prev, debounceDelay: Math.max(100, Math.min(2000, delay)) }));
+    setRealTimeState((prev) => ({ ...prev, debounceDelay: Math.max(100, Math.min(2000, delay)) }));
   };
 
   const forceCalculation = () => {
@@ -148,38 +163,39 @@ export const useRealTimeTaxCalculator = () => {
       clearTimeout(debounceRef.current);
     }
 
-    setRealTimeState(prev => ({ ...prev, isCalculating: true }));
+    setRealTimeState((prev) => ({ ...prev, isCalculating: true }));
     calculationStartTime.current = Date.now();
 
     // Store previous result
-    setRealTimeState(prev => ({
+    setRealTimeState((prev) => ({
       ...prev,
-      previousTaxResult: taxCalculator.taxResult
+      previousTaxResult: taxCalculator.taxResult,
     }));
 
     taxCalculator.recalculate();
 
     const calculationTime = Date.now() - (calculationStartTime.current || 0);
-    setRealTimeState(prev => {
+    setRealTimeState((prev) => {
       const newCount = prev.calculationCount + 1;
-      const newAverageTime = (prev.averageCalculationTime * prev.calculationCount + calculationTime) / newCount;
+      const newAverageTime =
+        (prev.averageCalculationTime * prev.calculationCount + calculationTime) / newCount;
 
       return {
         ...prev,
         isCalculating: false,
         lastCalculated: new Date(),
         calculationCount: newCount,
-        averageCalculationTime: newAverageTime
+        averageCalculationTime: newAverageTime,
       };
     });
   };
 
   const resetCalculationMetrics = () => {
-    setRealTimeState(prev => ({
+    setRealTimeState((prev) => ({
       ...prev,
       calculationCount: 0,
       averageCalculationTime: 0,
-      lastCalculated: null
+      lastCalculated: null,
     }));
   };
 
@@ -201,6 +217,6 @@ export const useRealTimeTaxCalculator = () => {
     isCalculating: realTimeState.isCalculating,
     lastCalculated: realTimeState.lastCalculated,
     previousTaxResult: realTimeState.previousTaxResult,
-    realTimeEnabled: realTimeState.realTimeEnabled
+    realTimeEnabled: realTimeState.realTimeEnabled,
   };
 };

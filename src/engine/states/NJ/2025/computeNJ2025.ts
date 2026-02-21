@@ -1,15 +1,7 @@
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
-import {
-  NJ_RULES_2025,
-  calculateNewJerseyTax,
-} from '../../../rules/2025/states/nj';
+import { NJ_RULES_2025, calculateNewJerseyTax } from '../../../rules/2025/states/nj';
 import type { NJStateSpecific } from '../../../rules/2025/states/nj';
-import {
-  addCents,
-  max0,
-  multiplyCents,
-  subtractCents,
-} from '../../../util/money';
+import { addCents, max0, multiplyCents, subtractCents } from '../../../util/money';
 
 /**
  * Compute New Jersey state tax for 2025
@@ -68,9 +60,7 @@ export function computeNJ2025(input: StateTaxInput): StateResult {
   const njTax = calculateNewJerseyTax(njTaxableIncome, filingStatus);
 
   // Step 9: Calculate credits
-  const propertyTaxCredit = njSpecific?.usePropertyTaxCredit
-    ? NJ_RULES_2025.propertyTaxCredit
-    : 0;
+  const propertyTaxCredit = njSpecific?.usePropertyTaxCredit ? NJ_RULES_2025.propertyTaxCredit : 0;
 
   const credits: StateCredits = {
     nonRefundableCredits: 0,
@@ -81,24 +71,24 @@ export function computeNJ2025(input: StateTaxInput): StateResult {
   const finalTax = max0(subtractCents(njTax, propertyTaxCredit));
 
   // Step 11: Calculate refund or amount owed
-  const totalPayments = addCents(
-    njSpecific?.stateWithheld ?? 0,
-    njSpecific?.stateEstPayments ?? 0
-  );
+  const totalPayments = addCents(njSpecific?.stateWithheld ?? 0, njSpecific?.stateEstPayments ?? 0);
   // Add refundable credits to payments
   const totalPaymentsWithCredits = addCents(totalPayments, propertyTaxCredit);
   const refundOrOwe = totalPaymentsWithCredits - njTax;
 
   return {
     state: 'NJ',
-    year: 2025,
-    agiState: njAGI,
-    taxableIncomeState: njTaxableIncome,
+    taxYear: 2025,
+    stateAGI: njAGI,
+    stateTaxableIncome: njTaxableIncome,
     stateTax: finalTax,
+    localTax: 0,
     totalStateLiability: finalTax,
-    stateWithheld: njSpecific?.stateWithheld,
+    stateDeduction: totalDeductions,
+    stateWithheld: njSpecific?.stateWithheld ?? 0,
+    stateEstPayments: njSpecific?.stateEstPayments ?? 0,
     stateRefundOrOwe: refundOrOwe,
-    credits,
+    stateCredits: credits,
   };
 }
 
@@ -152,7 +142,10 @@ function calculatePropertyTaxDeduction(input: StateTaxInput): number {
   }
   // Renters: 18% of rent paid is considered property tax
   else if (rentPaid && rentPaid > 0) {
-    propertyTaxAmount = multiplyCents(rentPaid, NJ_RULES_2025.propertyTaxDeduction.renterPercentage);
+    propertyTaxAmount = multiplyCents(
+      rentPaid,
+      NJ_RULES_2025.propertyTaxDeduction.renterPercentage
+    );
   }
 
   // Cap at maximum deduction of $15,000

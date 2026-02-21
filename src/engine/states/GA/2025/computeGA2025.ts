@@ -1,12 +1,7 @@
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
 import { GA_RULES_2025 } from '../../../rules/2025/states/ga';
 import type { GAStateSpecific } from '../../../rules/2025/states/ga';
-import {
-  addCents,
-  max0,
-  multiplyCents,
-  subtractCents
-} from '../../../util/money';
+import { addCents, max0, multiplyCents, subtractCents } from '../../../util/money';
 
 /**
  * Compute Georgia state tax for 2025
@@ -60,16 +55,17 @@ export function computeGA2025(input: StateTaxInput): StateResult {
 
   return {
     state: 'GA',
-    year: 2025,
-    agiState: gaAGI,
-    taxableIncomeState: gaTaxableIncome,
+    taxYear: 2025,
+    stateAGI: gaAGI,
+    stateTaxableIncome: gaTaxableIncome,
     stateTax: finalTax,
+    localTax: 0,
     totalStateLiability: finalTax,
-    stateWithheld: gaSpecific?.stateWithheld,
-    stateRefundOrOwe: gaSpecific?.stateWithheld
-      ? gaSpecific.stateWithheld - finalTax
-      : undefined,
-    credits,
+    stateDeduction: totalDeductions,
+    stateWithheld: gaSpecific?.stateWithheld ?? 0,
+    stateEstPayments: 0,
+    stateRefundOrOwe: (gaSpecific?.stateWithheld ?? 0) - finalTax,
+    stateCredits: credits,
   };
 }
 
@@ -143,7 +139,10 @@ function calculateRetirementExclusion(input: StateTaxInput): number {
     retirementIncome.netRentalIncome ?? 0,
     retirementIncome.capitalGains ?? 0,
     retirementIncome.royalties ?? 0,
-    Math.min(retirementIncome.earnedIncome ?? 0, GA_RULES_2025.retirementIncomeTypes.earnedIncomeLimit)
+    Math.min(
+      retirementIncome.earnedIncome ?? 0,
+      GA_RULES_2025.retirementIncomeTypes.earnedIncomeLimit
+    )
   );
 
   if (qualifyingIncome === 0) {
@@ -162,7 +161,11 @@ function calculateRetirementExclusion(input: StateTaxInput): number {
 
   // For MFJ, determine exclusion amount for spouse
   let spouseExclusionLimit = 0;
-  if (filingStatus === 'marriedJointly' && spouseAge !== undefined && spouseAge >= GA_RULES_2025.retirementExclusion.minimumAge) {
+  if (
+    filingStatus === 'marriedJointly' &&
+    spouseAge !== undefined &&
+    spouseAge >= GA_RULES_2025.retirementExclusion.minimumAge
+  ) {
     if (spouseAge >= 65) {
       spouseExclusionLimit = GA_RULES_2025.retirementExclusion.age65Plus;
     } else {
@@ -195,20 +198,21 @@ function calculateMilitaryRetirementExclusion(input: StateTaxInput): number {
     return 0;
   }
 
-  const {
-    isMilitaryRetiree,
-    isSpouseMilitaryRetiree,
-    taxpayerAge,
-    spouseAge,
-    retirementIncome,
-  } = gaSpecific;
+  const { isMilitaryRetiree, isSpouseMilitaryRetiree, taxpayerAge, spouseAge, retirementIncome } =
+    gaSpecific;
 
   let totalExclusion = 0;
 
   // Taxpayer military retirement exclusion
-  if (isMilitaryRetiree && (taxpayerAge === undefined || taxpayerAge < GA_RULES_2025.retirementExclusion.minimumAge)) {
+  if (
+    isMilitaryRetiree &&
+    (taxpayerAge === undefined || taxpayerAge < GA_RULES_2025.retirementExclusion.minimumAge)
+  ) {
     const militaryPension = retirementIncome?.pensionIncome ?? 0;
-    const baseExclusion = Math.min(militaryPension, GA_RULES_2025.retirementExclusion.militaryRetirement);
+    const baseExclusion = Math.min(
+      militaryPension,
+      GA_RULES_2025.retirementExclusion.militaryRetirement
+    );
     totalExclusion = addCents(totalExclusion, baseExclusion);
 
     // Additional exclusion if earned income > $17,500
@@ -229,7 +233,10 @@ function calculateMilitaryRetirementExclusion(input: StateTaxInput): number {
     (spouseAge === undefined || spouseAge < GA_RULES_2025.retirementExclusion.minimumAge)
   ) {
     const militaryPension = retirementIncome?.pensionIncome ?? 0;
-    const baseExclusion = Math.min(militaryPension, GA_RULES_2025.retirementExclusion.militaryRetirement);
+    const baseExclusion = Math.min(
+      militaryPension,
+      GA_RULES_2025.retirementExclusion.militaryRetirement
+    );
     totalExclusion = addCents(totalExclusion, baseExclusion);
 
     // Additional exclusion if earned income > $17,500

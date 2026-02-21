@@ -72,35 +72,41 @@ const FederalInputSchema = z.object({
     priorYearOverpayment: NonNegativeNumberSchema.optional(),
   }),
 
-  businessDetails: z.object({
-    grossReceipts: NonNegativeNumberSchema.optional(),
-    costOfGoodsSold: NonNegativeNumberSchema.optional(),
-    businessExpenses: NonNegativeNumberSchema.optional(),
-    advertisingExpenses: NonNegativeNumberSchema.optional(),
-    businessInsurance: NonNegativeNumberSchema.optional(),
-    businessInterest: NonNegativeNumberSchema.optional(),
-    legalFees: NonNegativeNumberSchema.optional(),
-    officeExpenses: NonNegativeNumberSchema.optional(),
-    rentExpense: NonNegativeNumberSchema.optional(),
-    repairsMaintenance: NonNegativeNumberSchema.optional(),
-    suppliesExpenses: NonNegativeNumberSchema.optional(),
-    travelExpenses: NonNegativeNumberSchema.optional(),
-    utilitiesExpenses: NonNegativeNumberSchema.optional(),
-    wagesExpenses: NonNegativeNumberSchema.optional(),
-    otherBusinessExpenses: NonNegativeNumberSchema.optional(),
-  }).optional(),
+  businessDetails: z
+    .object({
+      grossReceipts: NonNegativeNumberSchema.optional(),
+      costOfGoodsSold: NonNegativeNumberSchema.optional(),
+      businessExpenses: NonNegativeNumberSchema.optional(),
+      advertisingExpenses: NonNegativeNumberSchema.optional(),
+      businessInsurance: NonNegativeNumberSchema.optional(),
+      businessInterest: NonNegativeNumberSchema.optional(),
+      legalFees: NonNegativeNumberSchema.optional(),
+      officeExpenses: NonNegativeNumberSchema.optional(),
+      rentExpense: NonNegativeNumberSchema.optional(),
+      repairsMaintenance: NonNegativeNumberSchema.optional(),
+      suppliesExpenses: NonNegativeNumberSchema.optional(),
+      travelExpenses: NonNegativeNumberSchema.optional(),
+      utilitiesExpenses: NonNegativeNumberSchema.optional(),
+      wagesExpenses: NonNegativeNumberSchema.optional(),
+      otherBusinessExpenses: NonNegativeNumberSchema.optional(),
+    })
+    .optional(),
 
-  credits: z.object({
-    childTaxCredit: NonNegativeNumberSchema.optional(),
-    otherCredits: NonNegativeNumberSchema.optional(),
-  }).optional(),
+  credits: z
+    .object({
+      childTaxCredit: NonNegativeNumberSchema.optional(),
+      otherCredits: NonNegativeNumberSchema.optional(),
+    })
+    .optional(),
 
-  retirementContributions: z.object({
-    traditionalIRA: NonNegativeNumberSchema.optional(),
-    rothIRA: NonNegativeNumberSchema.optional(),
-    sep: NonNegativeNumberSchema.optional(),
-    simpleIRA: NonNegativeNumberSchema.optional(),
-  }).optional(),
+  retirementContributions: z
+    .object({
+      traditionalIRA: NonNegativeNumberSchema.optional(),
+      rothIRA: NonNegativeNumberSchema.optional(),
+      sep: NonNegativeNumberSchema.optional(),
+      simpleIRA: NonNegativeNumberSchema.optional(),
+    })
+    .optional(),
 });
 
 // Zod schema for FederalResult2025
@@ -227,6 +233,7 @@ export function validateFederalInput(input: unknown): asserts input is FederalIn
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
+      if (!firstError) throw new ValidationError('Validation failed', '', error);
       throw new ValidationError(
         `Invalid federal input: ${firstError.path.join('.')}: ${firstError.message}`,
         firstError.path.join('.'),
@@ -246,6 +253,7 @@ export function validateFederalResult(result: unknown): asserts result is Federa
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
+      if (!firstError) throw new ValidationError('Validation failed', '', error);
       throw new ValidationError(
         `Invalid federal result: ${firstError.path.join('.')}: ${firstError.message}`,
         firstError.path.join('.'),
@@ -265,6 +273,7 @@ export function validateStateTaxInput(input: unknown): asserts input is StateTax
   } catch (error) {
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0];
+      if (!firstError) throw new ValidationError('Validation failed', '', error);
       throw new ValidationError(
         `Invalid state tax input: ${firstError.path.join('.')}: ${firstError.message}`,
         firstError.path.join('.'),

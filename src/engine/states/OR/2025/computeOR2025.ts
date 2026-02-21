@@ -25,7 +25,13 @@ import { addCents, subtractCents, max0 } from '../../../util/money';
  * @returns Oregon state tax result
  */
 export function computeOR2025(input: StateTaxInput): StateResult {
-  const { federalResult, filingStatus, stateWithheld = 0, stateEstPayments = 0, stateSpecific } = input;
+  const {
+    federalResult,
+    filingStatus,
+    stateWithheld = 0,
+    stateEstPayments = 0,
+    stateSpecific,
+  } = input;
   const orSpecific = stateSpecific as OregonSpecificInput | undefined;
 
   // Step 1: Oregon AGI = Federal AGI (no modifications for basic case)
@@ -33,20 +39,13 @@ export function computeOR2025(input: StateTaxInput): StateResult {
 
   // Step 2: Calculate federal tax deduction
   // Oregon allows deduction of federal tax paid, up to limits
-  const federalTaxPaid = orSpecific?.federalTaxPaid ?? federalResult.totalFederalTax;
-  const federalTaxDeduction = calculateFederalTaxDeduction(
-    filingStatus,
-    federalTaxPaid
-  );
+  const federalTaxPaid = orSpecific?.federalTaxPaid ?? federalResult.totalTax;
+  const federalTaxDeduction = calculateFederalTaxDeduction(filingStatus, federalTaxPaid);
 
   // Step 3: Calculate standard deduction (with elderly/blind additions)
   const age65OrOlder = orSpecific?.age65OrOlder ?? 0;
   const isBlind = orSpecific?.isBlind ?? 0;
-  const standardDeduction = calculateStandardDeduction(
-    filingStatus,
-    age65OrOlder,
-    isBlind
-  );
+  const standardDeduction = calculateStandardDeduction(filingStatus, age65OrOlder, isBlind);
 
   // Step 4: Calculate Oregon taxable income
   // OR Taxable Income = OR AGI - Federal Tax Deduction - Standard Deduction
@@ -100,8 +99,12 @@ export function computeOR2025(input: StateTaxInput): StateResult {
       `Federal tax deduction: $${(federalTaxDeduction / 100).toFixed(2)}`,
       `Standard deduction: $${(standardDeduction / 100).toFixed(2)}`,
       `Personal exemption credit: $${(personalExemptionCredit / 100).toFixed(2)} (${numberOfExemptions} exemption${numberOfExemptions !== 1 ? 's' : ''})`,
-      age65OrOlder > 0 ? `Additional deduction for ${age65OrOlder} elderly person${age65OrOlder !== 1 ? 's' : ''}` : null,
-      isBlind > 0 ? `Additional deduction for ${isBlind} blind person${isBlind !== 1 ? 's' : ''}` : null,
+      age65OrOlder > 0
+        ? `Additional deduction for ${age65OrOlder} elderly person${age65OrOlder !== 1 ? 's' : ''}`
+        : null,
+      isBlind > 0
+        ? `Additional deduction for ${isBlind} blind person${isBlind !== 1 ? 's' : ''}`
+        : null,
     ].filter((note): note is string => note !== null),
   };
 }

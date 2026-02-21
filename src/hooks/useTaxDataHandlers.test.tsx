@@ -38,7 +38,6 @@ jest.mock('../utils/exportUtils', () => ({
 }));
 
 // Import after mocking (required for Jest mocks to work)
-// eslint-disable-next-line import/first
 import { useTaxDataHandlers } from './useTaxDataHandlers';
 
 describe('useTaxDataHandlers', () => {

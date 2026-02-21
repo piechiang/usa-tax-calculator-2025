@@ -23,9 +23,9 @@ import { multiplyCents } from '../../../util/money';
 export const SC_BRACKETS_2025 = {
   // SC uses same brackets regardless of filing status
   brackets: [
-    { threshold: 0, rate: 0.00 },           // 0% on $0 - $3,560
-    { threshold: 356000, rate: 0.03 },      // 3% on $3,561 - $17,830
-    { threshold: 1783000, rate: 0.062 },    // 6.2% on $17,831+
+    { threshold: 0, rate: 0.0 }, // 0% on $0 - $3,560
+    { threshold: 356000, rate: 0.03 }, // 3% on $3,561 - $17,830
+    { threshold: 1783000, rate: 0.062 }, // 6.2% on $17,831+
   ],
 };
 
@@ -38,10 +38,10 @@ export const SC_RULES_2025 = {
    * SC uses federal standard deduction amounts
    */
   standardDeduction: {
-    single: 1500000,           // $15,000
-    marriedJointly: 3000000,   // $30,000
+    single: 1500000, // $15,000
+    marriedJointly: 3000000, // $30,000
     marriedSeparately: 1500000, // $15,000
-    headOfHousehold: 2250000,  // $22,500
+    headOfHousehold: 2250000, // $22,500
   },
 
   /**
@@ -49,10 +49,10 @@ export const SC_RULES_2025 = {
    * SC allows personal exemption deduction
    */
   personalExemption: {
-    single: 280000,            // $2,800
-    marriedJointly: 280000,    // $2,800 per person
+    single: 280000, // $2,800
+    marriedJointly: 280000, // $2,800 per person
     marriedSeparately: 280000, // $2,800
-    headOfHousehold: 280000,   // $2,800
+    headOfHousehold: 280000, // $2,800
   },
 
   /**
@@ -77,6 +77,8 @@ export function calculateSouthCarolinaTax(taxableIncome: number): number {
 
   for (let i = 0; i < brackets.length; i++) {
     const bracket = brackets[i];
+    if (!bracket) continue;
+
     const nextBracket = i < brackets.length - 1 ? brackets[i + 1] : null;
 
     if (taxableIncome <= bracket.threshold) {

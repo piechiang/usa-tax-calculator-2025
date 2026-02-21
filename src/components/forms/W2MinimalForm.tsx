@@ -4,10 +4,28 @@
  */
 
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Upload, Radio, Typography, Space, Alert, Divider, Tooltip, message } from 'antd';
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Upload,
+  Radio,
+  Typography,
+  Space,
+  Alert,
+  Divider,
+  Tooltip,
+  message,
+} from 'antd';
 import type { UploadChangeParam } from 'antd/es/upload';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { CameraOutlined, EditOutlined, QuestionCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import {
+  CameraOutlined,
+  EditOutlined,
+  QuestionCircleOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
@@ -38,7 +56,11 @@ interface W2MinimalFormProps {
   allowMultiple?: boolean;
 }
 
-const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues = {}, allowMultiple = true }) => {
+const W2MinimalForm: React.FC<W2MinimalFormProps> = ({
+  onComplete,
+  defaultValues = {},
+  allowMultiple = true,
+}) => {
   const [inputMethod, setInputMethod] = useState(defaultValues.method || 'upload');
   const [w2Data, setW2Data] = useState(defaultValues.w2Data || []);
   const [currentW2, setCurrentW2] = useState<Omit<W2Data, 'id' | 'confidence'>>({
@@ -51,7 +73,7 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
     stateWages: '',
     stateWithheld: '',
     employerName: '',
-    employerEIN: ''
+    employerEIN: '',
   });
   const [uploading, setUploading] = useState(false);
   const [form] = Form.useForm();
@@ -69,59 +91,59 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
       label: '雇主名称',
       required: false,
       help: '可选填，便于识别',
-      prefix: null
+      prefix: null,
     },
     {
       key: 'wages',
       label: 'Box 1 - 工资总额',
       required: true,
       help: 'W-2表格Box 1：Wages, tips, other compensation',
-      prefix: '$'
+      prefix: '$',
     },
     {
       key: 'federalWithholding',
       label: 'Box 2 - 联邦预扣税',
       required: true,
       help: 'W-2表格Box 2：Federal income tax withheld',
-      prefix: '$'
+      prefix: '$',
     },
     {
       key: 'socialSecurityWages',
       label: 'Box 3 - 社保工资',
       required: false,
       help: 'W-2表格Box 3：Social security wages (通常等于Box 1)',
-      prefix: '$'
+      prefix: '$',
     },
     {
       key: 'socialSecurityWithheld',
       label: 'Box 4 - 社保税',
       required: false,
       help: 'W-2表格Box 4：Social security tax withheld',
-      prefix: '$'
+      prefix: '$',
     },
     {
       key: 'medicareWages',
       label: 'Box 5 - Medicare工资',
       required: false,
       help: 'W-2表格Box 5：Medicare wages and tips (通常等于Box 1)',
-      prefix: '$'
+      prefix: '$',
     },
     {
       key: 'medicareWithheld',
       label: 'Box 6 - Medicare税',
       required: false,
       help: 'W-2表格Box 6：Medicare tax withheld',
-      prefix: '$'
-    }
+      prefix: '$',
+    },
   ];
 
   // 模拟OCR识别（实际项目中对接真实OCR服务）
   const simulateOCR = async (_file: File) => {
     setUploading(true);
-    
+
     // 模拟API调用延迟
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     // 模拟识别结果
     const mockResult: Omit<W2Data, 'id'> = {
       employerName: 'ACME Corporation',
@@ -134,23 +156,23 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
       stateWages: '75000.00',
       stateWithheld: '3500.00',
       employerEIN: '',
-      confidence: 0.95
+      confidence: 0.95,
     };
 
     setUploading(false);
     const { confidence: _confidence, ...w2Data } = mockResult;
     setCurrentW2(w2Data);
     form.setFieldsValue(mockResult);
-    
+
     message.success('W-2识别成功！请核对信息是否正确');
-    
+
     return mockResult;
   };
 
   const handleUpload = async (info: UploadChangeParam<UploadFile>) => {
     const file = info.file.originFileObj as File;
     if (!file) return;
-    
+
     if (file.size > 10 * 1024 * 1024) {
       message.error('文件大小不能超过10MB');
       return;
@@ -173,7 +195,7 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
 
     const newData = { ...currentW2, [field]: formattedValue };
     setCurrentW2(newData);
-    
+
     // 自动填充相关字段
     if (field === 'wages') {
       // 通常Social Security和Medicare工资等于总工资
@@ -186,7 +208,7 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
         form.setFieldValue('medicareWages', value);
       }
     }
-    
+
     setCurrentW2(newData);
   };
 
@@ -198,7 +220,7 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
 
     const newW2Data = [...w2Data, { ...currentW2, id: Date.now() }];
     setW2Data(newW2Data);
-    
+
     // 重置表单
     setCurrentW2({
       wages: '',
@@ -210,10 +232,10 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
       stateWages: '',
       stateWithheld: '',
       employerName: '',
-      employerEIN: ''
+      employerEIN: '',
     });
     form.resetFields();
-    
+
     message.success('W-2信息已添加');
   };
 
@@ -224,8 +246,8 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
   };
 
   const handleComplete = () => {
-    let finalData = [...w2Data];
-    
+    const finalData = [...w2Data];
+
     // 如果当前表单有数据，也加入
     if (currentW2.wages || currentW2.federalWithholding) {
       if (!currentW2.wages || !currentW2.federalWithholding) {
@@ -246,7 +268,9 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
   const formatCurrency = (value: string): string => {
     if (!value) return '';
     const num = parseFloat(value);
-    return isNaN(num) ? '' : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return isNaN(num)
+      ? ''
+      : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (
@@ -256,16 +280,16 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
           <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
             W-2工资信息
           </Title>
-          <Paragraph type="secondary">
-            上传W-2自动识别，或手动输入关键信息
-          </Paragraph>
+          <Paragraph type="secondary">上传W-2自动识别，或手动输入关键信息</Paragraph>
         </div>
 
         {/* 输入方式选择 */}
         <div style={{ marginBottom: '24px' }}>
-          <Text strong style={{ display: 'block', marginBottom: '12px' }}>选择输入方式：</Text>
-          <Radio.Group 
-            value={inputMethod} 
+          <Text strong style={{ display: 'block', marginBottom: '12px' }}>
+            选择输入方式：
+          </Text>
+          <Radio.Group
+            value={inputMethod}
             onChange={(e) => setInputMethod(e.target.value)}
             style={{ width: '100%' }}
           >
@@ -298,14 +322,16 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
               disabled={uploading}
             >
               <p className="ant-upload-drag-icon">
-                {uploading ? <LoadingOutlined style={{ fontSize: '48px' }} /> : <CameraOutlined style={{ fontSize: '48px', color: '#1890ff' }} />}
+                {uploading ? (
+                  <LoadingOutlined style={{ fontSize: '48px' }} />
+                ) : (
+                  <CameraOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                )}
               </p>
               <p className="ant-upload-text">
                 {uploading ? '正在识别W-2信息...' : '点击或拖拽上传W-2表格'}
               </p>
-              <p className="ant-upload-hint">
-                支持图片和PDF格式，文件大小不超过10MB
-              </p>
+              <p className="ant-upload-hint">支持图片和PDF格式，文件大小不超过10MB</p>
             </Dragger>
 
             {uploading && (
@@ -349,13 +375,15 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
                     </Space>
                   }
                   help={field.help}
-                  rules={field.required ? [{ required: true, message: `请输入${field.label}` }] : []}
+                  rules={
+                    field.required ? [{ required: true, message: `请输入${field.label}` }] : []
+                  }
                 >
                   <Input
                     prefix={field.prefix}
                     value={currentW2[field.key]}
                     onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                    placeholder={field.prefix ? "0.00" : ""}
+                    placeholder={field.prefix ? '0.00' : ''}
                     size="large"
                   />
                 </Form.Item>
@@ -382,20 +410,18 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
             <Title level={5}>已添加的W-2 ({w2Data.length}个)</Title>
             {w2Data.map((w2, index) => (
               <Card key={w2.id} size="small" style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
                   <div>
                     <Text strong>{w2.employerName || `雇主 ${index + 1}`}</Text>
                     <br />
                     <Text type="secondary">
-                      工资: ${formatCurrency(w2.wages)} | 预扣: ${formatCurrency(w2.federalWithholding)}
+                      工资: ${formatCurrency(w2.wages)} | 预扣: $
+                      {formatCurrency(w2.federalWithholding)}
                     </Text>
                   </div>
-                  <Button 
-                    type="text" 
-                    danger 
-                    size="small"
-                    onClick={() => removeW2(index)}
-                  >
+                  <Button type="text" danger size="small" onClick={() => removeW2(index)}>
                     删除
                   </Button>
                 </div>
@@ -409,10 +435,18 @@ const W2MinimalForm: React.FC<W2MinimalFormProps> = ({ onComplete, defaultValues
           message="温馨提示"
           description={
             <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-              <li><Text>Box 1和Box 2是必填项，其他可选</Text></li>
-              <li><Text>如果有多个雇主，请分别添加每个W-2</Text></li>
-              <li><Text>OPT/CPT工资就是W-2工资，不是自雇收入</Text></li>
-              <li><Text>Social Security和Medicare工资通常等于Box 1工资</Text></li>
+              <li>
+                <Text>Box 1和Box 2是必填项，其他可选</Text>
+              </li>
+              <li>
+                <Text>如果有多个雇主，请分别添加每个W-2</Text>
+              </li>
+              <li>
+                <Text>OPT/CPT工资就是W-2工资，不是自雇收入</Text>
+              </li>
+              <li>
+                <Text>Social Security和Medicare工资通常等于Box 1工资</Text>
+              </li>
             </ul>
           }
           type="info"

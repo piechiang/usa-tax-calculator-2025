@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calculator, TrendingUp, TrendingDown, DollarSign, Clock, Zap, AlertCircle } from 'lucide-react';
+import {
+  Calculator,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Clock,
+  Zap,
+  AlertCircle,
+} from 'lucide-react';
 
 type NumericTaxSnapshot = Partial<Record<string, number>>;
 
@@ -23,7 +31,7 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
   taxResult,
   previousTaxResult,
   isCalculating,
-  lastCalculated
+  lastCalculated,
 }) => {
   const [changes, setChanges] = useState<TaxChangeIndicator[]>([]);
   const [animationTrigger, setAnimationTrigger] = useState(0);
@@ -48,14 +56,19 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
       { key: 'effectiveRate', label: 'Effective Rate' },
       { key: 'marginalRate', label: 'Marginal Rate' },
       { key: 'taxableIncome', label: 'Taxable Income' },
-      { key: 'adjustedGrossIncome', label: 'Adjusted Gross Income' }
+      { key: 'adjustedGrossIncome', label: 'Adjusted Gross Income' },
     ] as const;
 
     fieldsToTrack.forEach(({ key, label }) => {
       const current = Number(taxResult[key] ?? 0);
       const previous = Number(previousSnapshot[key] ?? 0);
 
-      if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0 || current === previous) {
+      if (
+        !Number.isFinite(current) ||
+        !Number.isFinite(previous) ||
+        previous === 0 ||
+        current === previous
+      ) {
         return;
       }
 
@@ -68,19 +81,19 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
         previousValue: previous,
         change,
         changePercent,
-        isIncrease: change > 0
+        isIncrease: change > 0,
       });
     });
 
     setChanges(newChanges);
-    setAnimationTrigger(prev => prev + 1);
+    setAnimationTrigger((prev) => prev + 1);
     previousResultRef.current = taxResult;
   }, [taxResult]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
   };
 
@@ -101,11 +114,7 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
   };
 
   const getChangeIcon = (isIncrease: boolean) => {
-    return isIncrease ? (
-      <TrendingUp className="h-3 w-3" />
-    ) : (
-      <TrendingDown className="h-3 w-3" />
-    );
+    return isIncrease ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />;
   };
 
   return (
@@ -131,9 +140,11 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
 
       {/* Main Tax Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className={`bg-gradient-to-r from-red-50 to-red-100 rounded-lg p-3 transition-all duration-500 ${
-          animationTrigger > 0 ? 'animate-pulse' : ''
-        }`}>
+        <div
+          className={`bg-gradient-to-r from-red-50 to-red-100 rounded-lg p-3 transition-all duration-500 ${
+            animationTrigger > 0 ? 'animate-pulse' : ''
+          }`}
+        >
           <div className="text-sm font-medium text-red-800 mb-1">Federal Tax</div>
           <div className="text-xl font-bold text-red-900">
             {formatCurrency(taxResult.federalTax || 0)}
@@ -143,9 +154,11 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
           </div>
         </div>
 
-        <div className={`bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 transition-all duration-500 ${
-          animationTrigger > 0 ? 'animate-pulse' : ''
-        }`}>
+        <div
+          className={`bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 transition-all duration-500 ${
+            animationTrigger > 0 ? 'animate-pulse' : ''
+          }`}
+        >
           <div className="text-sm font-medium text-blue-800 mb-1">Total Tax</div>
           <div className="text-xl font-bold text-blue-900">
             {formatCurrency(taxResult.totalTax || 0)}
@@ -155,16 +168,16 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
           </div>
         </div>
 
-        <div className={`bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3 transition-all duration-500 ${
-          animationTrigger > 0 ? 'animate-pulse' : ''
-        }`}>
+        <div
+          className={`bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3 transition-all duration-500 ${
+            animationTrigger > 0 ? 'animate-pulse' : ''
+          }`}
+        >
           <div className="text-sm font-medium text-green-800 mb-1">After-Tax Income</div>
           <div className="text-xl font-bold text-green-900">
             {formatCurrency((taxResult.adjustedGrossIncome || 0) - (taxResult.totalTax || 0))}
           </div>
-          <div className="text-xs text-green-700">
-            Take-home amount
-          </div>
+          <div className="text-xs text-green-700">Take-home amount</div>
         </div>
       </div>
 
@@ -179,13 +192,14 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
             {changes.slice(0, 3).map((change, index) => (
               <div key={index} className="flex items-center justify-between text-xs">
                 <span className="text-gray-600">{change.field}:</span>
-                <div className={`flex items-center gap-1 ${getChangeColor(change.isIncrease, change.field)}`}>
+                <div
+                  className={`flex items-center gap-1 ${getChangeColor(change.isIncrease, change.field)}`}
+                >
                   {getChangeIcon(change.isIncrease)}
                   <span className="font-medium">
                     {change.field.includes('Rate')
                       ? `${change.changePercent > 0 ? '+' : ''}${change.changePercent.toFixed(2)}%`
-                      : `${change.change > 0 ? '+' : ''}${formatCurrency(Math.abs(change.change))}`
-                    }
+                      : `${change.change > 0 ? '+' : ''}${formatCurrency(Math.abs(change.change))}`}
                   </span>
                 </div>
               </div>
@@ -198,16 +212,17 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
         <h4 className="text-sm font-medium text-gray-900 mb-2">Quick Insights</h4>
         <div className="space-y-1 text-xs text-gray-600">
-          {taxResult.effectiveRate > 0.25 && (
+          {(taxResult.effectiveRate ?? 0) > 0.25 && (
             <div className="flex items-center gap-1 text-orange-600">
               <AlertCircle className="h-3 w-3" />
               High effective tax rate - consider tax optimization strategies
             </div>
           )}
-          {taxResult.marginalRate > taxResult.effectiveRate * 1.5 && (
+          {(taxResult.marginalRate ?? 0) > (taxResult.effectiveRate ?? 0) * 1.5 && (
             <div className="flex items-center gap-1 text-blue-600">
               <DollarSign className="h-3 w-3" />
-              High marginal rate - additional income will be taxed at {formatPercentage(taxResult.marginalRate)}
+              High marginal rate - additional income will be taxed at{' '}
+              {formatPercentage(taxResult.marginalRate ?? 0)}
             </div>
           )}
           {(taxResult.adjustedGrossIncome || 0) > 400000 && (
@@ -220,7 +235,7 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
       </div>
 
       {/* Tax Breakdown Chart */}
-      {taxResult.totalTax > 0 && (
+      {(taxResult.totalTax ?? 0) > 0 && (
         <div className="mt-4">
           <h4 className="text-sm font-medium text-gray-900 mb-2">Tax Breakdown</h4>
           <div className="space-y-2">
@@ -231,15 +246,15 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
                   <div
                     className="bg-red-500 h-2 rounded-full transition-all duration-500"
                     style={{
-                      width: `${Math.min(100, (taxResult.federalTax / taxResult.totalTax) * 100)}%`
+                      width: `${Math.min(100, ((taxResult.federalTax ?? 0) / (taxResult.totalTax ?? 1)) * 100)}%`,
                     }}
                   ></div>
                 </div>
-                <span>{formatCurrency(taxResult.federalTax || 0)}</span>
+                <span>{formatCurrency(taxResult.federalTax ?? 0)}</span>
               </div>
             </div>
 
-            {taxResult.stateTax > 0 && (
+            {(taxResult.stateTax ?? 0) > 0 && (
               <div className="flex items-center justify-between text-xs">
                 <span>State Tax</span>
                 <div className="flex items-center gap-2">
@@ -247,11 +262,11 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
                     <div
                       className="bg-blue-500 h-2 rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min(100, (taxResult.stateTax / taxResult.totalTax) * 100)}%`
+                        width: `${Math.min(100, ((taxResult.stateTax ?? 0) / (taxResult.totalTax ?? 1)) * 100)}%`,
                       }}
                     ></div>
                   </div>
-                  <span>{formatCurrency(taxResult.stateTax || 0)}</span>
+                  <span>{formatCurrency(taxResult.stateTax ?? 0)}</span>
                 </div>
               </div>
             )}

@@ -126,7 +126,9 @@ export function calculateVirginiaTax(taxableIncome: number): number {
 
   for (let i = 0; i < VA_BRACKETS_2025.length; i++) {
     const bracket = VA_BRACKETS_2025[i];
-    const nextThreshold = i < VA_BRACKETS_2025.length - 1 ? VA_BRACKETS_2025[i + 1].threshold : Infinity;
+    if (!bracket) break;
+    const nextThreshold =
+      i < VA_BRACKETS_2025.length - 1 ? (VA_BRACKETS_2025[i + 1]?.threshold ?? Infinity) : Infinity;
 
     if (taxableIncome <= previousThreshold) {
       break;

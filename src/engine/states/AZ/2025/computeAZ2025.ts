@@ -18,7 +18,6 @@
 
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
 import {
-  AZ_RULES_2025,
   calculateArizonaTax,
   getStandardDeduction,
   calculateAge65AdditionalDeduction,

@@ -124,12 +124,12 @@ const FPL_HAWAII_MULTIPLIER = 1.15;
  * Income as % of FPL → Expected contribution as % of income
  */
 const AFFORDABILITY_TABLE_2025 = [
-  { fplMin: 0.00, fplMax: 1.50, contribution: 0.00 }, // 0-150% FPL: $0
-  { fplMin: 1.50, fplMax: 2.00, contribution: 0.00 }, // 150-200%: $0
-  { fplMin: 2.00, fplMax: 2.50, contribution: 0.02 }, // 200-250%: 2%
-  { fplMin: 2.50, fplMax: 3.00, contribution: 0.04 }, // 250-300%: 4%
-  { fplMin: 3.00, fplMax: 4.00, contribution: 0.06 }, // 300-400%: 6%
-  { fplMin: 4.00, fplMax: 9.99, contribution: 0.085 }, // 400%+: 8.5%
+  { fplMin: 0.0, fplMax: 1.5, contribution: 0.0 }, // 0-150% FPL: $0
+  { fplMin: 1.5, fplMax: 2.0, contribution: 0.0 }, // 150-200%: $0
+  { fplMin: 2.0, fplMax: 2.5, contribution: 0.02 }, // 200-250%: 2%
+  { fplMin: 2.5, fplMax: 3.0, contribution: 0.04 }, // 250-300%: 4%
+  { fplMin: 3.0, fplMax: 4.0, contribution: 0.06 }, // 300-400%: 6%
+  { fplMin: 4.0, fplMax: 9.99, contribution: 0.085 }, // 400%+: 8.5%
 ];
 
 /**
@@ -138,16 +138,16 @@ const AFFORDABILITY_TABLE_2025 = [
  */
 const REPAYMENT_CAPS_2025 = {
   single: [
-    { fplMax: 2.00, cap: 35000 }, // < 200% FPL: $350
-    { fplMax: 3.00, cap: 90000 }, // 200-300%: $900
-    { fplMax: 4.00, cap: 150000 }, // 300-400%: $1,500
+    { fplMax: 2.0, cap: 35000 }, // < 200% FPL: $350
+    { fplMax: 3.0, cap: 90000 }, // 200-300%: $900
+    { fplMax: 4.0, cap: 150000 }, // 300-400%: $1,500
     { fplMax: Infinity, cap: Infinity }, // 400%+: No cap
   ],
   other: [
     // MFJ, HOH, QSS
-    { fplMax: 2.00, cap: 70000 }, // < 200% FPL: $700
-    { fplMax: 3.00, cap: 180000 }, // 200-300%: $1,800
-    { fplMax: 4.00, cap: 300000 }, // 300-400%: $3,000
+    { fplMax: 2.0, cap: 70000 }, // < 200% FPL: $700
+    { fplMax: 3.0, cap: 180000 }, // 200-300%: $1,800
+    { fplMax: 4.0, cap: 300000 }, // 300-400%: $3,000
     { fplMax: Infinity, cap: Infinity }, // 400%+: No cap
   ],
 };
@@ -228,7 +228,7 @@ export function calculatePTC(input: Form8962Input): Form8962Result {
 
   // Determine repayment cap (even if no repayment owed)
   const repaymentCap = getRepaymentCap(fplPercentage, input.filingStatus);
-  let repaymentLimitation = repaymentCap;
+  const repaymentLimitation = repaymentCap;
 
   if (netPTC < 0) {
     // Repayment owed
@@ -271,10 +271,7 @@ function checkEligibility(input: Form8962Input): {
   }
 
   // MFS generally ineligible (unless exceptions apply)
-  if (
-    input.filingStatus === 'marriedSeparately' &&
-    !input.mfsWithExceptions
-  ) {
+  if (input.filingStatus === 'marriedSeparately' && !input.mfsWithExceptions) {
     return {
       eligible: false,
       reason: 'Married filing separately without domestic abuse/abandonment exception',
@@ -310,9 +307,7 @@ function calculateFPL(householdSize: number, state: string): number {
   if (householdSize <= 8) {
     baseFPL = FPL_2025_CONTINENTAL[householdSize]!;
   } else {
-    baseFPL =
-      FPL_2025_CONTINENTAL[8]! +
-      (householdSize - 8) * FPL_2025_PER_ADDITIONAL;
+    baseFPL = FPL_2025_CONTINENTAL[8]! + (householdSize - 8) * FPL_2025_PER_ADDITIONAL;
   }
 
   // Apply state multiplier
@@ -342,14 +337,8 @@ function getContributionRate(fplPercentage: number): number {
 /**
  * Get repayment cap based on FPL percentage and filing status
  */
-function getRepaymentCap(
-  fplPercentage: number,
-  filingStatus: FilingStatus
-): number {
-  const caps =
-    filingStatus === 'single'
-      ? REPAYMENT_CAPS_2025.single
-      : REPAYMENT_CAPS_2025.other;
+function getRepaymentCap(fplPercentage: number, filingStatus: FilingStatus): number {
+  const caps = filingStatus === 'single' ? REPAYMENT_CAPS_2025.single : REPAYMENT_CAPS_2025.other;
 
   for (const tier of caps) {
     if (fplPercentage < tier.fplMax) {

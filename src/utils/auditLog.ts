@@ -88,10 +88,7 @@ function writeAuditLog(entries: AuditLogEntry[]): void {
  * auditLog(AuditAction.LOAD_CLIENT, { clientId: '123', decrypted: true });
  * ```
  */
-export function auditLog(
-  action: AuditAction,
-  details?: Record<string, unknown>
-): void {
+export function auditLog(action: AuditAction, details?: Record<string, unknown>): void {
   const entry: AuditLogEntry = {
     timestamp: new Date().toISOString(),
     action,
@@ -104,9 +101,11 @@ export function auditLog(
   log.push(entry);
   writeAuditLog(log);
 
-  // Also log to console in development
+  // Also log in development via logger (which respects dev mode internally)
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Audit]', action, details);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { logger } = require('./logger');
+    logger.debug('[Audit]', { action, details });
   }
 }
 
@@ -173,9 +172,7 @@ export function getAuditLog(options?: {
   }
 
   if (options?.clientId) {
-    entries = entries.filter(
-      (e) => e.details?.clientId === options.clientId
-    );
+    entries = entries.filter((e) => e.details?.clientId === options.clientId);
   }
 
   if (options?.limit) {

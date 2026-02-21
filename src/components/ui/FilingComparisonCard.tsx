@@ -13,7 +13,7 @@ interface FilingComparisonCardProps {
   t: (key: string) => string;
 }
 
-export const FilingComparisonCard: React.FC<FilingComparisonCardProps> = ({
+const FilingComparisonCardComponent: React.FC<FilingComparisonCardProps> = ({
   filingComparison,
   t,
 }) => {
@@ -62,9 +62,7 @@ export const FilingComparisonCard: React.FC<FilingComparisonCardProps> = ({
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="h-4 w-4 text-yellow-600" />
-            <span className="font-medium text-yellow-800">
-              {t('spouseInfo.recommendedFiling')}
-            </span>
+            <span className="font-medium text-yellow-800">{t('spouseInfo.recommendedFiling')}</span>
           </div>
           <div className="text-lg font-bold text-yellow-900">
             {filingComparison.recommended === 'joint'
@@ -74,9 +72,7 @@ export const FilingComparisonCard: React.FC<FilingComparisonCardProps> = ({
           <div className="text-sm text-yellow-700 mt-1">
             💰 {t('spouseInfo.jointSavings')}:{' '}
             {formatCurrency(
-              Math.abs(
-                filingComparison.joint.totalTax - filingComparison.separate.totalTax
-              )
+              Math.abs(filingComparison.joint.totalTax - filingComparison.separate.totalTax)
             )}
           </div>
         </div>
@@ -84,3 +80,6 @@ export const FilingComparisonCard: React.FC<FilingComparisonCardProps> = ({
     </div>
   );
 };
+
+// Memoize to prevent unnecessary re-renders
+export const FilingComparisonCard = React.memo(FilingComparisonCardComponent);

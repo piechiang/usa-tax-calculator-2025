@@ -1,13 +1,63 @@
-import React, { useState, useMemo } from 'react';
-import { AlertTriangle, CheckCircle, Info, TrendingUp, TrendingDown, Calculator, DollarSign, Eye, FileText, Shield, Target, BarChart3, Minus, Plus, Check, Dot } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  TrendingUp,
+  Calculator,
+  Eye,
+  Shield,
+  Target,
+  Minus,
+  Plus,
+  Check,
+  Dot,
+} from 'lucide-react';
 import type {
   AccuracyCheck,
   DeductionComparison,
-  TaxScenario,
   TaxDataSnapshot,
   TaxCalculationOutput,
-  TranslationFunction
+  TranslationFunction,
 } from '../../types/CommonTypes';
+
+// Simplified TaxScenario for this component's UI
+interface TaxScenario {
+  id: string;
+  name: string;
+  description: string;
+  taxOwed: number;
+  refund: number;
+  changes: string[];
+}
+
+// Type definitions for internal use
+interface IncomeSource {
+  type?: string;
+  amount: number;
+  description?: string;
+}
+
+interface QualifyingChild {
+  name?: string;
+  dateOfBirth: string;
+  relationship?: string;
+}
+
+interface DeductionsData {
+  useStandardDeduction?: boolean;
+  mortgageInterestAmount?: number;
+  saltAmount?: number;
+  charitableAmount?: number;
+  medicalExpenses?: number;
+}
+
+interface CategorizedChecks {
+  error: AccuracyCheck[];
+  warning: AccuracyCheck[];
+  suggestion: AccuracyCheck[];
+  info: AccuracyCheck[];
+}
 
 interface TaxReviewAccuracyProps {
   taxData: TaxDataSnapshot;
@@ -17,14 +67,16 @@ interface TaxReviewAccuracyProps {
   t: TranslationFunction;
 }
 
-export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
+const TaxReviewAccuracyComponent: React.FC<TaxReviewAccuracyProps> = ({
   taxData,
   calculations,
   onFixIssue,
   onAcceptSuggestion,
-  t
+  t,
 }) => {
-  const [activeSection, setActiveSection] = useState<'accuracy' | 'comparison' | 'scenarios' | 'audit'>('accuracy');
+  const [activeSection, setActiveSection] = useState<
+    'accuracy' | 'comparison' | 'scenarios' | 'audit'
+  >('accuracy');
   const [expandedChecks, setExpandedChecks] = useState<Set<string>>(new Set());
 
   // Perform comprehensive accuracy checks
@@ -33,17 +85,21 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
 
     // Income verification checks
     if (taxData.incomeSourcesEach) {
-      const totalIncome = taxData.incomeSourcesEach.reduce((sum: number, income: any) => sum + (income.amount || 0), 0);
+      const totalIncome = (taxData.incomeSourcesEach as IncomeSource[]).reduce(
+        (sum: number, income: IncomeSource) => sum + (income.amount || 0),
+        0
+      );
 
       if (totalIncome === 0) {
         checks.push({
           id: 'no-income',
           category: 'warning',
           title: 'No Income Reported',
-          description: 'You haven\'t reported any income. Make sure to include all W-2s, 1099s, and other income sources.',
+          description:
+            "You haven't reported any income. Make sure to include all W-2s, 1099s, and other income sources.",
           impact: 'high',
           actionRequired: true,
-          fieldPath: 'incomeSourcesEach'
+          fieldPath: 'incomeSourcesEach',
         });
       }
 
@@ -52,10 +108,11 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
           id: 'retirement-suggestion',
           category: 'suggestion',
           title: 'Maximize Retirement Contributions',
-          description: 'With your income level, you could benefit from maximizing 401(k) and IRA contributions.',
+          description:
+            'With your income level, you could benefit from maximizing 401(k) and IRA contributions.',
           impact: 'medium',
           potentialSavings: totalIncome * 0.22 * 0.19, // Rough estimate
-          suggestion: 'Consider contributing the maximum to tax-advantaged retirement accounts'
+          suggestion: 'Consider contributing the maximum to tax-advantaged retirement accounts',
         });
       }
     }
@@ -71,7 +128,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
           description: 'Filing separately might save you money compared to joint filing.',
           impact: 'high',
           potentialSavings: joint.totalTax - separate.totalTax,
-          suggestion: 'Switch to Married Filing Separately'
+          suggestion: 'Switch to Married Filing Separately',
         });
       }
     }
@@ -89,7 +146,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
           description: 'Your itemized deductions may exceed the standard deduction.',
           impact: 'medium',
           potentialSavings: (itemizedTotal - standardDed) * 0.22, // Rough tax rate
-          suggestion: 'Switch to itemized deductions'
+          suggestion: 'Switch to itemized deductions',
         });
       }
     }
@@ -103,14 +160,14 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         description: 'The SSN format appears to be incorrect. Please verify and correct.',
         impact: 'high',
         actionRequired: true,
-        fieldPath: 'personalInfo.ssn'
+        fieldPath: 'personalInfo.ssn',
       });
     }
 
     // Dependent optimization
-    if (taxData.qualifyingChildren?.length > 0) {
-      const childTaxCreditEligible = taxData.qualifyingChildren.filter((child: any) =>
-        calculateAge(child.dateOfBirth) < 17
+    if (taxData.qualifyingChildren && taxData.qualifyingChildren.length > 0) {
+      const childTaxCreditEligible = (taxData.qualifyingChildren as QualifyingChild[]).filter(
+        (child: QualifyingChild) => calculateAge(child.dateOfBirth) < 17
       );
 
       if (childTaxCreditEligible.length > 0 && !taxData.claimedChildTaxCredit) {
@@ -121,13 +178,17 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
           description: `You may be eligible for Child Tax Credit for ${childTaxCreditEligible.length} child(ren).`,
           impact: 'high',
           potentialSavings: childTaxCreditEligible.length * 2000,
-          suggestion: 'Claim Child Tax Credit'
+          suggestion: 'Claim Child Tax Credit',
         });
       }
     }
 
     // Education credit checks
-    if (taxData.educationExpenses?.length > 0 && !taxData.claimedEducationCredits) {
+    if (
+      taxData.educationExpenses &&
+      taxData.educationExpenses > 0 &&
+      !taxData.claimedEducationCredits
+    ) {
       checks.push({
         id: 'education-credits',
         category: 'suggestion',
@@ -135,7 +196,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         description: 'You may qualify for American Opportunity or Lifetime Learning credits.',
         impact: 'medium',
         potentialSavings: 2500, // AOTC maximum
-        suggestion: 'Claim education credits'
+        suggestion: 'Claim education credits',
       });
     }
 
@@ -145,21 +206,26 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         id: 'state-tax-optimization',
         category: 'suggestion',
         title: 'Multi-State Tax Optimization',
-        description: 'With income in multiple states, ensure you\'re optimizing state tax strategies.',
+        description:
+          "With income in multiple states, ensure you're optimizing state tax strategies.",
         impact: 'medium',
-        suggestion: 'Review multi-state tax planning'
+        suggestion: 'Review multi-state tax planning',
       });
     }
 
     // Estimated tax payment checks
-    if (calculations?.estimatedTaxDue > 1000 && !taxData.madeEstimatedPayments) {
+    if (
+      calculations?.estimatedTaxDue &&
+      calculations.estimatedTaxDue > 1000 &&
+      !taxData.madeEstimatedPayments
+    ) {
       checks.push({
         id: 'estimated-tax-penalty',
         category: 'warning',
         title: 'Potential Estimated Tax Penalty',
         description: 'You may owe penalties for not making estimated tax payments.',
         impact: 'medium',
-        suggestion: 'Consider making estimated payments for next year'
+        suggestion: 'Consider making estimated payments for next year',
       });
     }
 
@@ -181,29 +247,36 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
       savings,
       breakdown: [
         { category: 'Mortgage Interest', amount: taxData.deductions?.mortgageInterestAmount || 0 },
-        { category: 'State & Local Taxes', amount: Math.min(taxData.deductions?.saltAmount || 0, 10000), limit: 10000 },
+        {
+          category: 'State & Local Taxes',
+          amount: Math.min(taxData.deductions?.saltAmount || 0, 10000),
+          limit: 10000,
+        },
         { category: 'Charitable Contributions', amount: taxData.deductions?.charitableAmount || 0 },
-        { category: 'Medical Expenses', amount: taxData.deductions?.medicalExpenses || 0 }
-      ]
+        { category: 'Medical Expenses', amount: taxData.deductions?.medicalExpenses || 0 },
+      ],
     };
   }, [taxData]);
 
   // Generate tax scenarios
   const taxScenarios = useMemo((): TaxScenario[] => {
-    const baseScenario = {
+    const baseScenario: TaxScenario = {
       id: 'current',
       name: 'Current Situation',
       description: 'Your tax situation as currently entered',
       taxOwed: calculations?.totalTax || 0,
       refund: calculations?.refund || 0,
-      changes: []
+      changes: [],
     };
 
-    const scenarios = [baseScenario];
+    const scenarios: TaxScenario[] = [baseScenario];
 
     // Scenario: Maximize retirement contributions
-    if (taxData.incomeSourcesEach?.length > 0) {
-      const currentIncome = taxData.incomeSourcesEach.reduce((sum: number, income: any) => sum + (income.amount || 0), 0);
+    if (taxData.incomeSourcesEach && taxData.incomeSourcesEach.length > 0) {
+      const currentIncome = (taxData.incomeSourcesEach as IncomeSource[]).reduce(
+        (sum: number, income: IncomeSource) => sum + (income.amount || 0),
+        0
+      );
       const maxRetirementContrib = Math.min(23000, currentIncome * 0.1); // 2025 401k limit
       const taxSavings = maxRetirementContrib * 0.22; // Approximate marginal rate
 
@@ -213,13 +286,17 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         description: 'Contribute maximum to 401(k) and IRA',
         taxOwed: Math.max(0, (calculations?.totalTax || 0) - taxSavings),
         refund: (calculations?.refund || 0) + taxSavings,
-        changes: [`Contribute $${maxRetirementContrib.toLocaleString()} to retirement accounts`]
+        changes: [`Contribute $${maxRetirementContrib.toLocaleString()} to retirement accounts`],
       });
     }
 
     // Scenario: Itemize deductions
-    if (deductionComparison.recommended === 'itemized' && taxData.deductions?.useStandardDeduction) {
-      const additionalDeduction = deductionComparison.itemizedDeduction - deductionComparison.standardDeduction;
+    if (
+      deductionComparison.recommended === 'itemized' &&
+      taxData.deductions?.useStandardDeduction
+    ) {
+      const additionalDeduction =
+        deductionComparison.itemizedDeduction - deductionComparison.standardDeduction;
       const taxSavings = additionalDeduction * 0.22;
 
       scenarios.push({
@@ -228,15 +305,45 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         description: 'Use itemized deductions instead of standard',
         taxOwed: Math.max(0, (calculations?.totalTax || 0) - taxSavings),
         refund: (calculations?.refund || 0) + taxSavings,
-        changes: ['Switch to itemized deductions', `Additional deduction: $${additionalDeduction.toLocaleString()}`]
+        changes: [
+          'Switch to itemized deductions',
+          `Additional deduction: $${additionalDeduction.toLocaleString()}`,
+        ],
       });
     }
 
     return scenarios;
   }, [taxData, calculations, deductionComparison]);
 
-  const toggleExpanded = (checkId: string) => {
-    setExpandedChecks(prev => {
+  // Categorize checks in a single pass for better performance
+  const categorizedChecks = useMemo((): CategorizedChecks => {
+    const result: CategorizedChecks = {
+      error: [],
+      warning: [],
+      suggestion: [],
+      info: [],
+    };
+
+    for (const check of accuracyChecks) {
+      const category = check.category as keyof CategorizedChecks;
+      if (result[category]) {
+        result[category].push(check);
+      }
+    }
+
+    return result;
+  }, [accuracyChecks]);
+
+  // Calculate potential savings from suggestions
+  const totalPotentialSavings = useMemo(() => {
+    return categorizedChecks.suggestion.reduce(
+      (sum, check) => sum + (check.potentialSavings || 0),
+      0
+    );
+  }, [categorizedChecks.suggestion]);
+
+  const toggleExpanded = useCallback((checkId: string) => {
+    setExpandedChecks((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(checkId)) {
         newSet.delete(checkId);
@@ -245,25 +352,35 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
       }
       return newSet;
     });
-  };
+  }, []);
 
   const getCheckIcon = (category: string) => {
     switch (category) {
-      case 'error': return AlertTriangle;
-      case 'warning': return AlertTriangle;
-      case 'suggestion': return TrendingUp;
-      case 'info': return Info;
-      default: return CheckCircle;
+      case 'error':
+        return AlertTriangle;
+      case 'warning':
+        return AlertTriangle;
+      case 'suggestion':
+        return TrendingUp;
+      case 'info':
+        return Info;
+      default:
+        return CheckCircle;
     }
   };
 
   const getCheckColor = (category: string) => {
     switch (category) {
-      case 'error': return 'red';
-      case 'warning': return 'amber';
-      case 'suggestion': return 'green';
-      case 'info': return 'blue';
-      default: return 'gray';
+      case 'error':
+        return 'red';
+      case 'warning':
+        return 'amber';
+      case 'suggestion':
+        return 'green';
+      case 'info':
+        return 'blue';
+      default:
+        return 'gray';
     }
   };
 
@@ -278,7 +395,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         bgDark: 'bg-red-100',
         button: 'bg-red-600',
         buttonHover: 'hover:bg-red-700',
-        hover: 'hover:text-red-800'
+        hover: 'hover:text-red-800',
       },
       amber: {
         border: 'border-amber-400',
@@ -289,7 +406,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         bgDark: 'bg-amber-100',
         button: 'bg-amber-600',
         buttonHover: 'hover:bg-amber-700',
-        hover: 'hover:text-amber-800'
+        hover: 'hover:text-amber-800',
       },
       green: {
         border: 'border-green-400',
@@ -300,7 +417,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         bgDark: 'bg-green-100',
         button: 'bg-green-600',
         buttonHover: 'hover:bg-green-700',
-        hover: 'hover:text-green-800'
+        hover: 'hover:text-green-800',
       },
       blue: {
         border: 'border-blue-400',
@@ -311,7 +428,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         bgDark: 'bg-blue-100',
         button: 'bg-blue-600',
         buttonHover: 'hover:bg-blue-700',
-        hover: 'hover:text-blue-800'
+        hover: 'hover:text-blue-800',
       },
       gray: {
         border: 'border-gray-400',
@@ -322,17 +439,18 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         bgDark: 'bg-gray-100',
         button: 'bg-gray-600',
         buttonHover: 'hover:bg-gray-700',
-        hover: 'hover:text-gray-800'
-      }
+        hover: 'hover:text-gray-800',
+      },
     };
     return colorMap[color as keyof typeof colorMap] || colorMap.gray;
   };
 
   const renderAccuracyChecks = () => {
-    const errorChecks = accuracyChecks.filter(check => check.category === 'error');
-    const warningChecks = accuracyChecks.filter(check => check.category === 'warning');
-    const suggestionChecks = accuracyChecks.filter(check => check.category === 'suggestion');
-    const infoChecks = accuracyChecks.filter(check => check.category === 'info');
+    const {
+      error: errorChecks,
+      warning: warningChecks,
+      suggestion: suggestionChecks,
+    } = categorizedChecks;
 
     return (
       <div className="space-y-6">
@@ -357,7 +475,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                ${Math.round(suggestionChecks.reduce((sum, check) => sum + (check.potentialSavings || 0), 0)).toLocaleString()}
+                ${Math.round(totalPotentialSavings).toLocaleString()}
               </div>
               <div className="text-sm text-gray-600">Potential Savings</div>
             </div>
@@ -371,9 +489,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
               <AlertTriangle className="w-5 h-5" />
               Errors Requiring Attention
             </h4>
-            <div className="space-y-3">
-              {errorChecks.map(check => renderCheck(check))}
-            </div>
+            <div className="space-y-3">{errorChecks.map((check) => renderCheck(check))}</div>
           </div>
         )}
 
@@ -384,9 +500,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
               <AlertTriangle className="w-5 h-5" />
               Warnings
             </h4>
-            <div className="space-y-3">
-              {warningChecks.map(check => renderCheck(check))}
-            </div>
+            <div className="space-y-3">{warningChecks.map((check) => renderCheck(check))}</div>
           </div>
         )}
 
@@ -397,9 +511,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
               <TrendingUp className="w-5 h-5" />
               Optimization Suggestions
             </h4>
-            <div className="space-y-3">
-              {suggestionChecks.map(check => renderCheck(check))}
-            </div>
+            <div className="space-y-3">{suggestionChecks.map((check) => renderCheck(check))}</div>
           </div>
         )}
 
@@ -422,7 +534,10 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
     const isExpanded = expandedChecks.has(check.id);
 
     return (
-      <div key={check.id} className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} rounded-r-lg`}>
+      <div
+        key={check.id}
+        className={`border-l-4 ${colorClasses.border} ${colorClasses.bg} rounded-r-lg`}
+      >
         <div className="p-4">
           <div className="flex items-start gap-3">
             <IconComponent className={`w-5 h-5 ${colorClasses.text} mt-0.5 flex-shrink-0`} />
@@ -454,7 +569,9 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
                 <div className="mt-4 space-y-3">
                   {check.suggestion && (
                     <div className={`${colorClasses.bgDark} rounded p-3`}>
-                      <h6 className={`font-medium ${colorClasses.textDark} mb-1`}>Suggested Action:</h6>
+                      <h6 className={`font-medium ${colorClasses.textDark} mb-1`}>
+                        Suggested Action:
+                      </h6>
                       <p className={`text-sm ${colorClasses.textLight}`}>{check.suggestion}</p>
                     </div>
                   )}
@@ -462,7 +579,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
                   <div className="flex gap-2">
                     {check.actionRequired && check.fieldPath && (
                       <button
-                        onClick={() => onFixIssue(check.id, check.fieldPath)}
+                        onClick={() => onFixIssue(check.id, check.fieldPath!)}
                         className={`px-3 py-1 ${colorClasses.button} text-white rounded text-sm ${colorClasses.buttonHover}`}
                       >
                         Fix Issue
@@ -495,7 +612,9 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`p-4 rounded-lg border-2 ${deductionComparison.recommended === 'standard' ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}>
+          <div
+            className={`p-4 rounded-lg border-2 ${deductionComparison.recommended === 'standard' ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}
+          >
             <h4 className="font-medium text-gray-900 mb-2">Standard Deduction</h4>
             <div className="text-2xl font-bold text-green-600 mb-2">
               ${deductionComparison.standardDeduction.toLocaleString()}
@@ -507,7 +626,9 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
             )}
           </div>
 
-          <div className={`p-4 rounded-lg border-2 ${deductionComparison.recommended === 'itemized' ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}>
+          <div
+            className={`p-4 rounded-lg border-2 ${deductionComparison.recommended === 'itemized' ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}
+          >
             <h4 className="font-medium text-gray-900 mb-2">Itemized Deductions</h4>
             <div className="text-2xl font-bold text-blue-600 mb-2">
               ${deductionComparison.itemizedDeduction.toLocaleString()}
@@ -523,7 +644,8 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
         {deductionComparison.recommended === 'itemized' && (
           <div className="mt-4 p-3 bg-green-100 rounded-lg">
             <div className="text-sm text-green-800">
-              <strong>Potential Additional Tax Savings:</strong> ${Math.round(deductionComparison.savings * 0.22).toLocaleString()}
+              <strong>Potential Additional Tax Savings:</strong> $
+              {Math.round(deductionComparison.savings * 0.22).toLocaleString()}
             </div>
           </div>
         )}
@@ -539,7 +661,9 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
               <div className="text-right">
                 <span className="font-medium">${item.amount.toLocaleString()}</span>
                 {item.limit && item.amount >= item.limit && (
-                  <div className="text-xs text-amber-600">Limited to ${item.limit.toLocaleString()}</div>
+                  <div className="text-xs text-amber-600">
+                    Limited to ${item.limit.toLocaleString()}
+                  </div>
                 )}
               </div>
             </div>
@@ -689,7 +813,7 @@ export const TaxReviewAccuracy: React.FC<TaxReviewAccuracyProps> = ({
             { id: 'accuracy', label: 'Accuracy Check', icon: Shield },
             { id: 'comparison', label: 'Deduction Analysis', icon: Calculator },
             { id: 'scenarios', label: 'Tax Scenarios', icon: Target },
-            { id: 'audit', label: 'Audit Risk', icon: Eye }
+            { id: 'audit', label: 'Audit Risk', icon: Eye },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -727,17 +851,17 @@ const getStandardDeduction = (filingStatus?: string): number => {
     marriedJointly: 31500,
     marriedSeparately: 15750,
     headOfHousehold: 23350,
-    qualifyingSurvivingSpouse: 31500
+    qualifyingSurvivingSpouse: 31500,
   };
   return deductions[filingStatus as keyof typeof deductions] || 15750;
 };
 
-const calculateItemizedTotal = (deductions: any): number => {
+const calculateItemizedTotal = (deductions: DeductionsData | undefined | null): number => {
   if (!deductions) return 0;
 
   return (
     (deductions.mortgageInterestAmount || 0) +
-    (Math.min(deductions.saltAmount || 0, 10000)) +
+    Math.min(deductions.saltAmount || 0, 10000) +
     (deductions.charitableAmount || 0) +
     (deductions.medicalExpenses || 0)
   );
@@ -752,5 +876,8 @@ const calculateAge = (birthDate: string): number => {
   const today = new Date();
   return today.getFullYear() - birth.getFullYear();
 };
+
+// Memoize to prevent unnecessary re-renders
+export const TaxReviewAccuracy = React.memo(TaxReviewAccuracyComponent);
 
 export default TaxReviewAccuracy;

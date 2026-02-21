@@ -3,11 +3,11 @@ import type { PersonalInfo, TaxResult } from '../types/CommonTypes';
 
 interface ExportData {
   personalInfo: PersonalInfo;
-  incomeData: Record<string, string | number>;
-  k1Data: Record<string, string | number>;
-  businessDetails: Record<string, string | number>;
-  paymentsData: Record<string, string | number>;
-  deductions: Record<string, string | number | boolean>;
+  incomeData: Record<string, string | number | undefined>;
+  k1Data: Record<string, string | number | undefined>;
+  businessDetails: Record<string, string | number | undefined>;
+  paymentsData: Record<string, string | number | undefined>;
+  deductions: Record<string, string | number | boolean | undefined>;
   taxResult: TaxResult;
   timestamp: string;
 }
@@ -16,10 +16,7 @@ interface TranslationFunction {
   (key: string): string;
 }
 
-export const exportToPDF = (
-  taxResult: TaxResult,
-  t: TranslationFunction
-): void => {
+export const exportToPDF = (taxResult: TaxResult, t: TranslationFunction): void => {
   const printContent = document.createElement('div');
   printContent.innerHTML = `
     <h1>${t('title')}</h1>
@@ -41,11 +38,11 @@ export const exportToPDF = (
 
 export const exportToJSON = (
   personalInfo: PersonalInfo,
-  incomeData: Record<string, string | number>,
-  k1Data: Record<string, string | number>,
-  businessDetails: Record<string, string | number>,
-  paymentsData: Record<string, string | number>,
-  deductions: Record<string, string | number | boolean>,
+  incomeData: Record<string, string | number | undefined>,
+  k1Data: Record<string, string | number | undefined>,
+  businessDetails: Record<string, string | number | undefined>,
+  paymentsData: Record<string, string | number | undefined>,
+  deductions: Record<string, string | number | boolean | undefined>,
   taxResult: TaxResult
 ): void => {
   const data: ExportData = {
@@ -56,7 +53,7 @@ export const exportToJSON = (
     paymentsData,
     deductions,
     taxResult,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

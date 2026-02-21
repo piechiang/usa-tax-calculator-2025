@@ -1,15 +1,7 @@
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
-import {
-  VA_RULES_2025,
-  calculateVirginiaTax,
-} from '../../../rules/2025/states/va';
+import { VA_RULES_2025, calculateVirginiaTax } from '../../../rules/2025/states/va';
 import type { VAStateSpecific } from '../../../rules/2025/states/va';
-import {
-  addCents,
-  max0,
-  multiplyCents,
-  subtractCents,
-} from '../../../util/money';
+import { addCents, max0, multiplyCents, subtractCents } from '../../../util/money';
 
 /**
  * Compute Virginia state tax for 2025
@@ -42,9 +34,7 @@ export function computeVA2025(input: StateTaxInput): StateResult {
   const canUseStandardDeduction = !vaSpecific?.itemizedOnFederal;
 
   // Step 3: Calculate standard deduction (if applicable)
-  const standardDeduction = canUseStandardDeduction
-    ? getStandardDeduction(filingStatus)
-    : 0;
+  const standardDeduction = canUseStandardDeduction ? getStandardDeduction(filingStatus) : 0;
 
   // Step 4: Calculate personal and dependent exemptions
   const personalExemptions = calculatePersonalExemptions(input);
@@ -53,11 +43,7 @@ export function computeVA2025(input: StateTaxInput): StateResult {
   const ageDeductionAmount = calculateAgeDeduction(input);
 
   // Step 6: Calculate total deductions and exemptions
-  const totalDeductions = addCents(
-    standardDeduction,
-    personalExemptions,
-    ageDeductionAmount
-  );
+  const totalDeductions = addCents(standardDeduction, personalExemptions, ageDeductionAmount);
 
   // Step 7: Calculate Virginia taxable income
   const vaTaxableIncome = max0(subtractCents(vaAGI, totalDeductions));
@@ -75,22 +61,22 @@ export function computeVA2025(input: StateTaxInput): StateResult {
   const finalTax = vaTax;
 
   // Step 11: Calculate refund or amount owed
-  const totalPayments = addCents(
-    vaSpecific?.stateWithheld ?? 0,
-    vaSpecific?.stateEstPayments ?? 0
-  );
+  const totalPayments = addCents(vaSpecific?.stateWithheld ?? 0, vaSpecific?.stateEstPayments ?? 0);
   const refundOrOwe = totalPayments - finalTax;
 
   return {
     state: 'VA',
-    year: 2025,
-    agiState: vaAGI,
-    taxableIncomeState: vaTaxableIncome,
+    taxYear: 2025,
+    stateAGI: vaAGI,
+    stateTaxableIncome: vaTaxableIncome,
     stateTax: finalTax,
+    localTax: 0,
     totalStateLiability: finalTax,
-    stateWithheld: vaSpecific?.stateWithheld,
+    stateDeduction: totalDeductions,
+    stateWithheld: vaSpecific?.stateWithheld ?? 0,
+    stateEstPayments: vaSpecific?.stateEstPayments ?? 0,
     stateRefundOrOwe: refundOrOwe,
-    credits,
+    stateCredits: credits,
   };
 }
 
@@ -176,8 +162,7 @@ function calculateAgeDeduction(input: StateTaxInput): number {
 
   // Taxpayer qualifies if age 65+ or blind
   if (
-    (taxpayerAge !== undefined &&
-      taxpayerAge >= VA_RULES_2025.minimumAgeForExemption) ||
+    (taxpayerAge !== undefined && taxpayerAge >= VA_RULES_2025.minimumAgeForExemption) ||
     taxpayerBlind
   ) {
     ageExemptionCount += 1;
@@ -186,16 +171,12 @@ function calculateAgeDeduction(input: StateTaxInput): number {
   // Spouse qualifies if age 65+ or blind (MFJ only)
   if (
     filingStatus === 'marriedJointly' &&
-    ((spouseAge !== undefined && spouseAge >= VA_RULES_2025.minimumAgeForExemption) ||
-      spouseBlind)
+    ((spouseAge !== undefined && spouseAge >= VA_RULES_2025.minimumAgeForExemption) || spouseBlind)
   ) {
     ageExemptionCount += 1;
   }
 
-  const ageExemptionAmount = multiplyCents(
-    VA_RULES_2025.ageExemption,
-    ageExemptionCount
-  );
+  const ageExemptionAmount = multiplyCents(VA_RULES_2025.ageExemption, ageExemptionCount);
 
   // Calculate alternative age deduction amount ($12,000)
   let alternativeDeductionAmount = 0;

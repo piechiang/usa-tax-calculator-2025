@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Upload, Database, Clock, Shield, AlertTriangle, Trash2 } from 'lucide-react';
+import {
+  Save,
+  Download,
+  Upload,
+  Database,
+  Clock,
+  Shield,
+  AlertTriangle,
+  Trash2,
+} from 'lucide-react';
 
 import type { TaxContextValue } from '../../contexts/TaxContext';
 import { toast } from '../../utils/toast';
+import { logger } from '../../utils/logger';
 
 interface BackupFormData {
   personalInfo: TaxContextValue['personalInfo'];
@@ -46,7 +56,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
   formData,
   taxResult,
   onDataRestore,
-  t
+  t,
 }) => {
   const translate = (key: string, fallback: string): string => {
     const value = t(key);
@@ -64,11 +74,14 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
 
     // Auto-save every 5 minutes if enabled
     if (autoSaveEnabled) {
-      const interval = setInterval(() => {
-        if (hasSignificantData(formData)) {
-          createAutoBackup();
-        }
-      }, 5 * 60 * 1000); // 5 minutes
+      const interval = setInterval(
+        () => {
+          if (hasSignificantData(formData)) {
+            createAutoBackup();
+          }
+        },
+        5 * 60 * 1000
+      ); // 5 minutes
 
       return () => clearInterval(interval);
     }
@@ -89,7 +102,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(16);
@@ -101,7 +114,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
       formData,
       taxResult,
       timestamp: timestamp.toISOString(),
-      version: '2025.1.0'
+      version: '2025.1.0',
     };
 
     const dataString = JSON.stringify(backupData);
@@ -110,12 +123,13 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
 
     const backup: BackupRecord = {
       id: `backup_${timestamp.getTime()}`,
-      name: name || `Tax Return ${timestamp.toLocaleDateString()} ${timestamp.toLocaleTimeString()}`,
+      name:
+        name || `Tax Return ${timestamp.toLocaleDateString()} ${timestamp.toLocaleTimeString()}`,
       timestamp,
       size,
       data: backupData,
       version: '2025.1.0',
-      checksum
+      checksum,
     };
 
     const updatedBackups = [backup, ...backups].slice(0, 10); // Keep max 10 backups
@@ -146,13 +160,20 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
       // Verify checksum
       const currentChecksum = generateChecksum(backup.data);
       if (currentChecksum !== backup.checksum) {
-        toast.error(translate('backup.manager.alert.checksumMismatch', 'Backup data may be corrupted. Checksum mismatch.'));
+        toast.error(
+          translate(
+            'backup.manager.alert.checksumMismatch',
+            'Backup data may be corrupted. Checksum mismatch.'
+          )
+        );
         return;
       }
 
       onDataRestore(backup.data);
       setShowRestoreConfirm(null);
-      toast.success(translate('backup.manager.alert.restoreSuccess', 'Data restored successfully!'));
+      toast.success(
+        translate('backup.manager.alert.restoreSuccess', 'Data restored successfully!')
+      );
     } catch (error) {
       toast.error(
         `${translate('backup.manager.alert.restoreError', 'Error restoring backup:')} ${(error as Error).message}`
@@ -162,7 +183,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
 
   const deleteBackup = (backupId: string) => {
     if (confirm('Are you sure you want to delete this backup?')) {
-      const updatedBackups = backups.filter(b => b.id !== backupId);
+      const updatedBackups = backups.filter((b) => b.id !== backupId);
       setBackups(updatedBackups);
       saveBackupsToStorage(updatedBackups);
     }
@@ -183,7 +204,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = (e) => {
       try {
         const importedData = JSON.parse(e.target?.result as string) as Partial<BackupPayload>;
 
@@ -197,7 +218,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
           formData: importedData.formData,
           taxResult: importedData.taxResult,
           version: importedData.version || 'unknown',
-          timestamp: importedData.timestamp
+          timestamp: importedData.timestamp,
         };
 
         const backup: BackupRecord = {
@@ -207,14 +228,16 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
           size: `${Math.round(file.size / 1024)}KB`,
           data: payload,
           version: payload.version,
-          checksum: generateChecksum(payload)
+          checksum: generateChecksum(payload),
         };
 
         const updatedBackups = [backup, ...backups].slice(0, 10);
         setBackups(updatedBackups);
         saveBackupsToStorage(updatedBackups);
 
-        toast.success(translate('backup.manager.alert.importSuccess', 'Backup imported successfully!'));
+        toast.success(
+          translate('backup.manager.alert.importSuccess', 'Backup imported successfully!')
+        );
       } catch (error) {
         toast.error(
           `${translate('backup.manager.alert.importError', 'Error importing backup:')} ${(error as Error).message}`
@@ -228,7 +251,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
     try {
       localStorage.setItem('tax_calculator_backups', JSON.stringify(backupsData));
     } catch (error) {
-      console.error('Error saving backups to storage:', error);
+      logger.error('Error saving backups to storage', error instanceof Error ? error : undefined);
     }
   };
 
@@ -237,14 +260,17 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
       const saved = localStorage.getItem('tax_calculator_backups');
       if (saved) {
         const parsedBackups: PersistedBackup[] = JSON.parse(saved);
-        const normalizedBackups: BackupRecord[] = parsedBackups.map(backup => ({
+        const normalizedBackups: BackupRecord[] = parsedBackups.map((backup) => ({
           ...backup,
-          timestamp: new Date(backup.timestamp)
+          timestamp: new Date(backup.timestamp),
         }));
         setBackups(normalizedBackups);
       }
     } catch (error) {
-      console.error('Error loading backups from storage:', error);
+      logger.error(
+        'Error loading backups from storage',
+        error instanceof Error ? error : undefined
+      );
     }
   };
 
@@ -280,8 +306,12 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
               onChange={(e) => setAutoSaveEnabled(e.target.checked)}
               className="sr-only"
             />
-            <div className={`w-11 h-6 rounded-full ${autoSaveEnabled ? 'bg-blue-600' : 'bg-gray-300'}`}>
-              <div className={`dot absolute w-4 h-4 rounded-full bg-white transition ${autoSaveEnabled ? 'transform translate-x-6' : ''}`}></div>
+            <div
+              className={`w-11 h-6 rounded-full ${autoSaveEnabled ? 'bg-blue-600' : 'bg-gray-300'}`}
+            >
+              <div
+                className={`dot absolute w-4 h-4 rounded-full bg-white transition ${autoSaveEnabled ? 'transform translate-x-6' : ''}`}
+              ></div>
             </div>
           </label>
         </div>
@@ -324,12 +354,7 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
         <label className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer">
           <Upload className="h-4 w-4" />
           Import Backup
-          <input
-            type="file"
-            accept=".json"
-            onChange={importBackup}
-            className="hidden"
-          />
+          <input type="file" accept=".json" onChange={importBackup} className="hidden" />
         </label>
         <button
           onClick={clearAllBackups}
@@ -407,8 +432,8 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
                       <span className="font-medium text-yellow-800">Confirm Restore</span>
                     </div>
                     <p className="text-sm text-yellow-700 mb-3">
-                      This will replace all current data with the backup from {backup.timestamp.toLocaleString()}.
-                      Any unsaved changes will be lost.
+                      This will replace all current data with the backup from{' '}
+                      {backup.timestamp.toLocaleString()}. Any unsaved changes will be lost.
                     </p>
                     <div className="flex gap-2">
                       <button
@@ -441,10 +466,27 @@ export const DataBackupManager: React.FC<DataBackupManagerProps> = ({
           </span>
         </div>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>{translate('backup.manager.security.tip1', 'All data is stored locally in your browser')}</li>
-          <li>{translate('backup.manager.security.tip2', 'Backups include checksums for data integrity verification')}</li>
-          <li>{translate('backup.manager.security.tip3', 'No personal information is sent to external servers')}</li>
-          <li>{translate('backup.manager.security.tip4', 'Export backups for additional security')}</li>
+          <li>
+            {translate(
+              'backup.manager.security.tip1',
+              'All data is stored locally in your browser'
+            )}
+          </li>
+          <li>
+            {translate(
+              'backup.manager.security.tip2',
+              'Backups include checksums for data integrity verification'
+            )}
+          </li>
+          <li>
+            {translate(
+              'backup.manager.security.tip3',
+              'No personal information is sent to external servers'
+            )}
+          </li>
+          <li>
+            {translate('backup.manager.security.tip4', 'Export backups for additional security')}
+          </li>
         </ul>
       </div>
     </div>

@@ -14,6 +14,30 @@ interface TaxFormData {
   businessExpenses?: number | string;
   federalWithholding?: number | string;
   capitalGains?: number | string;
+  personalInfo?: {
+    ssn?: string;
+    filingStatus?: string;
+    [key: string]: unknown;
+  };
+  spouseInfo?: {
+    ssn?: string;
+    [key: string]: unknown;
+  };
+  incomeData?: {
+    wages?: string | number;
+    businessIncome?: string | number;
+    capitalGains?: string | number;
+    [key: string]: unknown;
+  };
+  businessDetails?: {
+    grossReceipts?: string | number;
+    businessExpenses?: string | number;
+    [key: string]: unknown;
+  };
+  paymentsData?: {
+    federalWithholding?: string | number;
+    [key: string]: unknown;
+  };
   deductions?: {
     mortgageInterest?: number | string;
     stateLocalTaxes?: number | string;
@@ -52,7 +76,7 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     condition: (data) => {
       const ssn = data.personalInfo?.ssn;
       return !ssn || !/^\d{3}-\d{2}-\d{4}$/.test(ssn);
-    }
+    },
   },
   {
     field: 'spouseInfo.ssn',
@@ -60,9 +84,9 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     message: 'Spouse SSN must be in format XXX-XX-XXXX',
     condition: (data) => {
       const ssn = data.spouseInfo?.ssn;
-      const isMarried = data.personalInfo?.filingStatus?.includes('married');
-      return isMarried && ssn && !/^\d{3}-\d{2}-\d{4}$/.test(ssn);
-    }
+      const isMarried = data.personalInfo?.filingStatus?.includes('married') ?? false;
+      return Boolean(isMarried && ssn && !/^\d{3}-\d{2}-\d{4}$/.test(ssn));
+    },
   },
 
   // Income Validation
@@ -70,15 +94,15 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     field: 'incomeData.wages',
     type: 'warning',
     message: 'Wages seem unusually high',
-    condition: (data) => parseFloat(data.incomeData?.wages || '0') > 500000,
-    suggestion: 'Verify W-2 forms for accuracy'
+    condition: (data) => parseFloat(String(data.incomeData?.wages ?? '0')) > 500000,
+    suggestion: 'Verify W-2 forms for accuracy',
   },
   {
     field: 'incomeData.wages',
     type: 'info',
     message: 'Consider contributing to retirement accounts',
-    condition: (data) => parseFloat(data.incomeData?.wages || '0') > 50000,
-    suggestion: '401(k) and IRA contributions can reduce taxable income'
+    condition: (data) => parseFloat(String(data.incomeData?.wages ?? '0')) > 50000,
+    suggestion: '401(k) and IRA contributions can reduce taxable income',
   },
 
   // Deduction Validation
@@ -86,26 +110,26 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     field: 'deductions.mortgageInterest',
     type: 'warning',
     message: 'Mortgage interest exceeds typical limits',
-    condition: (data) => parseFloat(String(data.deductions?.mortgageInterest || '0')) > 100000,
-    suggestion: 'Mortgage interest is limited for loans over $750,000'
+    condition: (data) => parseFloat(String(data.deductions?.mortgageInterest ?? '0')) > 100000,
+    suggestion: 'Mortgage interest is limited for loans over $750,000',
   },
   {
     field: 'deductions.stateLocalTaxes',
     type: 'warning',
     message: 'SALT deduction limited to $10,000',
-    condition: (data) => parseFloat(String(data.deductions?.stateLocalTaxes || '0')) > 10000,
-    suggestion: 'State and local tax deduction is capped at $10,000'
+    condition: (data) => parseFloat(String(data.deductions?.stateLocalTaxes ?? '0')) > 10000,
+    suggestion: 'State and local tax deduction is capped at $10,000',
   },
   {
     field: 'deductions.charitableContributions',
     type: 'info',
     message: 'Large charitable contributions may require documentation',
     condition: (data) => {
-      const contributions = parseFloat(String(data.deductions?.charitableContributions || '0'));
-      const agi = data.taxResult?.adjustedGrossIncome || 0;
+      const contributions = parseFloat(String(data.deductions?.charitableContributions ?? '0'));
+      const agi = data.taxResult?.adjustedGrossIncome ?? 0;
       return contributions > agi * 0.6;
     },
-    suggestion: 'Keep receipts and acknowledgments for charitable gifts'
+    suggestion: 'Keep receipts and acknowledgments for charitable gifts',
   },
 
   // Business Income Validation
@@ -113,19 +137,19 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     field: 'incomeData.businessIncome',
     type: 'info',
     message: 'Business income may require Schedule C',
-    condition: (data) => parseFloat(data.incomeData?.businessIncome || '0') > 0,
-    suggestion: 'File Schedule C for business profit or loss'
+    condition: (data) => parseFloat(String(data.incomeData?.businessIncome ?? '0')) > 0,
+    suggestion: 'File Schedule C for business profit or loss',
   },
   {
     field: 'businessDetails.grossReceipts',
     type: 'warning',
     message: 'Business expenses exceed receipts',
     condition: (data) => {
-      const receipts = parseFloat(data.businessDetails?.grossReceipts || '0');
-      const expenses = parseFloat(data.businessDetails?.businessExpenses || '0');
+      const receipts = parseFloat(String(data.businessDetails?.grossReceipts ?? '0'));
+      const expenses = parseFloat(String(data.businessDetails?.businessExpenses ?? '0'));
       return expenses > receipts && receipts > 0;
     },
-    suggestion: 'Review business expense calculations'
+    suggestion: 'Review business expense calculations',
   },
 
   // Payment Validation
@@ -134,11 +158,11 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     type: 'warning',
     message: 'Federal withholding seems low for income level',
     condition: (data) => {
-      const withholding = parseFloat(data.paymentsData?.federalWithholding || '0');
-      const wages = parseFloat(data.incomeData?.wages || '0');
+      const withholding = parseFloat(String(data.paymentsData?.federalWithholding ?? '0'));
+      const wages = parseFloat(String(data.incomeData?.wages ?? '0'));
       return wages > 50000 && withholding < wages * 0.1;
     },
-    suggestion: 'You may owe taxes if withholding is insufficient'
+    suggestion: 'You may owe taxes if withholding is insufficient',
   },
 
   // Capital Gains Validation
@@ -146,8 +170,8 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     field: 'incomeData.capitalGains',
     type: 'info',
     message: 'Capital gains may qualify for preferential rates',
-    condition: (data) => parseFloat(data.incomeData?.capitalGains || '0') > 1000,
-    suggestion: 'Long-term capital gains have lower tax rates'
+    condition: (data) => parseFloat(String(data.incomeData?.capitalGains ?? '0')) > 1000,
+    suggestion: 'Long-term capital gains have lower tax rates',
   },
 
   // Filing Status Validation
@@ -156,7 +180,7 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     type: 'info',
     message: 'Consider comparing filing jointly vs separately',
     condition: (data) => data.personalInfo?.filingStatus === 'marriedJointly',
-    suggestion: 'Sometimes filing separately results in lower taxes'
+    suggestion: 'Sometimes filing separately results in lower taxes',
   },
 
   // Estimated Tax Validation
@@ -164,9 +188,9 @@ export const TAX_VALIDATION_RULES: ValidationRule[] = [
     field: 'taxResult.balance',
     type: 'warning',
     message: 'Large balance due may result in penalties',
-    condition: (data) => data.taxResult?.balance > 1000,
-    suggestion: 'Consider making estimated tax payments for next year'
-  }
+    condition: (data) => (data.taxResult?.balance ?? 0) > 1000,
+    suggestion: 'Consider making estimated tax payments for next year',
+  },
 ];
 
 interface TaxValidatorProps {
@@ -180,7 +204,7 @@ export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
     const warnings: ValidationRule[] = [];
     const info: ValidationRule[] = [];
 
-    TAX_VALIDATION_RULES.forEach(rule => {
+    TAX_VALIDATION_RULES.forEach((rule) => {
       if (rule.condition(data)) {
         switch (rule.type) {
           case 'error':
@@ -200,7 +224,7 @@ export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
       isValid: errors.length === 0,
       errors,
       warnings,
-      info
+      info,
     };
   };
 
@@ -210,13 +234,13 @@ export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
     const icons = {
       error: <AlertCircle className="w-4 h-4 text-red-500" />,
       warning: <AlertTriangle className="w-4 h-4 text-yellow-500" />,
-      info: <Info className="w-4 h-4 text-blue-500" />
+      info: <Info className="w-4 h-4 text-blue-500" />,
     };
 
     const colors = {
       error: 'border-red-200 bg-red-50',
       warning: 'border-yellow-200 bg-yellow-50',
-      info: 'border-blue-200 bg-blue-50'
+      info: 'border-blue-200 bg-blue-50',
     };
 
     return (
@@ -225,16 +249,18 @@ export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
           {icons[item.type]}
           <div className="flex-1">
             <div className="font-medium text-gray-900">{item.message}</div>
-            {item.suggestion && (
-              <div className="text-sm text-gray-600 mt-1">{item.suggestion}</div>
-            )}
+            {item.suggestion && <div className="text-sm text-gray-600 mt-1">{item.suggestion}</div>}
           </div>
         </div>
       </div>
     );
   };
 
-  if (validation.errors.length === 0 && validation.warnings.length === 0 && validation.info.length === 0) {
+  if (
+    validation.errors.length === 0 &&
+    validation.warnings.length === 0 &&
+    validation.info.length === 0
+  ) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex items-center gap-2 text-green-600">
@@ -260,9 +286,7 @@ export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
               <AlertCircle className="w-4 h-4" />
               {t('validation.errors')} ({validation.errors.length})
             </h4>
-            <div className="space-y-2">
-              {validation.errors.map(renderValidationItem)}
-            </div>
+            <div className="space-y-2">{validation.errors.map(renderValidationItem)}</div>
           </div>
         )}
 
@@ -272,9 +296,7 @@ export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
               <AlertTriangle className="w-4 h-4" />
               {t('validation.warnings')} ({validation.warnings.length})
             </h4>
-            <div className="space-y-2">
-              {validation.warnings.map(renderValidationItem)}
-            </div>
+            <div className="space-y-2">{validation.warnings.map(renderValidationItem)}</div>
           </div>
         )}
 
@@ -284,9 +306,7 @@ export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
               <Info className="w-4 h-4" />
               {t('validation.suggestions')} ({validation.info.length})
             </h4>
-            <div className="space-y-2">
-              {validation.info.map(renderValidationItem)}
-            </div>
+            <div className="space-y-2">{validation.info.map(renderValidationItem)}</div>
           </div>
         )}
       </div>
@@ -296,9 +316,7 @@ export const TaxValidator: React.FC<TaxValidatorProps> = ({ formData, t }) => {
           <Info className="w-4 h-4 text-gray-600" />
           <span className="font-medium text-gray-700">{t('validation.reminder')}</span>
         </div>
-        <p className="text-sm text-gray-600">
-          {t('validation.reminderText')}
-        </p>
+        <p className="text-sm text-gray-600">{t('validation.reminderText')}</p>
       </div>
     </div>
   );

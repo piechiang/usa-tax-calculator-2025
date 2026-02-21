@@ -3,10 +3,10 @@ import { Users, X } from 'lucide-react';
 import type { SpouseInfo } from '../../types/CommonTypes';
 
 interface InputProps {
-  field?: string;
+  field: string;
   label?: string;
   value?: string;
-  defaultValue?: string;
+  defaultValue?: string | number;
   onChange?: (field: string, value: string) => void;
   placeholder?: string;
   type?: string;
@@ -39,14 +39,9 @@ export const SpouseDialog: React.FC<SpouseDialogProps> = ({
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
               <Users className="h-6 w-6 text-blue-600" />
-              <h3 className="text-xl font-semibold text-gray-900">
-                {t('spouseInfo.title')}
-              </h3>
+              <h3 className="text-xl font-semibold text-gray-900">{t('spouseInfo.title')}</h3>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
               <X className="w-4 h-4" />
             </button>
           </div>

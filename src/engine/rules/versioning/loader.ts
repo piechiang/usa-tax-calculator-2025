@@ -4,13 +4,7 @@
  * Loads versioned rules from data files
  */
 
-import type { RuleMetadata, VersionedBracket, VersionedConstant } from './types';
-import {
-  registerRule,
-  registerFederalBrackets,
-  registerConstant,
-  getRegistry,
-} from './registry';
+import { registerFederalBrackets, registerConstant, getRegistry } from './registry';
 
 /**
  * Load 2025 federal rules
@@ -101,7 +95,7 @@ export function load2025FederalRules(): void {
       tags: ['federal', 'brackets', 'single'],
     },
     brackets: [
-      { min: 0, max: 1180000, rate: 0.10 }, // $11,800
+      { min: 0, max: 1180000, rate: 0.1 }, // $11,800
       { min: 1180000, max: 4780000, rate: 0.12 }, // $47,800
       { min: 4780000, max: 10025000, rate: 0.22 }, // $100,250
       { min: 10025000, max: 19175000, rate: 0.24 }, // $191,750
@@ -203,7 +197,7 @@ export function load2024FederalRules(): void {
       tags: ['federal', 'brackets', 'single'],
     },
     brackets: [
-      { min: 0, max: 1160000, rate: 0.10 }, // $11,600
+      { min: 0, max: 1160000, rate: 0.1 }, // $11,600
       { min: 1160000, max: 4725000, rate: 0.12 }, // $47,250
       { min: 4725000, max: 10050000, rate: 0.22 }, // $100,500
       { min: 10050000, max: 19175000, rate: 0.24 }, // $191,750

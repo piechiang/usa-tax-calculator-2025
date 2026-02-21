@@ -23,41 +23,39 @@ export const usePersonalInfoState = () => {
     county: '',
     city: '',
     // Deprecated field for backward compatibility
-    isMaryland: false
+    isMaryland: false,
   });
 
   const [spouseInfo, setSpouseInfo] = useState<SpouseInfo>({
     firstName: '',
     lastName: '',
     ssn: '',
-    wages: "",
-    interestIncome: "",
-    dividends: "",
-    capitalGains: "",
-    businessIncome: "",
-    otherIncome: "",
-    federalWithholding: "",
-    stateWithholding: ""
+    wages: '',
+    interestIncome: '',
+    dividends: '',
+    capitalGains: '',
+    businessIncome: '',
+    otherIncome: '',
+    federalWithholding: '',
+    stateWithholding: '',
   });
 
   // Track the current standard deduction based on filing status
-  const [standardDeduction, setStandardDeduction] = useState<number>(
-    standardDeductions.single
-  );
+  const [standardDeduction, setStandardDeduction] = useState<number>(standardDeductions.single);
 
   // Update standard deduction when filing status changes
   useEffect(() => {
     const newStandardDeduction =
-      standardDeductions[personalInfo.filingStatus as keyof typeof standardDeductions]
-      || standardDeductions.single;
+      standardDeductions[personalInfo.filingStatus as keyof typeof standardDeductions] ||
+      standardDeductions.single;
     setStandardDeduction(newStandardDeduction);
   }, [personalInfo.filingStatus]);
 
   const handlePersonalInfoChange = (
     field: keyof PersonalInfo,
-    value: string | number | boolean
+    value: string | number | boolean | Record<string, unknown>
   ) => {
-    setPersonalInfo(prev => {
+    setPersonalInfo((prev) => {
       const updated = { ...prev, [field]: value };
 
       // Auto-sync isMaryland for backward compatibility
@@ -69,8 +67,8 @@ export const usePersonalInfoState = () => {
     });
   };
 
-  const handleSpouseInfoChange = (field: keyof SpouseInfo, value: string) => {
-    setSpouseInfo(prev => ({ ...prev, [field]: value }));
+  const handleSpouseInfoChange = (field: keyof SpouseInfo, value: string | boolean) => {
+    setSpouseInfo((prev) => ({ ...prev, [field]: value }));
   };
 
   return {

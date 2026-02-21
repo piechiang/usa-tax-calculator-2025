@@ -35,7 +35,8 @@ export function ClassicModeView() {
     handleBusinessDetailsChange,
     handlePaymentsChange,
     handleDeductionChange,
-    recalculate
+    recalculate,
+    diagnostics,
   } = useTaxContext();
   const {
     activeTab,
@@ -43,7 +44,7 @@ export function ClassicModeView() {
     setShowSpouseDialog,
     setUseClassicMode,
     selectedState,
-    setSelectedState
+    setSelectedState,
   } = useUIContext();
   const { exportPDF, exportJSON } = useTaxDataHandlers();
 
@@ -107,7 +108,9 @@ export function ClassicModeView() {
             {activeTab === 'deductions' && (
               <DeductionsForm
                 deductions={deductions}
-                onChange={handleDeductionChange}
+                onChange={
+                  handleDeductionChange as (field: string, value: string | number | boolean) => void
+                }
                 ValidatedInput={ValidatedInput}
                 t={t}
               />
@@ -125,6 +128,7 @@ export function ClassicModeView() {
           onRecalculate={recalculate}
           t={t}
           selectedState={selectedState}
+          diagnostics={diagnostics}
         />
 
         <StateTaxSelector
@@ -135,7 +139,12 @@ export function ClassicModeView() {
           t={t}
         />
 
-        <TaxInfoPanels personalInfo={personalInfo} taxResult={taxResult} language={language} t={t} />
+        <TaxInfoPanels
+          personalInfo={personalInfo}
+          taxResult={taxResult}
+          language={language}
+          t={t}
+        />
 
         <TaxBurdenChart taxResult={taxResult} language={language} />
 
@@ -146,4 +155,3 @@ export function ClassicModeView() {
     </div>
   );
 }
-

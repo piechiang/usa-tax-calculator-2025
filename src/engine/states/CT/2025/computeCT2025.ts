@@ -18,7 +18,6 @@
 
 import type { StateTaxInput, StateResult, StateCredits } from '../../../types/stateTax';
 import {
-  CT_RULES_2025,
   calculateConnecticutTax,
   calculatePersonalExemptionCredit,
   calculatePersonalTaxCredit,
@@ -76,9 +75,8 @@ export function computeCT2025(input: StateTaxInput): StateResult {
 
   // Step 8: Build credits structure
   const credits: StateCredits = {
-    personal_exemption: personalExemptionCredit,
-    personal_tax_credit: personalTaxCredit,
-    eitc: ctEITC,
+    other_credits: personalExemptionCredit + personalTaxCredit,
+    earned_income: ctEITC,
     nonRefundableCredits: totalNonRefundableCredits,
     refundableCredits: ctEITC,
   };
@@ -103,9 +101,7 @@ export function computeCT2025(input: StateTaxInput): StateResult {
   }
 
   if (personalTaxCredit > 0) {
-    notes.push(
-      `Personal tax credit (income-based): ${formatCents(personalTaxCredit)}`
-    );
+    notes.push(`Personal tax credit (income-based): ${formatCents(personalTaxCredit)}`);
   }
 
   if (ctEITC > 0) {

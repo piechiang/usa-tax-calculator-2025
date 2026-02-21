@@ -18,7 +18,7 @@
  * - Additional age 65+ deduction continues through 2028
  */
 
-import { multiplyCents, subtractCents, max0, addCents } from '../../../util/money';
+import { multiplyCents } from '../../../util/money';
 
 /**
  * Arizona Tax Rate for 2025
@@ -194,12 +194,12 @@ export function calculateDependentExemption(agi: number, numberOfDependents: num
  * @param charitableContributions - Total charitable contributions in cents
  * @returns Standard deduction increase amount in cents
  */
-export function calculateCharitableDeductionIncrease(
-  charitableContributions: number
-): number {
+export function calculateCharitableDeductionIncrease(charitableContributions: number): number {
   if (charitableContributions <= 0) return 0;
 
-  return Math.round(multiplyCents(charitableContributions, AZ_RULES_2025.charitableContributionRate));
+  return Math.round(
+    multiplyCents(charitableContributions, AZ_RULES_2025.charitableContributionRate)
+  );
 }
 
 /**

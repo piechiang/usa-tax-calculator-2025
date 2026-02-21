@@ -1,5 +1,12 @@
 import { dollarsToCents } from '../../src/engine';
-import type { FederalInput2025, FilingStatus, QualifyingChild, QualifyingRelative, EducationExpenses, ForeignIncomeSource } from '../../src/engine/types';
+import type {
+  FederalInput2025,
+  FilingStatus,
+  QualifyingChild,
+  QualifyingRelative,
+  EducationExpenses,
+  ForeignIncomeSource,
+} from '../../src/engine/types';
 
 type DollarValue = number | undefined;
 
@@ -32,7 +39,6 @@ type DollarIncome = {
   capGains?: DollarValue;
   capitalGainsDetail?: DollarCapitalDetail;
   scheduleCNet?: DollarValue;
-  businessIncome?: DollarValue;
   k1?: DollarK1;
   other?: DollarOtherIncome;
 };
@@ -145,7 +151,6 @@ export function buildFederalInput(input: FederalInputDollarShape): FederalInput2
       capGainsNet: cents(income.capGains),
       capitalGainsDetail: buildCapitalDetail(income.capitalGainsDetail, income.capGains),
       scheduleCNet: cents(income.scheduleCNet),
-      businessIncome: cents(income.businessIncome),
       k1: buildK1(income.k1),
       other: buildOtherIncome(income.other),
     },
@@ -153,6 +158,8 @@ export function buildFederalInput(input: FederalInputDollarShape): FederalInput2
     itemized: buildItemized(input.itemized),
     payments: buildPayments(payments),
     ...(input.foreignIncomeSources && { foreignIncomeSources: input.foreignIncomeSources }),
-    ...(input.foreignTaxCreditOptions && { foreignTaxCreditOptions: input.foreignTaxCreditOptions }),
+    ...(input.foreignTaxCreditOptions && {
+      foreignTaxCreditOptions: input.foreignTaxCreditOptions,
+    }),
   };
 }

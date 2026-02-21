@@ -14,7 +14,13 @@
  */
 
 import { snapshotSchema, type Snapshot } from './schemas';
-import { encryptData, decryptData, type EncryptedData, getOrCreateEncryptionKey, isCryptoAvailable } from './crypto';
+import {
+  encryptData,
+  decryptData,
+  type EncryptedData,
+  getOrCreateEncryptionKey,
+  isCryptoAvailable,
+} from './crypto';
 import { auditLog, AuditAction } from './auditLog';
 
 const INDEX_KEY = 'utc:clients:index';
@@ -56,10 +62,7 @@ async function encryptSensitiveFields(
   const data = { ...obj };
   const encryptedFields: Record<string, EncryptedData> = {};
 
-  const processObject = async (
-    target: Record<string, unknown>,
-    path: string = ''
-  ) => {
+  const processObject = async (target: Record<string, unknown>, path: string = '') => {
     for (const key in target) {
       const value = target[key];
       const currentPath = path ? `${path}.${key}` : key;
@@ -184,7 +187,9 @@ export async function saveClientSecure(
       });
     } catch (error) {
       // Fallback to unencrypted if encryption fails
-      console.warn('Encryption failed, saving unencrypted:', error);
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { logger } = require('./logger');
+      logger.warn('Encryption failed, saving unencrypted', { error });
       localStorage.setItem(CLIENT_KEY(clientId), JSON.stringify(parsed.data));
       auditLog(AuditAction.SAVE_CLIENT, { clientId, encrypted: false, error: 'encryption_failed' });
     }

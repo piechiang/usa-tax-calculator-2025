@@ -17,7 +17,7 @@ import type {
   UIK1Data,
   UIBusinessDetails,
   UIPaymentsData,
-  UIDeductions
+  UIDeductions,
 } from '../../src/utils/engineAdapter';
 import type { SpouseInfo } from '../../src/types/CommonTypes';
 
@@ -25,7 +25,9 @@ import type { SpouseInfo } from '../../src/types/CommonTypes';
 type TestDeductions = UIDeductions;
 
 // Helper to create minimal test data
-const createTestPersonalInfo = (filingStatus: 'single' | 'marriedJointly' | 'marriedSeparately' | 'headOfHousehold' = 'single'): UIPersonalInfo => ({
+const createTestPersonalInfo = (
+  filingStatus: 'single' | 'marriedJointly' | 'marriedSeparately' | 'headOfHousehold' = 'single'
+): UIPersonalInfo => ({
   filingStatus,
   ssn: '123-45-6789',
   dependents: 0,
@@ -41,7 +43,6 @@ const createTestIncomeData = (wages: string = '75000'): UIIncomeData => ({
   dividends: '0',
   qualifiedDividends: '0',
   capitalGains: '0',
-  businessIncome: '0',
   rentalIncome: '0',
   farmIncome: '0',
   unemployment: '0',
@@ -60,7 +61,6 @@ const createTestK1Data = (): UIK1Data => ({
 });
 
 const createTestBusinessDetails = (): UIBusinessDetails => ({
-  businessIncome: '0',
   businessExpenses: '0',
   selfEmploymentIncome: '0',
 });
@@ -80,7 +80,6 @@ const createTestSpouseInfo = (): SpouseInfo => ({
   interestIncome: '0',
   dividends: '0',
   capitalGains: '0',
-  businessIncome: '0',
   otherIncome: '0',
   federalWithholding: '0',
   stateWithholding: '0',
