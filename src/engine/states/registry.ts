@@ -39,7 +39,6 @@ import { computeAK2025 } from './AK/2025/computeAK2025';
 import { computeNV2025 } from './NV/2025/computeNV2025';
 import { computeSD2025 } from './SD/2025/computeSD2025';
 import { computeWY2025 } from './WY/2025/computeWY2025';
-import { computeWA2025 } from './WA/2025/computeWA2025';
 import { computeNH2025 } from './NH/2025/computeNH2025';
 import { computeAR2025 } from './AR/2025/computeAR2025';
 import { computeDE2025 } from './DE/2025/computeDE2025';
@@ -988,10 +987,6 @@ export const STATE_REGISTRY: StateRegistry = {
     config: STATE_CONFIGS.WY!,
     calculator: computeWY2025,
   },
-  WA: {
-    config: STATE_CONFIGS.WA!,
-    calculator: computeWA2025,
-  },
   VA: {
     config: STATE_CONFIGS.VA!,
     calculator: computeVA2025,
@@ -1087,7 +1082,7 @@ function createNoTaxCalculator(stateCode: string): StateCalculator {
   return (input: StateTaxInput) => {
     const config = STATE_CONFIGS[stateCode];
     return {
-      stateAGI: 0,
+      stateAGI: input.federalResult?.agi ?? 0,
       stateTaxableIncome: 0,
       stateTax: 0,
       localTax: 0,
