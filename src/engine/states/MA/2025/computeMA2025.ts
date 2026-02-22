@@ -77,6 +77,8 @@ export function computeMA2025(input: StateTaxInput): StateResult {
     taxYear: 2025,
     stateAGI: maAGI,
     stateTaxableIncome: maTaxableIncome,
+    agiState: maAGI,
+    taxableIncomeState: maTaxableIncome,
     stateTax: finalTax,
     localTax: 0,
     totalStateLiability: finalTax,

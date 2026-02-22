@@ -75,8 +75,11 @@ export function computeCT2025(input: StateTaxInput): StateResult {
 
   // Step 8: Build credits structure
   const credits: StateCredits = {
+    personal_exemption: personalExemptionCredit,
+    personal_tax_credit: personalTaxCredit,
     other_credits: personalExemptionCredit + personalTaxCredit,
     earned_income: ctEITC,
+    eitc: ctEITC,
     nonRefundableCredits: totalNonRefundableCredits,
     refundableCredits: ctEITC,
   };
@@ -115,6 +118,8 @@ export function computeCT2025(input: StateTaxInput): StateResult {
     taxYear: 2025,
     stateAGI: ctAGI,
     stateTaxableIncome: ctTaxableIncome,
+    agiState: ctAGI,
+    taxableIncomeState: ctTaxableIncome,
     stateTax: finalTax,
     localTax: 0, // CT has no state-administered local income tax
     totalStateLiability: finalTax,

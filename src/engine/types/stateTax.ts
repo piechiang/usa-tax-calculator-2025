@@ -20,6 +20,11 @@ export interface StateResult {
   localTax: number; // Local/county/city tax
   totalStateLiability: number; // Total state + local tax
 
+  // Aliases for backward compatibility with test expectations
+  agiState?: number; // Alias for stateAGI
+  taxableIncomeState?: number; // Alias for stateTaxableIncome
+  credits?: StateCredits; // Alias for stateCredits
+
   // State-specific deductions
   stateDeduction: number; // Standard or itemized deduction
   stateExemptions?: number; // Personal/dependent exemptions (if applicable)
@@ -48,11 +53,16 @@ export interface StateResult {
  */
 export interface StateCredits {
   earned_income?: number; // State EITC (often % of federal)
+  eitc?: number; // Alias for earned_income
   child_dependent?: number; // Child/dependent care credit
+  child_care?: number; // Child care credit
   education?: number; // Education credits
   renters?: number; // Renter's credit
   property_tax?: number; // Property tax credit
   other_credits?: number; // Other state-specific credits
+  personal_exemption?: number; // Personal exemption credit (e.g. CT)
+  personal_tax_credit?: number; // Personal tax credit (e.g. CT income-based)
+  dependent_exemption?: number; // Dependent exemption credit
 
   // Total credits breakdown
   nonRefundableCredits: number;

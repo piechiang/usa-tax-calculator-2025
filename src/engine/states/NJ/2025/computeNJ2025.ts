@@ -81,6 +81,8 @@ export function computeNJ2025(input: StateTaxInput): StateResult {
     taxYear: 2025,
     stateAGI: njAGI,
     stateTaxableIncome: njTaxableIncome,
+    agiState: njAGI,
+    taxableIncomeState: njTaxableIncome,
     stateTax: finalTax,
     localTax: 0,
     totalStateLiability: finalTax,
@@ -89,6 +91,7 @@ export function computeNJ2025(input: StateTaxInput): StateResult {
     stateEstPayments: njSpecific?.stateEstPayments ?? 0,
     stateRefundOrOwe: refundOrOwe,
     stateCredits: credits,
+    credits,
   };
 }
 

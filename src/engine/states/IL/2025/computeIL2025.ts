@@ -52,6 +52,8 @@ export function computeIL2025(input: StateTaxInput): StateResult {
     taxYear: 2025,
     stateAGI: ilAGI,
     stateTaxableIncome: ilTaxableIncome,
+    agiState: ilAGI,
+    taxableIncomeState: ilTaxableIncome,
     stateTax: taxAfterCredits,
     localTax: 0,
     totalStateLiability: taxAfterCredits,
@@ -60,6 +62,7 @@ export function computeIL2025(input: StateTaxInput): StateResult {
     stateEstPayments: stateSpecific?.stateEstPayments ?? 0,
     stateRefundOrOwe: (stateSpecific?.stateWithheld ?? 0) - taxAfterCredits,
     stateCredits: credits,
+    credits,
   };
 }
 

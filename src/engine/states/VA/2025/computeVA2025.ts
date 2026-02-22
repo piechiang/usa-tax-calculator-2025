@@ -69,6 +69,8 @@ export function computeVA2025(input: StateTaxInput): StateResult {
     taxYear: 2025,
     stateAGI: vaAGI,
     stateTaxableIncome: vaTaxableIncome,
+    agiState: vaAGI,
+    taxableIncomeState: vaTaxableIncome,
     stateTax: finalTax,
     localTax: 0,
     totalStateLiability: finalTax,

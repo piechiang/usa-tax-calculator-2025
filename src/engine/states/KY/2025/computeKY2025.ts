@@ -56,6 +56,7 @@ export function computeKY2025(input: KentuckyInput2025): StateResult {
 
   // Build state credits object
   const stateCredits: StateCredits = {
+    child_care: childCareCredit,
     child_dependent: childCareCredit,
     nonRefundableCredits,
     refundableCredits: 0,

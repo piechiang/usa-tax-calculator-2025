@@ -58,6 +58,8 @@ export function computeGA2025(input: StateTaxInput): StateResult {
     taxYear: 2025,
     stateAGI: gaAGI,
     stateTaxableIncome: gaTaxableIncome,
+    agiState: gaAGI,
+    taxableIncomeState: gaTaxableIncome,
     stateTax: finalTax,
     localTax: 0,
     totalStateLiability: finalTax,
