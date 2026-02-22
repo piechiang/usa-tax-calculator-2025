@@ -8,6 +8,7 @@ import {
   ValidationError,
   TaxDataImport,
 } from '../types/EnhancedTaxTypes';
+import { calculateTaxResultsWithEngine } from '../utils/engineAdapter';
 import { logger } from '../utils/logger';
 
 interface WizardState {
@@ -185,47 +186,129 @@ export const useEnhancedTaxWizard = (
     [wizardState.data]
   );
 
-  // Calculate function
+  // Calculate function — delegates to the real engine via engineAdapter
   const calculate = useCallback(async (): Promise<void> => {
     setWizardState((prev) => ({ ...prev, isCalculating: true }));
 
     try {
-      // Simulate calculation delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Perform tax calculations based on current data
       const personalInfo = getData('personalInfo') as Partial<PersonalInformation>;
       const incomeSourcesEach = (getData('incomeSourcesEach') as IncomeSource[]) || [];
+      const wizardData = getData() as Partial<EnhancedTaxReturn>;
 
-      const totalIncome = incomeSourcesEach.reduce((sum, income) => sum + (income.amount || 0), 0);
-      const standardDeduction = getStandardDeduction(personalInfo?.filingStatus);
-      const taxableIncome = Math.max(0, totalIncome - standardDeduction);
-      const regularTax = calculateFederalTax(taxableIncome, personalInfo?.filingStatus);
+      // Map wizard income sources to UIIncomeData (string amounts, as expected by adapter)
+      const wagesSource = incomeSourcesEach.find((s) => s.type === 'wages');
+      const selfEmpSource = incomeSourcesEach.find(
+        (s) => s.type === 'selfEmployment' || s.type === 'business'
+      );
+      const investmentSource = incomeSourcesEach.find((s) => s.type === 'investment');
+      const retirementSource = incomeSourcesEach.find((s) => s.type === 'retirement');
+      const otherSource = incomeSourcesEach.find((s) => s.type === 'other');
+
+      const federalWithheld = incomeSourcesEach
+        .reduce((sum, s) => sum + (s.federalTaxWithheld ?? 0), 0)
+        .toString();
+      const stateWithheld = incomeSourcesEach
+        .reduce((sum, s) => sum + (s.stateTaxWithheld ?? 0), 0)
+        .toString();
+
+      const uiPersonalInfo = {
+        filingStatus: personalInfo?.filingStatus ?? 'single',
+        birthDate: personalInfo?.dateOfBirth ?? null,
+        isBlind: personalInfo?.isBlind ?? false,
+        ssn: personalInfo?.ssn,
+        dependents:
+          (wizardData?.qualifyingChildren?.length ?? 0) +
+          (wizardData?.qualifyingRelatives?.length ?? 0),
+        state: personalInfo?.stateResident ?? personalInfo?.address?.state ?? '',
+      };
+
+      const uiIncomeData = {
+        wages: (wagesSource?.amount ?? 0).toString(),
+        businessIncome: (selfEmpSource?.amount ?? 0).toString(),
+        capitalGains: (investmentSource?.amount ?? 0).toString(),
+        retirementIncome: (retirementSource?.amount ?? 0).toString(),
+        otherIncome: (otherSource?.amount ?? 0).toString(),
+      };
+
+      const aboveLineTotal = (wizardData?.aboveLineDeductions ?? []).reduce(
+        (sum, d) => sum + (d.amount ?? 0),
+        0
+      );
+      const itemizedTotal = (wizardData?.itemizedDeductions ?? []).reduce(
+        (sum, d) => sum + (d.amount ?? 0),
+        0
+      );
+
+      const uiDeductions = {
+        iraContribution: aboveLineTotal.toString(),
+        itemizeDeductions: !wizardData?.useStandardDeduction && itemizedTotal > 0,
+        itemizedTotal,
+      };
+
+      const uiPayments = {
+        federalWithholding: federalWithheld,
+        stateWithholding: stateWithheld,
+        estimatedTaxPayments: (
+          (wizardData?.estimatedTaxInfo?.q1Payment ?? 0) +
+          (wizardData?.estimatedTaxInfo?.q2Payment ?? 0) +
+          (wizardData?.estimatedTaxInfo?.q3Payment ?? 0) +
+          (wizardData?.estimatedTaxInfo?.q4Payment ?? 0)
+        ).toString(),
+      };
+
+      const engineResult = calculateTaxResultsWithEngine(
+        uiPersonalInfo,
+        uiIncomeData,
+        {},
+        {},
+        uiPayments,
+        uiDeductions,
+        {}
+      );
+
+      const r = engineResult.result;
+      const totalIncome = r.adjustedGrossIncome; // best proxy pre-AGI
+      const stateTaxTotal = r.stateTax + r.localTax;
 
       const result: TaxCalculationResult = {
         totalIncome,
-        adjustedGrossIncome: totalIncome, // Simplified
-        taxableIncome,
-        totalAboveLineDeductions: 0,
-        standardDeduction,
-        totalItemizedDeductions: 0,
-        deductionUsed: standardDeduction,
-        regularTax,
+        adjustedGrossIncome: r.adjustedGrossIncome,
+        taxableIncome: r.taxableIncome,
+        totalAboveLineDeductions: aboveLineTotal,
+        standardDeduction: r.standardDeduction,
+        totalItemizedDeductions: itemizedTotal,
+        deductionUsed:
+          r.itemizedDeduction > r.standardDeduction ? r.itemizedDeduction : r.standardDeduction,
+        regularTax: r.federalTax,
         alternativeMinimumTax: 0,
-        selfEmploymentTax: 0,
-        netInvestmentIncomeTax: 0,
-        additionalMedicareTax: 0,
-        totalTaxBeforeCredits: regularTax,
-        nonRefundableCredits: 0,
-        refundableCredits: 0,
-        totalTax: regularTax,
-        totalPayments: 0,
-        refundOrAmountDue: regularTax,
-        effectiveTaxRate: totalIncome > 0 ? (regularTax / totalIncome) * 100 : 0,
-        marginalTaxRate: getMarginalTaxRate(taxableIncome, personalInfo?.filingStatus),
+        selfEmploymentTax: r.selfEmploymentTax,
+        netInvestmentIncomeTax: r.netInvestmentIncomeTax,
+        additionalMedicareTax: r.additionalMedicareTax,
+        totalTaxBeforeCredits: r.federalTax + r.selfEmploymentTax,
+        nonRefundableCredits: r.childTaxCredit + r.educationCredits,
+        refundableCredits: r.earnedIncomeCredit,
+        totalTax: r.totalTax,
+        totalPayments: r.totalPayments,
+        refundOrAmountDue: r.refundOrOwe,
+        effectiveTaxRate: r.effectiveRate,
+        marginalTaxRate: r.marginalRate,
+        stateTaxSummary:
+          stateTaxTotal > 0
+            ? [
+                {
+                  state: uiPersonalInfo.state,
+                  stateAGI: r.adjustedGrossIncome,
+                  stateTaxableIncome: r.taxableIncome,
+                  stateTax: r.stateTax,
+                  localTax: r.localTax,
+                  totalStateTax: stateTaxTotal,
+                  stateRefundOrDue: 0,
+                },
+              ]
+            : [],
         calculationDetails: [],
         optimizationSuggestions: [],
-        warnings: [],
+        warnings: engineResult.success ? [] : [engineResult.error ?? 'Calculation error'],
         errors: [],
       };
 
@@ -634,56 +717,6 @@ const getValueAtPath = (obj: Record<string, unknown>, path: string): unknown => 
     }
     return undefined;
   }, obj);
-};
-
-const getStandardDeduction = (filingStatus?: string): number => {
-  const standardDeductions = {
-    single: 15750,
-    marriedJointly: 31500,
-    marriedSeparately: 15750,
-    headOfHousehold: 23350,
-    qualifyingSurvivingSpouse: 31500,
-  };
-
-  return standardDeductions[filingStatus as keyof typeof standardDeductions] || 15750;
-};
-
-const calculateFederalTax = (taxableIncome: number, _filingStatus?: string): number => {
-  // Simplified tax calculation for 2025
-  const brackets = {
-    single: [
-      { min: 0, max: 11925, rate: 0.1 },
-      { min: 11925, max: 48375, rate: 0.12 },
-      { min: 48375, max: 103350, rate: 0.22 },
-      { min: 103350, max: 197950, rate: 0.24 },
-      { min: 197950, max: 487450, rate: 0.32 },
-      { min: 487450, max: 731200, rate: 0.35 },
-      { min: 731200, max: Infinity, rate: 0.37 },
-    ],
-  };
-
-  const applicableBrackets = brackets.single; // Simplified
-  let tax = 0;
-
-  for (const bracket of applicableBrackets) {
-    if (taxableIncome > bracket.min) {
-      const taxableInBracket = Math.min(taxableIncome, bracket.max) - bracket.min;
-      tax += taxableInBracket * bracket.rate;
-    }
-  }
-
-  return Math.round(tax);
-};
-
-const getMarginalTaxRate = (taxableIncome: number, _filingStatus?: string): number => {
-  // Return the marginal tax rate based on income
-  if (taxableIncome <= 11925) return 10;
-  if (taxableIncome <= 48375) return 12;
-  if (taxableIncome <= 103350) return 22;
-  if (taxableIncome <= 197950) return 24;
-  if (taxableIncome <= 487450) return 32;
-  if (taxableIncome <= 731200) return 35;
-  return 37;
 };
 
 const mapPreviousYearData = (

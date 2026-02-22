@@ -52,6 +52,7 @@ export const RealTimeTaxDisplay: React.FC<RealTimeTaxDisplayProps> = ({
 
     const fieldsToTrack = [
       { key: 'federalTax', label: 'Federal Tax' },
+      { key: 'stateTax', label: 'State Tax' },
       { key: 'totalTax', label: 'Total Tax' },
       { key: 'effectiveRate', label: 'Effective Rate' },
       { key: 'marginalRate', label: 'Marginal Rate' },
