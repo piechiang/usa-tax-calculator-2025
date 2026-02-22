@@ -100,7 +100,7 @@ jobs:
         run: npm run test:engine -- tests/golden/states/ca
 
       - name: Verify no-tax states scenarios
-        run: npm run test:engine -- --grep "no.*tax.*states"
+        run: npm run test:engine -- --testNamePattern "no.*tax.*states"
 
   type-check:
     name: TypeScript Type Checking
