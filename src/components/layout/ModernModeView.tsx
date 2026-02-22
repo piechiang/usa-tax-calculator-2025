@@ -2,6 +2,7 @@ import React from 'react';
 import { Calculator, Download, Shield, Target, Zap } from 'lucide-react';
 import CountUp from 'react-countup';
 import { TaxBreakdownChart } from '../analytics/TaxBreakdownChart';
+import { TaxWaterfallChart } from '../analytics/TaxWaterfallChart';
 
 import { useTaxContext } from '../../contexts/TaxContext';
 import { useUIContext } from '../../contexts/UIContext';
@@ -156,6 +157,18 @@ export function ModernModeView() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-100">
+        <div className="bg-gradient-to-r from-brand to-brand-dark px-6 py-4 text-white">
+          <h3 className="text-lg font-semibold">Income to Take-Home Waterfall</h3>
+          <p className="text-xs opacity-75 mt-0.5">
+            How your gross income flows to after-tax income
+          </p>
+        </div>
+        <div className="p-6">
+          <TaxWaterfallChart taxResult={taxResult} />
         </div>
       </div>
     </div>
